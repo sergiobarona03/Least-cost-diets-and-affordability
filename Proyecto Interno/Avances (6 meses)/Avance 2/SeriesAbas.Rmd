@@ -1,0 +1,291 @@
+---
+title: "Series de tiempo"
+output: html_document
+date: "`r Sys.Date()`"
+---
+
+```{r set knitr options, echo = FALSE}
+knitr::opts_chunk$set(echo = FALSE
+                      , message = FALSE
+                      , warning = FALSE)
+```
+
+# Cargar Librerías
+```{r libraries, echo = FALSE}
+library(plotly)
+library(dplyr)
+library(tidyverse)
+library(lubridate)
+library(RColorBrewer)
+```
+
+# Estructura de la base de datos
+
+```{r load-data, echo=FALSE}
+# Cargar bases
+year_2018 <- readRDS("C:\\Users\\danie\\OneDrive\\Escritorio\\costo_minimo_asequibilidad\\Proyecto Interno\\Avances (6 meses)\\Avance 2\\Bases historicas\\2018.rds")
+
+year_2019 <- readRDS("C:\\Users\\danie\\OneDrive\\Escritorio\\costo_minimo_asequibilidad\\Proyecto Interno\\Avances (6 meses)\\Avance 2\\Bases historicas\\2019.rds")
+
+year_2020 <- readRDS("C:\\Users\\danie\\OneDrive\\Escritorio\\costo_minimo_asequibilidad\\Proyecto Interno\\Avances (6 meses)\\Avance 2\\Bases historicas\\2020.rds")
+
+year_2021 <- readRDS("C:\\Users\\danie\\OneDrive\\Escritorio\\costo_minimo_asequibilidad\\Proyecto Interno\\Avances (6 meses)\\Avance 2\\Bases historicas\\2021.rds")
+
+year_2022 <- readRDS("C:\\Users\\danie\\OneDrive\\Escritorio\\costo_minimo_asequibilidad\\Proyecto Interno\\Avances (6 meses)\\Avance 2\\Bases historicas\\2022.rds")
+
+year_2023 <- readRDS("C:\\Users\\danie\\OneDrive\\Escritorio\\costo_minimo_asequibilidad\\Proyecto Interno\\Avances (6 meses)\\Avance 2\\Bases historicas\\2023.rds")
+
+year_2024 <- readRDS("C:\\Users\\danie\\OneDrive\\Escritorio\\costo_minimo_asequibilidad\\Proyecto Interno\\Avances (6 meses)\\Avance 2\\Bases historicas\\2024.rds")
+
+
+# Crear una lista con todas las bases
+lista_bases <- list(year_2018, year_2019, year_2020, year_2021, year_2022, year_2023, year_2024)
+
+# Normalizar columnas
+lista_bases <- lapply(lista_bases, function(df) {
+  if (!"Cod_CPC" %in% colnames(df)) {
+    df$Cod_CPC <- NA  
+  }
+  return(df)
+})
+
+# Unir todas las bases
+dataset <- bind_rows(lista_bases)
+
+# Convertir columnas a formatos correctos
+dataset <- dataset %>%
+  mutate(
+    Fecha = as.Date(Fecha),  
+    Cantidad_KG = as.numeric(Cantidad_KG) 
+  )
+
+glimpse(dataset)
+```
+
+**Fuente de datos:** Sistema de Información de Precios y Abastecimiento del Sector Agropecuario (SIPSA)
+
+## Tendencias de Consumo de Alimentos por Ciudad y Grupo
+
+```{r city-group-plot, echo=FALSE}
+dataset <- dataset %>%
+  mutate(Year_Month = floor_date(Fecha, "month")) %>%
+  filter(Ciudad %in% c("Bogotá", "Medellín", "Cali", "Barranquilla", 
+                       "Bucaramanga", "Manizales", "Pasto", "Pereira", 
+                       "Ibagué", "Cúcuta", "Villavicencio", "Montería", "Cartagena"))
+
+dataset_1 <- dataset %>%
+  group_by(Year_Month, Ciudad, Grupo) %>%
+  summarise(Cantidad_Total = sum(Cantidad_KG, na.rm = TRUE) / 1000, .groups = "drop") 
+
+lista_graficos1 <- lapply(unique(dataset_1$Ciudad), function(ciudad) {
+  
+  datos_ciudad <- dataset_1 %>% filter(Ciudad == ciudad)
+  
+  plot_ly(
+    data = datos_ciudad,
+    x = ~Year_Month,
+    y = ~Cantidad_Total,
+    color = ~Grupo,  
+    type = "scatter",
+    mode = "lines+markers", 
+    hoverinfo = "text",
+    text = ~paste(
+      "<b>Fecha:</b>", format(Year_Month, "%Y-%m"), "<br>",
+      "<b>Cantidad (Ton):</b>", round(Cantidad_Total, 2), "<br>",
+      "<b>Grupo:</b>", Grupo
+    )
+  ) %>%
+    layout(
+      title = paste("Evolución de Alimentos en", ciudad),
+      xaxis = list(title = "Fecha", type = "date"),
+      yaxis = list(title = "Cantidad (Ton)"),
+      legend = list(
+        title = list(text = "Grupo de Alimento"),
+        orientation = "h",
+        x = 0,  
+        y = -0.3  
+      ),
+      hovermode = "x unified"  
+    )
+})
+
+lista_graficos1[[1]]
+lista_graficos1[[2]]
+lista_graficos1[[3]]
+lista_graficos1[[4]]
+lista_graficos1[[5]]
+lista_graficos1[[6]]
+lista_graficos1[[7]]
+lista_graficos1[[8]]
+lista_graficos1[[9]]
+lista_graficos1[[10]]
+lista_graficos1[[11]]
+lista_graficos1[[12]]
+lista_graficos1[[13]]
+```
+
+## Tendencias de Consumo por Ciudad, Grupo y Tipo de Alimento
+
+```{r city-group-food-plot, echo=FALSE}
+dataset_2 <- dataset %>%
+  group_by(Year_Month, Ciudad, Grupo, Alimento) %>%
+  summarise(Cantidad_Total = sum(Cantidad_KG, na.rm = TRUE) / 1000, .groups = "drop") 
+
+num_colores <- length(unique(dataset_2$Alimento)) 
+paleta_colores <- colorRampPalette(brewer.pal(12, "Set3"))(num_colores) 
+
+lista_graficos2 <- lapply(unique(dataset_2$Ciudad), function(ciudad) {
+  lapply(unique(dataset_2$Grupo), function(grupo) {
+    
+    datos_filtro <- dataset_2 %>%
+      filter(Ciudad == ciudad, Grupo == grupo)
+    
+    plot_ly(
+      data = datos_filtro,
+      x = ~Year_Month,
+      y = ~Cantidad_Total,
+      color = ~Alimento,
+      colors = paleta_colores,  
+      type = "scatter",
+      mode = "lines+markers", 
+      hoverinfo = "text",
+      text = ~paste(
+        "<b>Fecha:</b>", format(Year_Month, "%Y-%m"), "<br>",
+        "<b>Cantidad (Ton):</b>", round(Cantidad_Total, 2), "<br>",
+        "<b>Alimento:</b>", Alimento
+      )
+    ) %>%
+      layout(
+        title = paste("Evolución de", grupo, "en", ciudad),
+        xaxis = list(title = "Fecha", type = "date"),
+        yaxis = list(title = "Cantidad (Ton)"),
+        legend = list(
+          title = list(text = "Alimento"),
+          orientation = "h",  
+          x = 0,  
+          y = -0.3  
+        ),
+        hovermode = "x unified"  
+      )
+  })
+})
+
+
+lista_graficos2[[1]][[1]]
+lista_graficos2[[1]][[2]]
+lista_graficos2[[1]][[3]]
+lista_graficos2[[1]][[4]]
+lista_graficos2[[1]][[5]]
+lista_graficos2[[1]][[6]]
+lista_graficos2[[1]][[7]]
+lista_graficos2[[1]][[8]]
+
+lista_graficos2[[2]][[1]]
+lista_graficos2[[2]][[2]]
+lista_graficos2[[2]][[3]]
+lista_graficos2[[2]][[4]]
+lista_graficos2[[2]][[5]]
+lista_graficos2[[2]][[6]]
+lista_graficos2[[2]][[7]]
+lista_graficos2[[2]][[8]]
+
+lista_graficos2[[3]][[1]]
+lista_graficos2[[3]][[2]]
+lista_graficos2[[3]][[3]]
+lista_graficos2[[3]][[4]]
+lista_graficos2[[3]][[5]]
+lista_graficos2[[3]][[6]]
+lista_graficos2[[3]][[7]]
+lista_graficos2[[3]][[8]]
+
+lista_graficos2[[4]][[1]]
+lista_graficos2[[4]][[2]]
+lista_graficos2[[4]][[3]]
+lista_graficos2[[4]][[4]]
+lista_graficos2[[4]][[5]]
+lista_graficos2[[4]][[6]]
+lista_graficos2[[4]][[7]]
+lista_graficos2[[4]][[8]]
+
+lista_graficos2[[5]][[1]]
+lista_graficos2[[5]][[2]]
+lista_graficos2[[5]][[3]]
+lista_graficos2[[5]][[4]]
+lista_graficos2[[5]][[5]]
+lista_graficos2[[5]][[6]]
+lista_graficos2[[5]][[7]]
+lista_graficos2[[5]][[8]]
+
+lista_graficos2[[6]][[1]]
+lista_graficos2[[6]][[2]]
+lista_graficos2[[6]][[3]]
+lista_graficos2[[6]][[4]]
+lista_graficos2[[6]][[5]]
+lista_graficos2[[6]][[6]]
+lista_graficos2[[6]][[7]]
+lista_graficos2[[6]][[8]]
+
+lista_graficos2[[7]][[1]]
+lista_graficos2[[7]][[2]]
+lista_graficos2[[7]][[3]]
+lista_graficos2[[7]][[4]]
+lista_graficos2[[7]][[5]]
+lista_graficos2[[7]][[6]]
+lista_graficos2[[7]][[7]]
+lista_graficos2[[7]][[8]]
+
+lista_graficos2[[8]][[1]]
+lista_graficos2[[8]][[2]]
+lista_graficos2[[8]][[3]]
+lista_graficos2[[8]][[4]]
+lista_graficos2[[8]][[5]]
+lista_graficos2[[8]][[6]]
+lista_graficos2[[8]][[7]]
+lista_graficos2[[8]][[8]]
+
+lista_graficos2[[9]][[1]]
+lista_graficos2[[9]][[2]]
+lista_graficos2[[9]][[3]]
+lista_graficos2[[9]][[4]]
+lista_graficos2[[9]][[5]]
+lista_graficos2[[9]][[6]]
+lista_graficos2[[9]][[7]]
+lista_graficos2[[9]][[8]]
+
+lista_graficos2[[10]][[1]]
+lista_graficos2[[10]][[2]]
+lista_graficos2[[10]][[3]]
+lista_graficos2[[10]][[4]]
+lista_graficos2[[10]][[5]]
+lista_graficos2[[10]][[6]]
+lista_graficos2[[10]][[7]]
+lista_graficos2[[10]][[8]]
+
+lista_graficos2[[11]][[1]]
+lista_graficos2[[11]][[2]]
+lista_graficos2[[11]][[3]]
+lista_graficos2[[11]][[4]]
+lista_graficos2[[11]][[5]]
+lista_graficos2[[11]][[6]]
+lista_graficos2[[11]][[7]]
+lista_graficos2[[11]][[8]]
+
+lista_graficos2[[12]][[1]]
+lista_graficos2[[12]][[2]]
+lista_graficos2[[12]][[3]]
+lista_graficos2[[12]][[4]]
+lista_graficos2[[12]][[5]]
+lista_graficos2[[12]][[6]]
+lista_graficos2[[12]][[7]]
+lista_graficos2[[12]][[8]]
+
+lista_graficos2[[13]][[1]]
+lista_graficos2[[13]][[2]]
+lista_graficos2[[13]][[3]]
+lista_graficos2[[13]][[4]]
+lista_graficos2[[13]][[5]]
+lista_graficos2[[13]][[6]]
+lista_graficos2[[13]][[7]]
+lista_graficos2[[13]][[8]]
+
+```
