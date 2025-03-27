@@ -18,19 +18,19 @@ library(lubridate)
 library(shiny)
 
 # Cargar bases
-year_2018 <- readRDS("C:\\Users\\danie\\OneDrive\\Escritorio\\costo_minimo_asequibilidad\\Proyecto Interno\\Avances (6 meses)\\Avance 2\\Bases historicas\\2018.rds")
+year_2018 <- readRDS("C:\\Users\\danie\\OneDrive\\Escritorio\\Least-cost-diets-and-affordabilityd\\Proyecto Interno\\Avances (6 meses)\\Avance 2\\Bases historicas\\2018.rds")
 
-year_2019 <- readRDS("C:\\Users\\danie\\OneDrive\\Escritorio\\costo_minimo_asequibilidad\\Proyecto Interno\\Avances (6 meses)\\Avance 2\\Bases historicas\\2019.rds")
+year_2019 <- readRDS("C:\\Users\\danie\\OneDrive\\Escritorio\\Least-cost-diets-and-affordabilityd\\Proyecto Interno\\Avances (6 meses)\\Avance 2\\Bases historicas\\2019.rds")
 
-year_2020 <- readRDS("C:\\Users\\danie\\OneDrive\\Escritorio\\costo_minimo_asequibilidad\\Proyecto Interno\\Avances (6 meses)\\Avance 2\\Bases historicas\\2020.rds")
+year_2020 <- readRDS("C:\\Users\\danie\\OneDrive\\Escritorio\\Least-cost-diets-and-affordabilityd\\Proyecto Interno\\Avances (6 meses)\\Avance 2\\Bases historicas\\2020.rds")
 
-year_2021 <- readRDS("C:\\Users\\danie\\OneDrive\\Escritorio\\costo_minimo_asequibilidad\\Proyecto Interno\\Avances (6 meses)\\Avance 2\\Bases historicas\\2021.rds")
+year_2021 <- readRDS("C:\\Users\\danie\\OneDrive\\Escritorio\\Least-cost-diets-and-affordabilityd\\Proyecto Interno\\Avances (6 meses)\\Avance 2\\Bases historicas\\2021.rds")
 
-year_2022 <- readRDS("C:\\Users\\danie\\OneDrive\\Escritorio\\costo_minimo_asequibilidad\\Proyecto Interno\\Avances (6 meses)\\Avance 2\\Bases historicas\\2022.rds")
+year_2022 <- readRDS("C:\\Users\\danie\\OneDrive\\Escritorio\\Least-cost-diets-and-affordabilityd\\Proyecto Interno\\Avances (6 meses)\\Avance 2\\Bases historicas\\2022.rds")
 
-year_2023 <- readRDS("C:\\Users\\danie\\OneDrive\\Escritorio\\costo_minimo_asequibilidad\\Proyecto Interno\\Avances (6 meses)\\Avance 2\\Bases historicas\\2023.rds")
+year_2023 <- readRDS("C:\\Users\\danie\\OneDrive\\Escritorio\\Least-cost-diets-and-affordabilityd\\Proyecto Interno\\Avances (6 meses)\\Avance 2\\Bases historicas\\2023.rds")
 
-year_2024 <- readRDS("C:\\Users\\danie\\OneDrive\\Escritorio\\costo_minimo_asequibilidad\\Proyecto Interno\\Avances (6 meses)\\Avance 2\\Bases historicas\\2024.rds")
+year_2024 <- readRDS("C:\\Users\\danie\\OneDrive\\Escritorio\\Least-cost-diets-and-affordabilityd\\Proyecto Interno\\Avances (6 meses)\\Avance 2\\Bases historicas\\2024.rds")
 
 
 # Crear una lista con todas las bases
