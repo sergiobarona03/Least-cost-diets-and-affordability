@@ -13,8 +13,8 @@ years <- unique(fechas$year)
 # Bucle por año
 for (y in years) {
   df_year <- data.frame()  # DataFrame vacío para cada año
+
   
-<<<<<<< HEAD
   for (m in 1:12) {
     print(paste0("Done ", m, "-", y))
     
@@ -27,8 +27,7 @@ for (y in years) {
   # Guardar el archivo 
   saveRDS(df_year, file = file.path("C:/Users/danie/OneDrive/Documentos", paste0(y, ".rds")))
   
-  
-<<<<<<< HEAD
+
 
 }
 

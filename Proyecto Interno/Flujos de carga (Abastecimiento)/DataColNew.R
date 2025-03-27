@@ -5,16 +5,6 @@
 
 DataCol<- function(Month, Year, City, Percentile = NULL, Food_income = NULL, Price_data_list = NULL, Supply_data_list = NULL, Margins=NULL) {
   
-  Month = 1
-  Year = 2022
-  City = "Cali"
-  Percentile = 0.1
-  Food_income = NULL
-  Price_data_list = NULL
-  Supply_data_list = NULL
-  Margins=NULL
-  
-  
   #------------------------------------------------------------------------------------------#
   #         PRIMERA ETAPA: VALIDACIÓN DE PARÁMETROS OBLIGATORIOS Y OPCIONALES                # ✔ SIMPLIFICADA Y ASEGURADA
   #-----------------------------------------------------------------------------------------#
