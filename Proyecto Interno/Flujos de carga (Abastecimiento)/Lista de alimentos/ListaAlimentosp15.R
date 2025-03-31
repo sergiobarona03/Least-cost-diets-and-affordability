@@ -90,7 +90,7 @@ for (año in 2018:2024) {
   }
 }
 
-# Guardar el archivo final con percentil 15 por ciudad
+ # Guardar el archivo final con percentil 15 por ciudad
 output <- "C:\\Users\\danie\\OneDrive\\Escritorio\\Least-cost-diets-and-affordability\\Proyecto Interno\\Flujos de carga (Abastecimiento)\\Lista de alimentos\\"
 saveRDS(resultados_p15, file = paste0(output, "lista_alimentos_p15.rds"))
 
