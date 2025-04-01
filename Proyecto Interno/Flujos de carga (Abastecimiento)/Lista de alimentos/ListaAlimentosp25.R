@@ -11,6 +11,7 @@ library(readr)
 
 # Definir la ruta de los archivos 
 ruta <- "C:\\Users\\danie\\OneDrive\\Escritorio\\Least-cost-diets-and-affordability\\Proyecto Interno\\Flujos de carga (Abastecimiento)\\Bases historicas\\"
+output <- "C:\\Users\\danie\\OneDrive\\Escritorio\\Least-cost-diets-and-affordability\\Proyecto Interno\\Flujos de carga (Abastecimiento)\\Lista de alimentos\\"
 
 # Inicializar lista de bases de datos
 bases <- list()
@@ -54,19 +55,25 @@ percentile25 <- function(df, año, mes) {
   
   # Seleccionar columnas relevantes
   columnas_seleccion <- if ("Cod_CPC" %in% colnames(df)) {
-    c("Ciudad","Grupo", "Cod_CPC", "Alimento", "Cantidad_KG")
+    c("Ciudad", "Grupo", "Cod_CPC", "Alimento", "Cantidad_KG")
   } else {
-    c("Ciudad","Grupo", "Alimento", "Cantidad_KG")
+    c("Ciudad", "Grupo", "Alimento", "Cantidad_KG")
   }
   
-  df <- df %>%
+  # Agregar por Ciudad, Grupo y Alimento
+  df_agregado <- df %>%
     select(all_of(columnas_seleccion)) %>%
+    group_by(across(-Cantidad_KG)) %>%
+    summarise(Cantidad_KG = sum(Cantidad_KG, na.rm = TRUE), .groups = "drop")
+  
+  # Calcular percentil 25 por grupo
+  df_agregado <- df_agregado %>%
     group_by(Grupo) %>%
-    mutate(p25 = quantile(Cantidad_KG, 0.25, na.rm = TRUE)) %>%
+    mutate(p25 = quantile(Cantidad_KG, 0.15, na.rm = TRUE)) %>%
     ungroup()
   
   # Filtrar por percentil 25
-  df_filtrado <- df %>%
+  df_filtrado <- df_agregado %>%
     filter(Cantidad_KG >= p25) %>%
     mutate(Año = año, Mes = mes)
   
@@ -88,8 +95,13 @@ for (año in 2018:2024) {
     # Llamar la función 
     percentile25(bases[[as.character(año)]], año, mes)
   }
+  
+  # Guardar resultados del año si hay datos
+  if (nrow(resultados_p25) > 0) {
+    resultados_año <- resultados_p25 %>% filter(Año == año)  
+    saveRDS(resultados_año, file = paste0(output, "lista_alimentos_p25_", año, ".rds"))
+  }
 }
 
-# Guardar el archivo final con percentil 25 por ciudad
-output <- "C:\\Users\\danie\\OneDrive\\Escritorio\\Least-cost-diets-and-affordability\\Proyecto Interno\\Flujos de carga (Abastecimiento)\\Lista de alimentos\\"
-saveRDS(resultados_p25, file = paste0(output, "lista_alimentos_p25.rds"))
+# Guardar el archivo consolidado de todos los años
+saveRDS(resultados_p25, file = paste0(output, "lista_alimentos_p25_total.rds"))
