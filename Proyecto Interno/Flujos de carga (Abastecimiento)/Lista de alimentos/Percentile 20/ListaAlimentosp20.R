@@ -105,8 +105,3 @@ for (año in 2018:2024) {
 
 # Guardar el archivo consolidado de todos los años
 saveRDS(resultados_p20, file = paste0(output, "lista_alimentos_p20_total.rds"))
-install.packages("writexl")
-library(writexl)
-write_xlsx(resultados_p20, "C:\\Users\\danie\\OneDrive\\Escritorio\\lista_alimentos_p20.xlsx")
-
-
