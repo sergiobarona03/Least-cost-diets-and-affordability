@@ -68,13 +68,12 @@ DataCol3 <- function(Month, Year) {
   #-----------------------------------------------------------------------------------------#
   
   cargar_datos_precios <- function(año, carpeta, env) {
-    # Detectar nombre de archivo según año
-    if (año == 2024) {
-      archivo_excel <- file.path(carpeta, "anex-SIPSA-SerieHistoricaMayorista-2024.xlsx")
+    archivo_excel <- if (año == 2024) {
+      file.path(carpeta, "anex-SIPSA-SerieHistoricaMayorista-2024.xlsx")
     } else if (año == 2023) {
-      archivo_excel <- file.path(carpeta, "anex-SIPSA-SerieHistoricaMayorista-Dic2023.xlsx")
+      file.path(carpeta, "anex-SIPSA-SerieHistoricaMayorista-Dic2023.xlsx")
     } else {
-      archivo_excel <- file.path(carpeta, paste0("series-historicas-precios-mayoristas-", año, ".xlsx"))
+      file.path(carpeta, paste0("series-historicas-precios-mayoristas-", año, ".xlsx"))
     }
     
     nombre_data <- paste0("data_list_precios_", año, "_ev")
@@ -86,24 +85,39 @@ DataCol3 <- function(Month, Year) {
     if (!exists(nombre_data, envir = env)) {
       hojas <- readxl::excel_sheets(archivo_excel)
       
-      datos <- purrr::map_dfr(hojas, function(hoja) {
-        df <- readxl::read_excel(archivo_excel, sheet = hoja, skip = 6)
-        names(df) <- tolower(gsub("\\s+", "_", names(df)))
+      # Excluir hojas no deseadas como 'Índice' o vacías
+      hojas_validas <- hojas[!tolower(hojas) %in% c("índice", "indice", "")]
+      
+      datos <- purrr::map(hojas_validas, function(hoja) {
+        df <- tryCatch({
+          readxl::read_excel(archivo_excel, sheet = hoja, skip = 6)
+        }, error = function(e) {
+          warning(paste("No se pudo leer la hoja:", hoja, "-", e$message))
+          return(NULL)
+        })
         
+        if (is.null(df) || nrow(df) == 0 || ncol(df) == 0) return(NULL)
+        
+        names(df) <- tolower(gsub("\\s+", "_", names(df)))
         df <- dplyr::rename_with(df, ~ gsub("\\*", "", .x))
         
-        df <- dplyr::mutate(df,
-                            anio = as.character(año),
-                            mes = ifelse(length(hojas) == 1,
-                                         if (año == 2024 && "fecha" %in% names(df)) {
-                                           lubridate::month(lubridate::dmy(paste0("01-", df$fecha)))
-                                         } else {
-                                           NA
-                                         },
-                                         stringr::str_pad(match(tolower(hoja), tolower(month.abb)), 2, pad = "0"))
-        )
+        # Extraer nombre del mes
+        mes_detectado <- NA
+        if (año == 2024 && hoja == "2024") {
+          mes_detectado <- "01"  # Puedes ajustar esta lógica si hay más de un mes
+        } else if (año %in% 2019:2022) {
+          mes_detectado <- stringr::str_pad(match(substr(hoja, 1, 3), c("Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic")), 2, pad = "0")
+        } else if (año == 2023) {
+          mes_detectado <- stringr::str_pad(match(hoja, c("Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre")), 2, pad = "0")
+        } else if (año == 2018) {
+          mes_detectado <- "12"  # según imagen, diciembre 2018
+        }
         
-        # Renombrar la columna correcta de precio
+        df <- df %>%
+          mutate(anio = año,
+                 mes = mes_detectado)
+        
+        # Detectar y renombrar la columna correcta de precio
         col_precio <- if (año == 2018) {
           "precio"
         } else if (año %in% c(2019, 2020)) {
@@ -112,18 +126,30 @@ DataCol3 <- function(Month, Year) {
           "precio_promedio_por_kilogramo"
         }
         
-        df <- df %>% rename(precio = !!sym(col_precio))
+        if (col_precio %in% names(df)) {
+          df <- df %>% rename(precio = !!sym(col_precio))
+        } else {
+          warning(paste("Columna de precio no encontrada en hoja:", hoja))
+          return(NULL)
+        }
         
+        return(df)
       })
       
-      assign(nombre_data, datos, envir = env)
+      # Filtrar las que no sean NULL
+      datos <- purrr::compact(datos)
+      
+      # Unir todas las hojas válidas
+      data_final <- bind_rows(datos)
+      
+      assign(nombre_data, data_final, envir = env)
     }
     
     return(get(nombre_data, envir = env))
   }
   
   # Define carpeta
-  carpeta_precios <- "C:\\Users\\danie\\OneDrive\\Escritorio\\Least-cost-diets-and-affordability\\Proyecto Interno\\Precios al por mayor\\Función DataCol\\Datos precios\\"
+  carpeta_precios <- "C:\\Users\\danie\\OneDrive\\Documentos\\Datos precios\\"
   
   # Define entorno
   data_list_precios_ev_nuevo <- new.env()
