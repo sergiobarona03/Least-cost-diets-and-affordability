@@ -158,7 +158,6 @@ DataCol<- function(Month, Year, City, Percentile = NULL, Food_income = NULL, Pri
   if (!is.null(Percentile) && is.null(Supply_data_list)){data_list_abast_ev_nuevo <- crear_o_reusar_entorno("data_list_abast_ev")}
   
   
-  
   # Carga de precios mayoristas
   if (is.null(Price_data_list)) {
     Price_data_list = cargar_datos_dane("precios", Year, data_list_precios_ev_nuevo)

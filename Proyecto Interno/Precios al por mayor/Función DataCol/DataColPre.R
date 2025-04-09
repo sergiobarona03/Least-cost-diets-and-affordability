@@ -62,10 +62,10 @@ DataCol3 <- function(Month, Year) {
     }
   }
   
-  
   #------------------------------------------------------------------------------------------#
   #                   TERCERA ETAPA: CARGA DE DATOS DESDE CARPETA (DANE)                      # ✔ SIMPLIFICADA Y ASEGURADA
   #-----------------------------------------------------------------------------------------#
+  # Función carga de datos de precios
   
   cargar_datos_precios <- function(año, carpeta, env) {
     archivo_excel <- if (año == 2024) {
@@ -78,92 +78,40 @@ DataCol3 <- function(Month, Year) {
     
     nombre_data <- paste0("data_list_precios_", año, "_ev")
     
+    # Verificar si el archivo existe
     if (!file.exists(archivo_excel)) {
       stop(paste("El archivo", archivo_excel, "no se encuentra en la carpeta especificada."))
     }
     
+    # Verificar si los datos ya están en el entorno
     if (!exists(nombre_data, envir = env)) {
-      hojas <- readxl::excel_sheets(archivo_excel)
-      
-      # Excluir hojas no deseadas como 'Índice' o vacías
-      hojas_validas <- hojas[!tolower(hojas) %in% c("índice", "indice", "")]
-      
-      datos <- purrr::map(hojas_validas, function(hoja) {
-        df <- tryCatch({
-          readxl::read_excel(archivo_excel, sheet = hoja, skip = 6)
-        }, error = function(e) {
-          warning(paste("No se pudo leer la hoja:", hoja, "-", e$message))
-          return(NULL)
-        })
-        
-        if (is.null(df) || nrow(df) == 0 || ncol(df) == 0) return(NULL)
-        
-        names(df) <- tolower(gsub("\\s+", "_", names(df)))
-        df <- dplyr::rename_with(df, ~ gsub("\\*", "", .x))
-        
-        # Extraer nombre del mes
-        mes_detectado <- NA
-        if (año == 2024 && hoja == "2024") {
-          mes_detectado <- "01"  # Puedes ajustar esta lógica si hay más de un mes
-        } else if (año %in% 2019:2022) {
-          mes_detectado <- stringr::str_pad(match(substr(hoja, 1, 3), c("Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic")), 2, pad = "0")
-        } else if (año == 2023) {
-          mes_detectado <- stringr::str_pad(match(hoja, c("Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre")), 2, pad = "0")
-        } else if (año == 2018) {
-          mes_detectado <- "12"  # según imagen, diciembre 2018
-        }
-        
-        df <- df %>%
-          mutate(anio = año,
-                 mes = mes_detectado)
-        
-        # Detectar y renombrar la columna correcta de precio
-        col_precio <- if (año == 2018) {
-          "precio"
-        } else if (año %in% c(2019, 2020)) {
-          "precio_por_kilogramo"
-        } else {
-          "precio_promedio_por_kilogramo"
-        }
-        
-        if (col_precio %in% names(df)) {
-          df <- df %>% rename(precio = !!sym(col_precio))
-        } else {
-          warning(paste("Columna de precio no encontrada en hoja:", hoja))
-          return(NULL)
-        }
-        
-        return(df)
-      })
-      
-      # Filtrar las que no sean NULL
-      datos <- purrr::compact(datos)
-      
-      # Unir todas las hojas válidas
-      data_final <- bind_rows(datos)
-      
-      assign(nombre_data, data_final, envir = env)
+      suppressMessages(assign(nombre_data, rio::import_list(archivo_excel, setclass = "tbl"), envir = env))
     }
     
     return(get(nombre_data, envir = env))
   }
   
-  # Define carpeta
-  carpeta_precios <- "C:\\Users\\danie\\OneDrive\\Documentos\\Datos precios\\"
+  # Definir la carpeta donde están los archivos
+  carpeta_local <- "C:\\Users\\danie\\OneDrive\\Documentos\\Datos precios\\"
   
-  # Define entorno
-  data_list_precios_ev_nuevo <- new.env()
-  
-  if (!exists("Price_data_list")) {
-    Price_data_list <- tryCatch({
-      cargar_datos_precios(Year, carpeta_precios, data_list_precios_ev_nuevo)
-    }, error = function(e) {
-      message("Error al cargar los datos de precios: ", e$message)
-      NULL
-    })
+  # Función para crear o reutilizar un entorno
+  crear_o_reusar_entorno <- function(nombre_entorno) {
+    if (!exists(nombre_entorno, envir = globalenv())) {
+      assign(nombre_entorno, new.env(parent = emptyenv()), envir = globalenv())
+    }
+    return(get(nombre_entorno, envir = globalenv()))
   }
   
-    
+  # Crear o reutilizar entorno para los precios
+  data_list_precios_ev_nuevo <- crear_o_reusar_entorno("data_list_precios_ev")
+  
+  # Cargar datos de precios
+  Price_data_list <- tryCatch({
+    cargar_datos_precios(Year, carpeta_local, data_list_precios_ev_nuevo)
+  }, error = function(e) {
+    message("Error al cargar los datos de precios: ", e$message)
+    NULL
+  })
   
   #------------------------------------------------------------------------------------------#
   #                       CUARTA ETAPA: DEPURACIÓN DE LOS DATOS                              #  ✔ SIMPLIFICADA Y ASEGURADA
@@ -238,8 +186,12 @@ DataCol3 <- function(Month, Year) {
   
   
   # Selección del año según la estructura de datos
-  if (Year >= 2019) {
-    Meses <- Nombres_Meses[1:length(Price_data_list) - 1]
+  if (Year == 2024) {
+    # El archivo tiene todos los meses en una sola hoja
+    Data_Sipsa_Precios <- depurar_y_filtrar(Price_data_list[["2024"]], Mes_Num)
+    
+  } else if (Year >= 2019) {
+    Meses <- Nombres_Meses[1:(length(Price_data_list) - 1)]
     posicion_mes <- which(Meses %in% Month)
     
     if (length(posicion_mes) == 0) {
@@ -247,13 +199,11 @@ DataCol3 <- function(Month, Year) {
     }
     
     Data_Sipsa_Precios <- depurar_y_filtrar(Price_data_list[[posicion_mes + 1]], Mes_Num)
-  }
-  
-  if (Year == 2018 || Year < 2018) {
+    
+  } else if (Year == 2018 || Year < 2018) {
     Año_selec <- ifelse(Year == 2018, 2, which(Year == 2013:2017) + 1)
     Data_Sipsa_Precios <- depurar_y_filtrar(Price_data_list[[Año_selec]], Mes_Num)
   }
   
-  return(Price_data_list)
+}
   
-} 
