@@ -26,7 +26,5 @@ for (y in years) {
   
   # Guardar el archivo 
   saveRDS(df_year, file = file.path("C:/Users/danie/OneDrive/Documentos", paste0(y, ".rds")))
-  
-  
-  
+
 }
