@@ -39,7 +39,7 @@ DataCol3 <- function(Month, Year) {
   # Verificación de Month
   validar_parametros(Month, "numeric", c(1, 12))
   # Verificación de Year
-  validar_parametros(Year, "numeric", c(2018, 2025))
+  validar_parametros(Year, "numeric", c(2013, 2025))
   
   #------------------------------------------------------------------------------------------#
   #                       SEGUNDA ETAPA: VALIDACIÓN DE LIBRERIAS                             # ✔ SIMPLIFICADA Y ASEGURADA
@@ -70,9 +70,12 @@ DataCol3 <- function(Month, Year) {
       file.path(carpeta, "anex-SIPSA-SerieHistoricaMayorista-2024.xlsx")
     } else if (año == 2023) {
       file.path(carpeta, "anex-SIPSA-SerieHistoricaMayorista-Dic2023.xlsx")
+    } else if (año %in% 2013:2017) {
+      file.path(carpeta, "series-historicas-precios-mayoristas.xlsx")
     } else {
       file.path(carpeta, paste0("series-historicas-precios-mayoristas-", año, ".xlsx"))
     }
+    
     
     nombre_data <- paste0("data_list_precios_", año, "_ev")
     
