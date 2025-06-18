@@ -43,12 +43,8 @@ alimentos_excluir <- c(
 # Excluir alimentos
 retail_99_18 <- retail_99_18 %>% filter(!articulo %in% alimentos_excluir)
 
-# Filtrar para 2018:
-retail_18 <- retail_99_18 %>% filter(as.numeric(ano) == 2018  & 
-                                       (mes %in% c("enero", "febrero", "marzo")))
-
 # Armonizar los nombres de las ciudades (código DIVIPOLA)
-retail_18 <- retail_18 %>%
+retail_99_18 <- retail_99_18 %>%
   mutate(cod_mun = case_when(
     nombre_ciudad == "BARRANQUILLA"   ~ "08001",
     nombre_ciudad == "BOGOTÁ D.C."    ~ "11001",
@@ -67,11 +63,11 @@ retail_18 <- retail_18 %>%
   ))
 
 # Recodificar año
-retail_18 <- retail_18 %>%
+retail_99_18 <- retail_99_18 %>%
   mutate(ano = as.integer(ano))
 
 # Recodificar mes
-retail_18 <- retail_18 %>%
+retail_99_18 <- retail_99_18 %>%
   mutate(
     mes_num = recode(mes,
                      "enero" = 1,
@@ -89,15 +85,44 @@ retail_18 <- retail_18 %>%
     )
   )
 
+# Conversión de las unidades (precio_500g)
+retail_99_18 <- retail_99_18 %>%
+  mutate(
+    unidad = str_replace_all(tolower(unidad), "\\s", ""),
+    precio = as.numeric(precio),
+    precio_500g = case_when(
+      unidad == "125grs." ~ precio * 4,
+      unidad == "250grs." ~ precio * 2,
+      unidad %in% c("400grs.", "400grs") ~ precio * (500 / 400),
+      unidad %in% c("500grs.", "500grs") ~ precio,
+      unidad %in% c("600grs.", "600grs") ~ precio * (500 / 600),
+      unidad %in% c("1und.", "1und") & articulo == "HUEVOS" ~ precio * 8.33,
+      unidad %in% c("1000c.c.", "1000cc") & str_detect(articulo, regex("aceite", ignore_case = TRUE)) ~ precio * (500 / 920),
+      unidad %in% c("1000c.c.", "1000cc") & str_detect(articulo, regex("leche", ignore_case = TRUE)) ~ precio * 0.5,
+      unidad %in% c("250c.c.", "250cc") & str_detect(articulo, regex("mantequilla", ignore_case = TRUE)) ~ precio * 2,
+      TRUE ~ NA_real_
+    )
+  )
+
+# Guardar retail 1999 - 2018
+writexl::write_xlsx(retail_99_18, "Precios DANE\\OUTPUT_DANE\\precios_unadj_DANE_1999_2018.xlsx")
+
 ##------------------------------------##
 ## Cargar datos de precios mayoristas ##
 ##------------------------------------##
 
+# Lista output
+whole_list = vector(mode = "list", length = length(2013:2018))
+
 # Cargar series de sipsa
-whole_18 <- readRDS("Precios al por mayor\\Bases historicas\\2018.rds")
+for (k in 2013:2018) {
+  whole_list[[k]] = readRDS(paste0("Precios al por mayor\\Bases historicas\\", k,".rds"))
+}
+
+# whole_18 significa whole hasta 2018
+whole_18 <- do.call(rbind, whole_list)
 
 # Identificar los mercados de las principales ciudades
-
 whole_18 <- whole_18 %>%
   mutate(nombre_ciudad = case_when(
     str_detect(Mercado, regex("Barranquilla", ignore_case = TRUE)) ~ "BARRANQUILLA",
@@ -138,9 +163,27 @@ whole_18 <- whole_18 %>%
     TRUE ~ NA_character_
   ))
 
+# Antes de calcular el precio medio, se armonizan las unidad (P500g)
+# El precio 
+whole_18 <- whole_18 %>%
+  mutate(
+    precio_500g = case_when(
+      str_detect(Alimento, regex("aceite", ignore_case = TRUE)) ~ Precio_kg * (500 / 920),
+      
+      Alimento %in% c("Huevo blanco A", "Huevo rojo A") ~ Precio_kg * (500 / 50),
+      Alimento %in% c("Huevo blanco AA", "Huevo rojo AA") ~ Precio_kg * (500 / 60),
+      Alimento %in% c("Huevo blanco extra", "Huevo rojo extra") ~ Precio_kg * (500 / 67),
+      
+      TRUE ~ Precio_kg / 2  # Por defecto, mitad del precio por kg
+    )
+  ) %>%
+  filter(!Alimento %in% c("Jugo de frutas", "Bocadillo veleño", "Vinagre",
+                          "Huevo blanco B", "Huevo rojo B"))
+      
+    
 # Crear el precio promedio para cada alimento según: año, mes, ciudad, alimento
 whole_18_mean <- whole_18 %>% group_by(Year, Month, cod_mun, Alimento) %>%
-  summarise(precio_medio = mean(Precio_kg, na.rm = TRUE))
+  summarise(precio_medio = mean(precio_500g, na.rm = TRUE))
 
 ##------------------------------------##
 ## Cargar mapeo: DANE (IPC) - SIPSA   ##
@@ -150,10 +193,10 @@ whole_18_mean <- whole_18 %>% group_by(Year, Month, cod_mun, Alimento) %>%
 ipc_sipsa = readxl::read_excel("Time-series\\mapeo_retail_sipsa.xlsx")
 
 # Añadir al retail las denominaciones de sipsa
-retail_18 = retail_18 %>% left_join(ipc_sipsa, by = c("articulo" = "retail"))
+retail_99_18 = retail_99_18 %>% left_join(ipc_sipsa, by = c("articulo" = "retail"))
 
 # Añadir los precios mayoristas
-retail_whole_18 <- retail_18 %>%
+retail_whole_18 <- retail_99_18 %>%
   left_join(
     whole_18_mean[c("Year", "Month", "cod_mun", "Alimento", "precio_medio")],
     by = c(
@@ -162,14 +205,48 @@ retail_whole_18 <- retail_18 %>%
       "cod_mun" = "cod_mun",
       "sipsa" = "Alimento"
     )
-  )
+  ) %>% filter(ano >= 2013)
+
+# Filtro para Cali, Medellín y Bogotá
+whole_tres = retail_whole_18 %>% filter(nombre_ciudad %in% c("MEDELLÍN",
+                                                             "CALI",
+                                                             "BOGOTÁ D.C."))
 
 # Función para comparar las series de tiempo
 source("Time-series\\f3_plot_comparar.R")
 
-x = levels(as.factor(retail_whole_18$codigo_articulo))[10]
-y = levels(as.factor(retail_whole_18$cod_mun))[8]
+for (i in levels(as.factor(whole_tres$cod_mun))) {
+  for (j in levels(as.factor(whole_tres$codigo_articulo))) {
+    
+    tryCatch({
+      plot.aux <- comparar_precios(df = whole_tres, 
+                                   cod_articulo = as.numeric(j), 
+                                   cod_ciudad = as.numeric(i))
+      
+      articulo <- unique(whole_tres$articulo[whole_tres$codigo_articulo == j])
+      ciudad <- unique(whole_tres$nombre_ciudad[whole_tres$cod_mun == i])
+      
+      print(paste0("DONE: ", ciudad, " - ", articulo))
+      
+      # Ruta del directorio y archivo
+      dir_path <- file.path("Time-series", "ts-plots", ciudad, articulo)
+      file_path <- file.path(dir_path, paste0(ciudad, "_", articulo, "_plot.png"))
+      
+      # Crear carpeta si no existe
+      dir.create(dir_path, recursive = TRUE, showWarnings = FALSE)
+      
+      # Guardar el gráfico
+      ggsave(
+        filename = file_path,
+        plot = plot.aux,
+        width = 16, height = 11, dpi = 300
+      )
+      
+    }, error = function(e) {
+      message("❌ Error en ciudad ", i, ", artículo ", j, ": ", e$message)
+    })
+  }
+}
 
-comparar_precios(df = retail_whole_18, cod_articulo = x, 
-                 cod_ciudad = y)
+
 

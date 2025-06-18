@@ -40,7 +40,10 @@ alimentos_excluir <- c(
   "ALMUERZO CORRIENTE O EJECUTIVO", "ALMUERZO ESPECIAL O A LA CARTA",
   "CHOCOLATE EN PASTA", "CAFÉ INSTANTANEO", "COMBOS", 
   "CREMAS", "ENSALADA  DE FRUTAS", "QUESO CREMA", "TINTO", 
-  "HAMBURGUESA", "KUMIS", "JUGOS NATURALES", "SUERO"
+  "HAMBURGUESA", "KUMIS", "JUGOS NATURALES", "SUERO",
+  
+  # Otros
+  "AGUA  MINERAL"
 )
 
 # Excluir alimentos
@@ -70,8 +73,15 @@ graficar_precio(retail_99_18, "ARROZ PARA SECO",
 # Cargar función:
 source("Time-series\\f2_plot_wholesale.R")
 
+whole_list = vector(mode = "list", length = length(2013:2018))
+
 # Cargar series de sipsa
-whole_18 <- readRDS("Precios al por mayor\\Bases historicas\\2018.rds")
+for (k in 2013:2018) {
+  whole_list[[k]] = readRDS(paste0("Precios al por mayor\\Bases historicas\\", k,".rds"))
+}
+
+# whole_18 significa whole hasta 2018
+whole_18 <- do.call(rbind, whole_list)
 
 # Identificar los mercados de las principales ciudades
 
@@ -95,7 +105,7 @@ whole_18 <- whole_18 %>%
 
 # Los mercados identificados para cada ciudad principal son los siguientes
 writexl::write_xlsx(dplyr::count(whole_18, nombre_ciudad, Mercado),
-                    "Time-series\\2018_mercados_sipsa.xlsx")
+                    "Time-series\\2013_2018_mercados_sipsa.xlsx")
 
 # Filtrar para las 13 ciudades principales
 whole_18 <- whole_18 %>% filter(!is.na(nombre_ciudad))
