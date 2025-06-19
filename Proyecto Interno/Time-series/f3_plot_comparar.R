@@ -45,14 +45,7 @@ comparar_precios <- function(df, cod_articulo,
     ggplot(aes(x = fecha, y = value, 
                color = variable, group = variable)) +
     geom_line(linewidth = 1) +
-    geom_point(size = 3) +
-    geom_text(
-      aes(label = value_label),
-      vjust = -0.7,
-      size = 3,
-      show.legend = FALSE,
-      col = "black"
-    ) +
+    geom_point(size = 1) +
     facet_wrap(~ faceta, scales = "free_y") +
     labs(
       title = "Comparación de precios Retail (IPC) y Mayorista (SIPSA)",
