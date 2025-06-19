@@ -63,11 +63,11 @@ DataCol3 <- function(Month, Year) {
   #------------------------------------------------------------------------------------------#
   #                   TERCERA ETAPA: CARGA DE DATOS DESDE CARPETA (DANE)                      # ✔ SIMPLIFICADA Y ASEGURADA
   #-----------------------------------------------------------------------------------------#
-  # Función carga de datos de precios
-  
+ 
+   # Función carga de datos de precios
   cargar_datos_precios <- function(año, carpeta, env) {
-    archivo_excel <- if (año == 2024) {
-      file.path(carpeta, "anex-SIPSA-SerieHistoricaMayorista-2024.xlsx")
+    archivo_excel <- if (año %in% 2024:2025) {
+      file.path(carpeta, paste0("anex-SIPSA-SerieHistoricaMayorista-", año, ".xlsx"))
     } else if (año == 2023) {
       file.path(carpeta, "anex-SIPSA-SerieHistoricaMayorista-Dic2023.xlsx")
     } else if (año %in% 2013:2017) {
@@ -75,7 +75,6 @@ DataCol3 <- function(Month, Year) {
     } else {
       file.path(carpeta, paste0("series-historicas-precios-mayoristas-", año, ".xlsx"))
     }
-    
     
     nombre_data <- paste0("data_list_precios_", año, "_ev")
     
@@ -86,11 +85,21 @@ DataCol3 <- function(Month, Year) {
     
     # Verificar si los datos ya están en el entorno
     if (!exists(nombre_data, envir = env)) {
-      suppressMessages(assign(nombre_data, rio::import_list(archivo_excel, setclass = "tbl"), envir = env))
+      hojas <- readxl::excel_sheets(archivo_excel)
+      
+      # Si el archivo corresponde a 2024 o 2025, aplicar skip = 5
+      if (año %in% 2024:2025) {
+        data_importada <- rio::import_list(archivo_excel, setclass = "tbl", which = hojas, skip = 5)
+      } else {
+        data_importada <- rio::import_list(archivo_excel, setclass = "tbl", which = hojas)
+      }
+      
+      suppressMessages(assign(nombre_data, data_importada, envir = env))
     }
     
     return(get(nombre_data, envir = env))
   }
+  
   
   # Definir la carpeta donde están los archivos
   carpeta_local <- "C:\\Users\\danie\\OneDrive\\Documentos\\Datos precios\\"
@@ -186,10 +195,20 @@ DataCol3 <- function(Month, Year) {
   
   
   
-  # Selección del año según la estructura de datos
-  if (Year == 2024) {
-    # El archivo tiene todos los meses en una sola hoja
-    Data_Sipsa_Precios <- depurar_y_filtrar(Price_data_list[["2024"]], Mes_Num)
+  # ------------------ SELECCIÓN DEL AÑO SEGÚN LA ESTRUCTURA DE DATOS ------------------
+  
+  if (Year %in% 2024:2025) {
+    # Buscar hoja que contenga el nombre del año
+    hoja_primaria <- grep(as.character(Year), names(Price_data_list), value = TRUE)
+    if (length(hoja_primaria) == 0) {
+      hoja_primaria <- names(Price_data_list)[1]  # usar la primera hoja como respaldo
+    }
+    
+    if (is.null(Price_data_list[[hoja_primaria]])) {
+      stop("No se encontró hoja válida en el archivo para el año ", Year)
+    }
+    
+    Data_Sipsa_Precios <- depurar_y_filtrar(Price_data_list[[hoja_primaria]], Mes_Num)
     
   } else if (Year >= 2019) {
     Meses <- Nombres_Meses[1:(length(Price_data_list) - 1)]
@@ -205,6 +224,7 @@ DataCol3 <- function(Month, Year) {
     Año_selec <- ifelse(Year == 2018, 2, which(Year == 2013:2017) + 1)
     Data_Sipsa_Precios <- depurar_y_filtrar(Price_data_list[[Año_selec]], Mes_Num)
   }
+  
   
 }
   

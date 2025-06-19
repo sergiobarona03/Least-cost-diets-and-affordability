@@ -3,8 +3,8 @@ library(dplyr)
 
 # Definición de data.frame para las fechas
 fechas <- data.frame(
-  month = rep(1:12, 12),
-  year = rep(2013:2024, each = 12) 
+  month = rep(1:12, 13),
+  year = rep(2013:2025, each = 12) 
 )
 
 # Obtener los años únicos
