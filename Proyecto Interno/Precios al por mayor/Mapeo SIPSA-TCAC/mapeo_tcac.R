@@ -15,7 +15,7 @@ setwd("C:\\Users\\Portatil\\Desktop\\Least-cost-diets-and-affordability\\Proyect
 
 # Cargar datos sobre precios mayoristas (SIPSA)
 input <- vector(mode = "list", length = 6)
-year <- 2018:2023
+year <- 2013:2023
   
 for (k in 1:length(year)) {
   print(paste0("Done: ", year[k]))
@@ -106,7 +106,7 @@ overall_tcac_sipsa <- overall_tcac_sipsa %>% janitor::clean_names()
 
 
 # Guardar 
-writexl::write_xlsx(overall_tcac_sipsa, "Mapeo SIPSA-TCAC\\1824_mun_mapeo_sipsa_tcac.xlsx")
+writexl::write_xlsx(overall_tcac_sipsa, "Mapeo SIPSA-TCAC\\1324_mun_mapeo_sipsa_tcac.xlsx")
 
 
 

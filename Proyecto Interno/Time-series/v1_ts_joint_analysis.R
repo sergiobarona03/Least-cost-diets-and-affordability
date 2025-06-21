@@ -212,6 +212,9 @@ whole_tres = retail_whole_18 %>% filter(nombre_ciudad %in% c("MEDELLÍN",
                                                              "CALI",
                                                              "BOGOTÁ D.C."))
 
+# Guardar:
+writexl::write_xlsx(whole_tres, "Time-series\\ipc_sipsa_ts.xlsx")
+
 # Función para comparar las series de tiempo
 source("Time-series\\f3_plot_comparar.R")
 

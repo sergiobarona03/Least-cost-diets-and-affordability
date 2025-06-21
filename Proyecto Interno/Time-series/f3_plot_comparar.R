@@ -19,7 +19,7 @@ comparar_precios <- function(df, cod_articulo,
   df_filtrado <- df_filtrado %>%
     mutate(
       fecha = as.Date(paste(ano, mes_num, "01", sep = "-")),
-      precio = as.numeric(precio),
+      precio = as.numeric(precio_500g),
       precio_medio = as.numeric(precio_medio)
     ) %>%
     filter(!is.na(precio), !is.na(fecha)) %>%
