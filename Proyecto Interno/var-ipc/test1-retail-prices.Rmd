@@ -150,7 +150,6 @@ Por simplicidad, la primera prueba es implementada únicamente para la ciudad de
 
 ```{r, include = TRUE, echo=FALSE, eval = TRUE, warning=FALSE, message = FALSE}
 
-
 ########################################################
 ## Prueba: estimación según variación mensual del IPC ##
 ## Fecha: 22 de junio de 2025                         ##
@@ -197,14 +196,17 @@ list.fail = vector(mode = "list")
 # Bucle
 for (i in 1:length(city_i)) {
 for (j in 1:length(food_j)) {
-  
 print(paste0(city_i[i], " - ", food_j[j]))
   
 # Base de datos aux.
 df.aux = dane_99_18 %>% filter(nombre_ciudad == city_i[i] &
                                 articulo == food_j[j])
 
-if (length(df.aux$precio_500g) == 0) {
+# Filtrar fechas_75
+train.df = df.aux %>% dplyr::filter(fecha <= "2015-01-01")
+test.df = df.aux %>% filter(fecha >= "2015-01-01")
+
+if (length(test.df$precio_500g) == 0) {
   df.aux2 = dane_99_18 %>% filter(articulo == food_j[j])
   list.fail[[length(list.fail) + 1]] <- data.frame(
     ciudad = city_i[i],
@@ -224,18 +226,28 @@ if (length(df.aux$precio_500g) == 0) {
                                  gasto_basico, "00"))
   
   # Recuperar código ipc
-  df.aux = df.aux %>% left_join(correlativa[c("cod_subclase",
+  test.df2 = test.df %>% left_join(correlativa[c("cod_subclase",
                                                       "subclase")],
                                         by = "cod_subclase")
   
+  # Condicional (si hay más de un código que coincide, entonces
+  # usamos una correlativa más desagregada)
+  if (length(levels(as.factor(test.df2$subclase))) > 1){
+    corr_producto = readxl::read_excel("var-ipc\\correlativa_ipc_articulos.xlsx") %>%
+      mutate(codigo_articulo = cod_dane, 
+             subclase = cod_ipc)
+    
+    test.df = test.df %>% left_join(corr_producto[c("codigo_articulo",
+                                                      "subclase")],
+                                        by = "codigo_articulo")
+    
+  } else {
+    test.df = test.df2
+  }
+  
   # Código de subclase (formato)
-  df.aux$subclase = paste0(df.aux$subclase,"00")
+  test.df$subclase = paste0(test.df$subclase,"00")
   
-  # Filtrar fechas_75
-  train.df = df.aux %>% dplyr::filter(fecha <= "2015-01-01")
-  test.df = df.aux %>% filter(fecha >= "2015-01-01")
-  
-
 #######################################
 ###---------------------------------###
 ### Variación del ÍPC: datos > 2015 ###
@@ -254,7 +266,7 @@ var_ipc$cod_subclase = paste0(substr(var_ipc$subclase, 1, 8))
 
 # Filtrar para la ciudad de interés
 var_ipc = var_ipc %>% filter(ciudad == city_i[i] & 
-                               as.numeric(cod_subclase) == as.numeric(unique(df.aux$subclase))) 
+                               as.numeric(cod_subclase) == as.numeric(unique(test.df$subclase))) 
 
 
 if (length(var_ipc$numero_indice) == 0) {
@@ -340,3 +352,15 @@ print(plot_aux)
 
 
 ```
+
+## Prueba 2: 16/07/2025
+
+
+
+# Notas
+
+- En el caso de "FECULA DE MAÍZ", no se puede realizar una estimación a partir del procedimiento anterior, porque el producto salió de la canasta después de 2008.
+
+
+
+
