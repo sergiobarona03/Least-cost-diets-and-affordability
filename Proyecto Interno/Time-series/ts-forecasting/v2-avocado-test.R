@@ -16,16 +16,15 @@ library(seastests)
 library(aTSA)
 library(zoo)
 library(patchwork)
-library(urca)
 
 # Definir directorio de trabajo
-setwd("C:\\Users\\danie\\OneDrive\\Escritorio\\Least-cost-diets-and-affordability\\Proyecto Interno\\")
+setwd("C:\\Users\\Portatil\\Desktop\\Least-cost-diets-and-affordability\\Proyecto Interno\\")
 
 ## -----------------------##
 ## 1. Datos               ##
 ## -----------------------##
 # Cargar datos
-all_ts <- readxl::read_excel("Time-series\\V4_ipc_sipsa.xlsx") 
+all_ts = readxl::read_excel("Time-series\\ipc_sipsa_ts.xlsx")
 
 # Cambiar formato
 all_ts <- all_ts %>%
@@ -102,7 +101,7 @@ serie_ipc_sa %>%
   autoplot() +
   autolayer(serie_ipc, series = 'Serie original') +
   labs(
-    title = 'Precio minorista del limón tahití',
+    title = 'Precio minorista del aguacate',
     subtitle = 'Ajuste estacional',
     x = '',
     y = 'Precio minorista'
@@ -113,8 +112,8 @@ serie_ipc_sa %>%
 # Prueba de raíz unitaria
 serie_ipc_sa = predict(serie_ipc_sa)
 adf_ipc = summary(urca::ur.df(serie_ipc_sa, 
-                                selectlags =  "BIC", 
-                                type = "trend"))
+                                selectlags =  "AIC", 
+                                type = "drift"))
 adf_ipc
 
 ## ---------------------------------------------------##
@@ -245,8 +244,8 @@ df.city.food = df.city.food %>% mutate(
 df.city.food$mes <- factor(format(df.city.food$fecha,
                                   "%m"))  
 
-train <- df.city.food %>% filter(fecha < "2015-01-01")
-test <- df.city.food %>% filter(fecha >= "2015-01-01")
+train <- df.city.food %>% filter(fecha < "2017-01-01")
+test <- df.city.food %>% filter(fecha >= "2017-01-01")
 
 ## ------------------------------------------##
 ## 5. Modelos de largo plazo (cointegración) ##
@@ -266,11 +265,12 @@ train <- train %>%
     lag_Pmin = lag(P_min),
     lag_Pmay = lag(P_may),
     lag_ecmt = lag(ecmt),
-    lag2_ecmt = lag(ecmt, n = 2),
-    mes_n = as.numeric(as.character(mes))  # estacionalidad suave
+    d_lag_Pmin = lag(d_Pmin, n = 1),
+    d_lag_Pmay = lag(d_Pmay, n = 1),
+    mes_n = as.numeric(as.character(mes))
   )
 
-modelo_CP <- lm(d_Pmin ~ lag2_ecmt + lag_Pmin + lag_Pmay + d_Pmay + mes_n,
+modelo_CP <- lm(d_Pmin ~ d_lag_Pmin + d_lag_Pmay + lag_ecmt, 
                 data = train, na.action = na.exclude)
 
 summary(modelo_CP)
@@ -278,29 +278,34 @@ summary(modelo_CP)
 ## -------------------------------##
 ## 7. Predicción recursiva        ##
 ## -------------------------------##
+
 pred <- test
 pred$P_min_hat <- NA
-pred$mes_n <- as.numeric(as.character(pred$mes))  # asegurar formato numérico
-
 prev <- tail(train, 1)
+
+# Asegurar que también el mes sea numérico en test
+pred$mes_n <- as.numeric(as.character(pred$mes))
 
 for (i in 1:nrow(pred)) {
   if (i == 1) {
-    d_Pmay     <- pred$P_may[i] - prev$P_may
-    lag_Pmin   <- prev$P_min
-    lag_Pmay   <- prev$P_may
-    lag_ecmt   <- prev$lag2_ecmt
+    d_Pmay <- pred$P_may[i] - prev$P_may
+    d_lag_Pmin  <- prev$d_lag_Pmin
+    d_lag_Pmay <- prev$d_lag_Pmay
+    lag_ecmt <- prev$ecmt
     last_Pmin_hat <- prev$P_min
   } else {
-    d_Pmay     <- pred$P_may[i] - pred$P_may[i - 1]
-    lag_Pmin   <- pred$P_min_hat[i - 1]
-    lag_Pmay   <- pred$P_may[i - 1]
-    lag_ecmt   <- lag_Pmin - (coef(modelo_LP)[1] + coef(modelo_LP)[2] * lag_Pmay)
+    d_Pmay <- pred$P_may[i] - pred$P_may[i - 1]
+    lag_Pmin <- pred$P_min_hat[i - 1]
+    lag_Pmay <- pred$P_may[i - 1]
+    lag_ecmt <- lag_Pmin - (coef(modelo_LP)[1] + coef(modelo_LP)[2] * lag_Pmay)
     last_Pmin_hat <- pred$P_min_hat[i - 1]
+    
+    d_lag_Pmin <- pred$P_min_hat[i - 1] - pred$P_min_hat[i - 2]
+    d_lag_Pmay <- pred$P_may[i - 1] - pred$P_may[i - 2]
   }
   
-  # Vector de regresores
-  x <- c(1, lag_ecmt, lag_Pmin, lag_Pmay, d_Pmay)
+  mes_n <- pred$mes_n[i]
+  x <- c(1, d_lag_Pmin, d_lag_Pmay, lag_ecmt)
   
   if (any(is.na(x))) {
     delta_hat <- 0
@@ -310,6 +315,7 @@ for (i in 1:nrow(pred)) {
   
   pred$P_min_hat[i] <- last_Pmin_hat + delta_hat
 }
+
 
 ## ----------------------------------##
 ## 8. Visualización de la predicción ##
