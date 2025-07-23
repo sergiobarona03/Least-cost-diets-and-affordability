@@ -16,15 +16,16 @@ library(seastests)
 library(aTSA)
 library(zoo)
 library(patchwork)
+library(urca)
 
 # Definir directorio de trabajo
-setwd("C:\\Users\\Portatil\\Desktop\\Least-cost-diets-and-affordability\\Proyecto Interno\\")
+setwd("C:\\Users\\danie\\OneDrive\\Escritorio\\Least-cost-diets-and-affordability\\Proyecto Interno\\")
 
 ## -----------------------##
 ## 1. Datos               ##
 ## -----------------------##
 # Cargar datos
-all_ts = readxl::read_excel("Time-series\\ipc_sipsa_ts.xlsx")
+all_ts <- readxl::read_excel("Time-series\\V4_ipc_sipsa.xlsx") 
 
 # Cambiar formato
 all_ts <- all_ts %>%
@@ -101,7 +102,7 @@ serie_ipc_sa %>%
   autoplot() +
   autolayer(serie_ipc, series = 'Serie original') +
   labs(
-    title = 'Precio minorista del aguacate',
+    title = 'Precio minorista del limón tahití',
     subtitle = 'Ajuste estacional',
     x = '',
     y = 'Precio minorista'
@@ -112,8 +113,8 @@ serie_ipc_sa %>%
 # Prueba de raíz unitaria
 serie_ipc_sa = predict(serie_ipc_sa)
 adf_ipc = summary(urca::ur.df(serie_ipc_sa, 
-                                selectlags =  "AIC", 
-                                type = "drift"))
+                                selectlags =  "BIC", 
+                                type = "trend"))
 adf_ipc
 
 ## ---------------------------------------------------##
