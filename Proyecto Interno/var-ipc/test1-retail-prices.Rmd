@@ -3,6 +3,10 @@ title: "Estimación de precios minoristas de alimentos"
 author: "Sergio Barona Montoya"
 date: '2025-07-14'
 output:
+  word_document:
+    toc: yes
+  pdf_document:
+    toc: yes
   html_document:
     theme: cerulean
     highlight: tango
@@ -10,8 +14,6 @@ output:
     toc_float: yes
     number_sections: yes
     df_print: paged
-  pdf_document:
-    toc: yes
 ---
 
 
@@ -193,10 +195,20 @@ food_j = levels(as.factor(dane_99_18$articulo))
 # Base de datos fallidos
 list.fail = vector(mode = "list")
 
+# Métricas 
+resultados_metricas <- data.frame(
+  ciudad = character(),
+  articulo = character(),
+  rmse = numeric(),
+  mape = numeric(),
+  stringsAsFactors = FALSE
+)
+
 # Bucle
 for (i in 1:length(city_i)) {
 for (j in 1:length(food_j)) {
-print(paste0(city_i[i], " - ", food_j[j]))
+  
+  print(paste0(city_i[i], " - ", food_j[j]))
   
 # Base de datos aux.
 df.aux = dane_99_18 %>% filter(nombre_ciudad == city_i[i] &
@@ -319,6 +331,22 @@ test.df2 = test.df %>% left_join(ipc_df[c("fecha", "ipc",
 # Unir con la base de datos de entrenamiento
 test.df2 = bind_rows(train.df, test.df2)
 
+# Cálculo de la métrica sobre el conjunto de validación
+valid_df <- test.df2 %>% filter(!is.na(precio_hat))
+# RMSE
+rmse <- sqrt(mean((valid_df$precio_500g - valid_df$precio_hat)^2))
+
+# MAPE
+mape <- mean(abs(valid_df$precio_500g - valid_df$precio_hat) / valid_df$precio_500g) * 100
+
+resultados_metricas <- resultados_metricas %>%
+  add_row(
+    ciudad = unique(valid_df$nombre_ciudad),
+    articulo = unique(valid_df$articulo),
+    rmse = rmse,
+    mape = mape
+  )
+
 # Validar la estimación:
 plot_aux = test.df2 %>%
   ggplot(aes(x = fecha)) +
@@ -326,15 +354,16 @@ plot_aux = test.df2 %>%
   geom_line(aes(y = precio_hat, color = "Precio estimado"), linetype = "dashed", size = 1) +
   labs(
     title = "Comparación entre precio real y estimado",
-    subtitle = paste0(unique(test.df2$nombre_ciudad),
-                      " - ",
-                      unique(test.df2$articulo)),
+    subtitle = paste0(
+      unique(valid_df$nombre_ciudad), " - ", unique(valid_df$articulo),
+      "\nRMSE = ", round(rmse, 2), 
+      " | MAPE = ", round(mape, 2), "%"
+    ),
     x = "Fecha",
     y = "Precio (500g)",
     color = " "
   ) +
-  scale_color_manual(values = c("Precio real" = "black",
-                                "Precio estimado" = "red")) +
+  scale_color_manual(values = c("Precio real" = "black", "Precio estimado" = "red")) +
   theme_bw() +
   theme(
     legend.position = "bottom",
@@ -351,6 +380,9 @@ print(plot_aux)
 }
 
 
+readr::write_csv(resultados_metricas, "300725_resultados_metricas_ipc.csv")
+
+
 ```
 
 ## Prueba 2: 16/07/2025
@@ -362,5 +394,32 @@ print(plot_aux)
 - En el caso de "FECULA DE MAÍZ", no se puede realizar una estimación a partir del procedimiento anterior, porque el producto salió de la canasta después de 2008.
 
 
+```{r, include = TRUE, echo=FALSE, eval = TRUE, warning=FALSE, message = FALSE}
 
+# Cargar resultados
+setwd("C:\\Users\\Portatil\\Desktop\\Least-cost-diets-and-affordability\\Proyecto Interno\\")
+resultados_metricas = read.csv("300725_resultados_metricas_ipc.csv")
 
+# Asegúrate de que las columnas estén en formato numérico
+resultados_metricas$rmse <- as.numeric(resultados_metricas$rmse)
+resultados_metricas$mape <- as.numeric(resultados_metricas$mape)
+
+# Alimentos con MAPE mayor a 5%
+mape_5 = resultados_metricas %>% filter(mape > 5)
+print("Alimentos con MAPE > 5%:")
+print(mape_5)
+
+# Alimentos con MAPE mayor a 10%
+mape_10 = resultados_metricas %>% filter(mape > 10)
+print("Alimentos con MAPE > 10%:")
+print(mape_10)
+
+# Métrica global: promedio de RMSE y MAPE
+# Opción 1: Promedio simple
+rmse_promedio <- mean(resultados_metricas$rmse, na.rm = TRUE)
+mape_promedio <- mean(resultados_metricas$mape, na.rm = TRUE)
+
+cat("RMSE promedio:", round(rmse_promedio, 2), "\n")
+cat("MAPE promedio:", round(mape_promedio, 2), "%\n")
+
+```
