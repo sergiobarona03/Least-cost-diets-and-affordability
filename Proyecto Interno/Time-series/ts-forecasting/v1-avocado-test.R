@@ -36,6 +36,9 @@ all_ts <- all_ts %>%
   ) %>%
   select(fecha, nombre_ciudad, articulo, sipsa, precio_ipc, precio_sipsa)
 
+writexl::write_xlsx(all_ts, "Time-series\\V5_ipc_sipsa.xlsx")
+
+
 # Seleccionar aguacate en Cali (Aguacate y aguacate papelillo)
 df.city.food = all_ts %>% filter(nombre_ciudad == "CALI" & 
                                   articulo == "LIMONES" &
@@ -156,18 +159,42 @@ ggplot(df_sipsa, aes(x = month, y = sipsa, group = year, color = factor(year))) 
   ) +
   theme_bw()
 
+# Parte 1: enero 1999 a diciembre 2011
+serie_sipsa_1 <- window(serie_sipsa, start = c(1999, 1), end = c(2011, 12))
+
+# Parte 2: enero 2013 a enero 2018
+serie_sipsa_2 <- window(serie_sipsa, start = c(2013, 1), end = c(2018, 12))
+
 # Descomposición de la serie de tiempo
-sipsa_comp <- decompose(serie_sipsa)
-plot(sipsa_comp)
+sipsa_comp1 <- decompose(serie_sipsa_1)
+plot(sipsa_comp1)
+
+sipsa_comp2 <- decompose(serie_sipsa_2)
+plot(sipsa_comp2)
 
 # Desestacionalizar la serie
 library(seasonal)
-serie_sipsa_sa = seas(serie_sipsa)
+serie_sipsa_sa = seas(serie_sipsa_1)
 
 serie_sipsa_sa %>% 
   final() %>% 
   autoplot() +
-  autolayer(serie_sipsa, series = 'Serie original') +
+  autolayer(serie_sipsa_1, series = 'Serie original') +
+  labs(
+    title = 'Precio mayorista',
+    subtitle = 'Ajuste estacional',
+    x = '',
+    y = 'Precio mayorista'
+  ) +
+  theme(legend.position = "bottom")
+
+
+serie_sipsa_sa_2 = seas(serie_sipsa_2)
+
+serie_sipsa_sa_2 %>% 
+  final() %>% 
+  autoplot() +
+  autolayer(serie_sipsa_2, series = 'Serie original') +
   labs(
     title = 'Precio mayorista',
     subtitle = 'Ajuste estacional',
@@ -181,15 +208,22 @@ serie_sipsa_sa %>%
 serie_sipsa_sa = predict(serie_sipsa_sa)
 adf_sipsa = summary(urca::ur.df(serie_sipsa_sa, 
                                 selectlags =  "AIC", 
-                                type = "drift"))
+                                type = "trend"))
 adf_sipsa
 
+
+# Prueba de raíz unitaria
+serie_sipsa_sa_2 = predict(serie_sipsa_sa_2)
+adf_sipsa2 = summary(urca::ur.df(serie_sipsa_sa_2, 
+                                selectlags =  "AIC", 
+                                type = "trend"))
+adf_sipsa2
 ## ------------------------------------------##
 ## 3. Pruebas de cointegración               ##
 ## ------------------------------------------##
 
 # SIPSA para que termine en marzo-2018
-sipsa_coint <- window(serie_sipsa, end = c(2018, 3))
+sipsa_coint <- window(serie_sipsa, end = c(2011, 12))
 ipc_coint <- window(serie_ipc, start = start(sipsa_coint), 
                     end = end(sipsa_coint))
 
@@ -234,19 +268,24 @@ coint.output
 ## ------------------------------------------##
 ## 4. Datos de entrenamiento y validación    ##
 ## ------------------------------------------##
+serie_2012 <- ts(NA, start = c(2012, 1), end = c(2012, 12), frequency = 12)
+serie_sipsa_des <- ts(c(serie_sipsa_sa,
+                        serie_2012,
+                        serie_sipsa_sa_2), 
+                      start = c(1999, 1), end = c(2018, 12), frequency = 12)
 
 df.city.food = df.city.food %>% mutate(
   P_min = c(serie_ipc_sa, ts(NA,start = c(2018, 4),
              end = c(2018, 12), frequency = 12)),
-  P_may = serie_sipsa_sa
+  P_may = c(serie_sipsa_des)
 )
 
 
 df.city.food$mes <- factor(format(df.city.food$fecha,
                                   "%m"))  
 
-train <- df.city.food %>% filter(fecha < "2015-01-01")
-test <- df.city.food %>% filter(fecha >= "2015-01-01")
+train <- df.city.food %>% filter(fecha < "2012-01-01")
+test <- df.city.food %>% filter(fecha >= "2013-01-01")
 
 ## ------------------------------------------##
 ## 5. Modelos de largo plazo (cointegración) ##
@@ -270,7 +309,7 @@ train <- train %>%
     mes_n = as.numeric(as.character(mes))  # estacionalidad suave
   )
 
-modelo_CP <- lm(d_Pmin ~ lag2_ecmt + lag_Pmin + lag_Pmay + d_Pmay + mes_n,
+modelo_CP <- lm(d_Pmin ~ lag2_ecmt + lag_Pmin + lag_Pmay + d_Pmay ,
                 data = train, na.action = na.exclude)
 
 summary(modelo_CP)
