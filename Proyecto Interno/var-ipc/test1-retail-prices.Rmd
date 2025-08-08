@@ -162,7 +162,7 @@ library(lubridate)
 library(tidyverse)
 
 # Definir directorio de trabajo
-setwd("C:\\Users\\Portatil\\Desktop\\Least-cost-diets-and-affordability\\Proyecto Interno\\")
+setwd("C:\\Users\\danie\\OneDrive\\Escritorio\\Least-cost-diets-and-affordability\\Proyecto Interno\\")
 
 ######################################
 ###--------------------------------###
@@ -187,6 +187,8 @@ dane_99_18$cod_subclase = paste0("0",substr(dane_99_18$codigo_articulo, 1, 6), "
 
 # Eliminamos > 2018-3
 dane_99_18 = dane_99_18 %>% filter(fecha < "2018-04-01")
+
+write_xlsx(dane_99_18, "C:\\Users\\danie\\OneDrive\\Escritorio\\Least-cost-diets-and-affordability\\Proyecto Interno\\var-ipc")
 
 # Prueba con una ciudad y una alimento
 city_i = levels(as.factor(dane_99_18$nombre_ciudad))
