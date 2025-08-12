@@ -19,7 +19,6 @@ setwd("C:\\Users\\Portatil\\Desktop\\Least-cost-diets-and-affordability\\Proyect
 # Cargar datos de precios estimados
 input_cali_hat = read.csv("estimadores-banrep/CALI/input/010825_q1_q3_price_data_cali.csv")
 
-
 ##-------------------------------------------------##
 ## Cargar base de datos de composición nutricional ##
 ##-------------------------------------------------##
