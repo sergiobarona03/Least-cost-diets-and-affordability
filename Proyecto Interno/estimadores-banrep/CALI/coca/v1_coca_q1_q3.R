@@ -85,4 +85,90 @@ for (k in seq_along(escenarios)) {
 
 resultados_coca <- bind_rows(resultados)
 
-print(head(resultados_coca, 10))
+print(head(resultados_coca, 20))
+
+# Gráfica para visualizar los resultados:
+library(dplyr)
+library(tidyr)
+library(ggplot2)
+library(scales)
+library(RColorBrewer)
+
+# Aseguramos que 'escenario' y 'Demo_Group' son factores
+resultados_coca <- resultados_coca %>%
+  mutate(
+    escenario = factor(escenario, levels = c("precio_q1_100g", "precio_q2_100g", "precio_q3_100g")),
+    Demo_Group = factor(Demo_Group),
+    Sex = factor(Sex,
+                 labels = c("Hombres", "Mujeres"))
+  )
+
+# Función para preparar datos y graficar según sexo
+plot_coca_band <- function(data, sexo) {
+  data_sexo <- data %>% filter(Sex == sexo)
+  
+  # Pivotar para columnas Q1, Q2, Q3
+  data_wide <- data_sexo %>%
+    select(fecha, Demo_Group, escenario, cost_day) %>%
+    pivot_wider(names_from = escenario, values_from = cost_day)
+  
+  ggplot(data_wide, aes(x = fecha, group = Demo_Group)) +
+    geom_ribbon(aes(ymin = precio_q1_100g,
+                    ymax = precio_q3_100g),
+                fill = "red", alpha = 0.15) +  # Banda roja transparente
+    geom_line(aes(y = precio_q1_100g), 
+              color = "red", linetype = 2, size = 0.6) +  # Q1 roja punteada
+    geom_line(aes(y = precio_q3_100g), 
+              color = "red", linetype = 2, size = 0.6) +  # Q3 roja punteada
+    geom_line(aes(y = precio_q2_100g), color = "black", size = 1) +  # Q2 negra sólida
+    facet_wrap(~ Demo_Group, scales = "free_y", ncol = 3) +
+    scale_x_date(date_labels = "%Y-%m", date_breaks = "6 months") +
+    labs(
+      title = paste("Evolución del costo diario con banda entre Q1 y Q3 (", sexo, ")", sep = ""),
+      x = "Fecha",
+      y = "Costo diario (COP)"
+    ) +
+    theme_bw(base_size = 14) +
+    theme(
+      axis.text.x = element_text(angle = 45, hjust = 1),
+      panel.grid.minor = element_blank(),
+      legend.position = "none"
+    )
+}
+
+# Graficar para hombres
+p_hombres <- plot_coca_band(resultados_coca,
+                            "Hombres")
+print(p_hombres)
+
+# Graficar para mujeres
+p_mujeres <- plot_coca_band(resultados_coca,
+                            "Mujeres")
+print(p_mujeres)
+
+# El costo por 1000kcal no es constante para cada grupo demográfico
+coca_1000kcal = resultados_coca %>% group_by(fecha, escenario) %>%
+  summarise(mean_1000kcal = mean(Cost_1000kcal))
+
+# Pivotar para tener columnas q1, q2, q3
+coca_wide <- coca_1000kcal %>%
+  pivot_wider(names_from = escenario, values_from = mean_1000kcal)
+
+ggplot(coca_wide, aes(x = fecha)) +
+  geom_ribbon(aes(ymin = precio_q1_100g, ymax = precio_q3_100g),
+              fill = "red", alpha = 0.15) +
+  geom_line(aes(y = precio_q1_100g), color = "red", linetype = 2, size = 0.7) +
+  geom_line(aes(y = precio_q3_100g), color = "red", linetype = 2, size = 0.7) +
+  geom_line(aes(y = precio_q2_100g), color = "black", size = 1) +
+  labs(
+    title = "CoCA - Evolución del costo por 1000 kcal",
+    x = "Fecha",
+    y = "Costo promedio (COP)",
+    caption = "Líneas rojas punteadas: cuartiles 1 y 3; línea negra: mediana (Q2)"
+  ) +
+  scale_x_date(date_labels = "%Y-%m", date_breaks = "6 months") +
+  theme_bw(base_size = 14) +
+  theme(
+    axis.text.x = element_text(angle = 45, hjust = 1)
+  )
+
