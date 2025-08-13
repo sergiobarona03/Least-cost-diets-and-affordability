@@ -9,7 +9,7 @@ library(lubridate)
 library(tidyverse)
 
 # Definir directorio de trabajo
-setwd("C:\\Users\\Portatil\\Desktop\\Least-cost-diets-and-affordability\\Proyecto Interno\\")
+setwd("C:/Users/danie/OneDrive/Escritorio/Least-cost-diets-and-affordability/Proyecto Interno")
 
 ##-------------------------------------------##
 ## Cargar datos de precios minoristas (2018) ##

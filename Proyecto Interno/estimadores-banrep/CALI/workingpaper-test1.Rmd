@@ -54,7 +54,7 @@ Una característica relevante de estos datos es su estructura de clasificación,
 
 
 ```{r, include = TRUE, echo=FALSE, eval = TRUE, warning=FALSE, message = FALSE}
-setwd("C:/Users/Portatil/Desktop/Least-cost-diets-and-affordability/Proyecto Interno")
+setwd("C:/Users/danie/OneDrive/Escritorio/Least-cost-diets-and-affordability/Proyecto Interno")
 ipc_subclase = readxl::read_excel("var-ipc/XYZ_Correlativa-ENPH-IPC-2008.xlsx") %>% janitor::clean_names() %>% mutate(clase = clase_9,
                                                                                                                       articulo = articulo_11) %>%
   select(clase, gasto_basico, articulo, descripcion_ipc)
@@ -64,7 +64,7 @@ head(ipc_subclase[11:nrow(ipc_subclase),], 30)
 A continuación, se muestra la estructura de la base de datos de precios proporcionada por el DANE:
 
 ```{r, include = TRUE, echo=FALSE, eval = TRUE, warning=FALSE, message = FALSE}
-setwd("C:/Users/Portatil/Desktop/Least-cost-diets-and-affordability/Proyecto Interno")
+setwd("C:/Users/danie/OneDrive/Escritorio/Least-cost-diets-and-affordability/Proyecto Interno")
 dane_99_18 = readxl::read_excel("Precios DANE\\OUTPUT_DANE\\precios_unadj_DANE_1999_2018.xlsx")
 
 head(dane_99_18[c("ano", "mes_num", "nombre_ciudad", "codigo_articulo",
@@ -80,7 +80,7 @@ Dado el objetivo de estimar precios minoristas, se hace uso exclusivamente del I
 A continuación, se muestra la estructura de los datos utilizados:
 
 ```{r, include = TRUE, echo=FALSE, eval = TRUE, warning=FALSE, message = FALSE}
-setwd("C:/Users/Portatil/Desktop/Least-cost-diets-and-affordability/Proyecto Interno")
+setwd("C:/Users/danie/OneDrive/Escritorio/Least-cost-diets-and-affordability/Proyecto Interno")
 # Cargar variación del IPC
 var_ipc = readxl::read_excel("var-ipc\\IPC.xls") %>% janitor::clean_names()
 
@@ -103,7 +103,7 @@ Como se indicó en la sección anterior, las dos fuentes de información ---los 
 Para integrar ambos sistemas en una única base de datos, se recurre a la siguiente tabla correlativa:
 
 ```{r, include = TRUE, echo=FALSE, eval = TRUE, warning=FALSE, message = FALSE}
-setwd("C:/Users/Portatil/Desktop/Least-cost-diets-and-affordability/Proyecto Interno")
+setwd("C:/Users/danie/OneDrive/Escritorio/Least-cost-diets-and-affordability/Proyecto Interno")
 #Tablas correlativas
 correlativa = readxl::read_excel("var-ipc\\correlativa_ipc.xlsx")
 
@@ -202,7 +202,7 @@ library(lubridate)
 library(tidyverse)
 
 # Definir directorio de trabajo
-setwd("C:\\Users\\Portatil\\Desktop\\Least-cost-diets-and-affordability\\Proyecto Interno\\")
+setwd("C:/Users/danie/OneDrive/Escritorio/Least-cost-diets-and-affordability/Proyecto Interno")
 
 # Cargar datos
 source("margen-dist/v1-join-ipc-sipsa.R")
@@ -341,7 +341,7 @@ library(tidyverse)
 library(FoodpriceR)
 
 # Definir directorio de trabajo
-setwd("C:\\Users\\Portatil\\Desktop\\Least-cost-diets-and-affordability\\Proyecto Interno\\")
+setwd("C:/Users/danie/OneDrive/Escritorio/Least-cost-diets-and-affordability/Proyecto Interno")
 
 # Cargar datos de márgenes
 source("margen-dist/v2-margen-producto.R")
@@ -356,7 +356,7 @@ source("margen-dist/v2-margen-producto.R")
 ```{r, include = TRUE, echo=FALSE, eval = TRUE, warning=FALSE, message = FALSE}
 
 # Definir directorio de trabajo
-setwd("C:\\Users\\Portatil\\Desktop\\Least-cost-diets-and-affordability\\Proyecto Interno\\")
+setwd("C:/Users/danie/OneDrive/Escritorio/Least-cost-diets-and-affordability/Proyecto Interno")
 
 # Cargar Estimaciones CoCA
 source("estimadores-banrep\\CALI\\coca\\v1_coca_q1_q3.R")
@@ -369,9 +369,9 @@ source("estimadores-banrep\\CALI\\coca\\v1_coca_q1_q3.R")
 ```{r, include = TRUE, echo=FALSE, eval = TRUE, warning=FALSE, message = FALSE}
 
 # Definir directorio de trabajo
-setwd("C:\\Users\\Portatil\\Desktop\\Least-cost-diets-and-affordability\\Proyecto Interno\\")
+setwd("C:/Users/danie/OneDrive/Escritorio/Least-cost-diets-and-affordability/Proyecto Interno")
 
-# Cargar Estimaciones CoCA
+# Cargar Estimaciones CoNA
 source("estimadores-banrep\\CALI\\cona\\v1_cona_q1_q3.R")
 
 
