@@ -204,85 +204,115 @@ server <- function(input, output, session){
   )
   
   observeEvent(input$load, {
-    old <- getwd(); on.exit(setwd(old), add=TRUE); setwd(input$base_dir)
+    req(input$base_dir)
     rv$logs <- list()
     
-    # ---- Excels ----
-    rv$xyz <- tryCatch({
-      readxl::read_excel("var-ipc/XYZ_Correlativa-ENPH-IPC-2008.xlsx") %>%
-        janitor::clean_names() %>%
-        mutate(clase = clase_9, articulo = articulo_11) %>%
-        select(clase, gasto_basico, articulo, descripcion_ipc)
-    }, error=function(e){ rv$logs$xyz <- e$message; NULL })
+    dir_base <- normalizePath(trimws(input$base_dir), winslash = "/", mustWork = FALSE)
+    if (!dir.exists(dir_base)) {
+      showNotification("La carpeta base no existe.", type = "error")
+      return(invisible(NULL))
+    }
     
-    rv$dane <- tryCatch({
-      readxl::read_excel("Precios DANE/OUTPUT_DANE/precios_unadj_DANE_1999_2018.xlsx")
-    }, error=function(e){ rv$logs$dane <- e$message; NULL })
-    
-    rv$ipc <- tryCatch({
-      readxl::read_excel("var-ipc/IPC.xls") %>%
-        janitor::clean_names() %>%
-        mutate(
-          ciudad = dplyr::case_when(
-            ciudad == "CARTAGENA DE INDIAS" ~ "CARTAGENA",
-            ciudad == "BOGOTÁ, D.C." ~ "BOGOTÁ D.C.",
-            TRUE ~ ciudad
-          ),
-          cod_subclase = substr(subclase, 1, 8)
-        )
-    }, error=function(e){ rv$logs$ipc <- e$message; NULL })
-    
-    rv$corr <- tryCatch({
-      readxl::read_excel("var-ipc/correlativa_ipc.xlsx") %>%
-        tidyr::fill(subclase, ipc, .direction = "down")
-    }, error=function(e){ rv$logs$corr <- e$message; NULL })
-    
-    # ---- Integración (v1) ----
-    rv$retail <- tryCatch({
-      env <- source_inheriting("margen-dist/v1-join-ipc-sipsa.R")
-      if (exists("retail_whole_18", envir=env)) get("retail_whole_18", envir=env) else NULL
-    }, error=function(e){ rv$logs$retail <- e$message; NULL })
-    
-    # --- CoCA  ---
-    rv$env_coca <- new.env(parent = globalenv())
-    coca_err <- tryCatch(
-      { sys.source("estimadores-banrep/CALI/coca/v1_coca_q1_q3.R",
-                   envir = rv$env_coca, chdir = FALSE); NULL },
-      error = function(e) e
+    # --- rutas  ---
+    rutas <- list(
+      xyz     = file.path(dir_base, "var-ipc", "XYZ_Correlativa-ENPH-IPC-2008.xlsx"),
+      dane    = file.path(dir_base, "Precios DANE", "OUTPUT_DANE", "precios_unadj_DANE_1999_2018.xlsx"),
+      ipc     = file.path(dir_base, "var-ipc", "IPC.xls"),
+      corr    = file.path(dir_base, "var-ipc", "correlativa_ipc.xlsx"),
+      s_retail= file.path(dir_base, "margen-dist", "v1-join-ipc-sipsa.R"),
+      s_coca  = file.path(dir_base, "estimadores-banrep", "CALI", "coca", "v1_coca_q1_q3.R"),
+      s_cona  = file.path(dir_base, "estimadores-banrep", "CALI", "cona", "v1_cona_q1_q3.R")
     )
-    rv$coca <-
-      if (exists("coca_resultados", envir = rv$env_coca)) get("coca_resultados", envir = rv$env_coca) else
-        if (exists("resultados_coca", envir = rv$env_coca)) get("resultados_coca",  envir = rv$env_coca) else
-          NULL
-    if (!is.null(coca_err) && is.null(rv$coca)) rv$logs$coca <- conditionMessage(coca_err)
     
-    # --- CoNA  ---
-    rv$env_cona <- new.env(parent = globalenv())
-    cona_err <- tryCatch(
-      { sys.source("estimadores-banrep/CALI/cona/v1_cona_q1_q3.R",
-                   envir = rv$env_cona, chdir = FALSE); NULL },
-      error = function(e) e
-    )
-    rv$cona <-
-      if (exists("resultados_cona", envir = rv$env_cona)) get("resultados_cona", envir = rv$env_cona) else
-        if (exists("cona_resultados", envir = rv$env_cona)) get("cona_resultados", envir = rv$env_cona) else
-          NULL
-    if (!is.null(cona_err) && is.null(rv$cona)) rv$logs$cona <- conditionMessage(cona_err)
+    # helper lectura con logs
+    leer_archivo <- function(path_abs, fun) {
+      p <- normalizePath(path_abs, winslash = "/", mustWork = FALSE)
+      if (!file.exists(p)) { rv$logs <- append(rv$logs, list(paste("[WARN] No existe:", p))); return(NULL) }
+      tryCatch(fun(p),
+               error = function(e){ rv$logs <- append(rv$logs, list(paste("[ERROR]", e$message))); NULL })
+    }
     
+    withProgress(message = "Cargando datos…", value = 0, {
+      incProgress(0.1)
+      
+      rv$xyz <- leer_archivo(rutas$xyz, function(p)
+        readxl::read_excel(p) |>
+          janitor::clean_names() |>
+          dplyr::mutate(clase = clase_9, articulo = articulo_11) |>
+          dplyr::select(clase, gasto_basico, articulo, descripcion_ipc)
+      )
+      
+      rv$dane <- leer_archivo(rutas$dane, readxl::read_excel)
+      
+      rv$ipc <- leer_archivo(rutas$ipc, function(p)
+        readxl::read_excel(p) |>
+          janitor::clean_names() |>
+          dplyr::mutate(
+            ciudad = dplyr::case_when(
+              ciudad == "CARTAGENA DE INDIAS" ~ "CARTAGENA",
+              ciudad == "BOGOTÁ, D.C." ~ "BOGOTÁ D.C.",
+              TRUE ~ ciudad
+            ),
+            cod_subclase = substr(subclase, 1, 8)
+          )
+      )
+      
+      rv$corr <- leer_archivo(rutas$corr, function(p)
+        readxl::read_excel(p) |>
+          tidyr::fill(subclase, ipc, .direction = "down")
+      )
+      
+      # --- Integración (retail) ---
+      rv$retail <- tryCatch({
+        if (!file.exists(rutas$s_retail)) stop("No se encontró script retail: ", rutas$s_retail)
+        e <- new.env(parent = globalenv())
+        sys.source(rutas$s_retail, envir = e, chdir = FALSE)
+        if (exists("retail_whole_18", envir = e)) get("retail_whole_18", envir = e) else NULL
+      }, error = function(e){ rv$logs <- append(rv$logs, list(paste("[ERROR retail]", e$message))); NULL })
+      
+      # --- CoCA ---
+      rv$env_coca <- new.env(parent = globalenv())
+      tryCatch(sys.source(rutas$s_coca, envir = rv$env_coca, chdir = FALSE),
+               error = function(e) rv$logs <- append(rv$logs, list(paste("[ERROR CoCA]", e$message))))
+      rv$coca <- if (exists("coca_resultados", envir = rv$env_coca)) get("coca_resultados", rv$env_coca)
+      else if (exists("resultados_coca", envir = rv$env_coca)) get("resultados_coca", rv$env_coca) else NULL
+      
+      # --- CoNA ---
+      rv$env_cona <- new.env(parent = globalenv())
+      tryCatch(sys.source(rutas$s_cona, envir = rv$env_cona, chdir = FALSE),
+               error = function(e) rv$logs <- append(rv$logs, list(paste("[ERROR CoNA]", e$message))))
+      rv$cona <- if (exists("resultados_cona", envir = rv$env_cona)) get("resultados_cona", rv$env_cona)
+      else if (exists("cona_resultados", envir = rv$env_cona)) get("cona_resultados", rv$env_cona) else NULL
+      
+      incProgress(0.9)
+    })
+    
+    showNotification("Carga finalizada.", type = "message")
   })
   
-  # ---- estado ----
-  output$status_box <- renderUI({
-    ok <- c("XYZ"=!is.null(rv$xyz), "DANE"=!is.null(rv$dane),
-            "IPC"=!is.null(rv$ipc), "Correlativa"=!is.null(rv$corr),
-            "Pipeline (retail_whole_18)"=!is.null(rv$retail))
-    cls <- if (all(ok)) "alert-success" else "alert-warning"
-    div(class=paste("alert", cls),
-        tags$b("Resultado de la carga:"),
-        tags$ul(lapply(names(ok), function(nm) tags$li(sprintf("%s: %s", nm, if (ok[[nm]]) "✓" else "✗")))),
-        if (!is.null(rv$logs$retail)) div(style="color:#a94442", paste("Detalle join:", rv$logs$retail))
+  # --- Estado (✓/✗). Píntalo en 'resultado_carga' y también en 'status_box' ---
+  render_estado <- function(){
+    ok <- c(
+      "XYZ" = !is.null(rv$xyz),
+      "DANE" = !is.null(rv$dane),
+      "IPC" = !is.null(rv$ipc),
+      "Correlativa" = !is.null(rv$corr),
+      "Pipeline (retail_whole_18)" = !is.null(rv$retail),
+      "CoCA" = !is.null(rv$coca),
+      "CoNA" = !is.null(rv$cona)
     )
-  })
+    cls <- if (all(ok)) "alert-success" else if (any(ok)) "alert-warning" else "alert-danger"
+    div(class = paste("alert", cls),
+        tags$b("Resultado de la carga:"),
+        tags$ul(lapply(names(ok), function(nm)
+          tags$li(sprintf("%s: %s", nm, if (ok[[nm]]) "✓" else "✗"))
+        ))
+    )
+  }
+  output$resultado_carga <- renderUI(render_estado())
+  output$status_box      <- renderUI(render_estado())   # opcional para compatibilidad
+  
+  output$logs <- renderText(paste(unlist(rv$logs), collapse = "\n"))
   
   # ---- tablas ----
   output$tbl_xyz <- renderDT({
