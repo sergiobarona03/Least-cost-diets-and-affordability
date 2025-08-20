@@ -310,7 +310,7 @@ server <- function(input, output, session){
     )
   }
   output$resultado_carga <- renderUI(render_estado())
-  output$status_box      <- renderUI(render_estado())   # opcional para compatibilidad
+  output$status_box      <- renderUI(render_estado())  
   
   output$logs <- renderText(paste(unlist(rv$logs), collapse = "\n"))
   
