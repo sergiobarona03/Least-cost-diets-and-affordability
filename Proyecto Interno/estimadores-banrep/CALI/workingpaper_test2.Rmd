@@ -32,7 +32,7 @@ if (length(to_install)) install.packages(to_install)
 invisible(lapply(pkgs, library, character.only = TRUE))
 
 # ====================== ROOT DEL PROYECTO ======================
-base_dir <- "C:/Users/danie/OneDrive/Escritorio/Least-cost-diets-and-affordability/Proyecto Interno"
+base_dir <- "C:/Users/Portatil/Desktop/Least-cost-diets-and-affordability/Proyecto Interno"
 knitr::opts_knit$set(root.dir = base_dir)  # << CLAVE: todos los chunks usan este root
 setwd(base_dir)                            # útil también si corres interactivo
 
