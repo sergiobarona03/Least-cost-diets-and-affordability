@@ -125,6 +125,8 @@ resultados_cona <- resultados_cona %>%
                  labels = c("Hombres", "Mujeres"))
   )
 
+writexl::write_xlsx(resultados_cona, "estimadores-banrep/CALI/input/sipsa_cona_cali.csv")
+
 # Función para preparar datos y graficar según sexo
 plot_cona_band <- function(data, sexo, age) {
   data_sexo <- data %>% filter(Sex == sexo & Demo_Group == age)

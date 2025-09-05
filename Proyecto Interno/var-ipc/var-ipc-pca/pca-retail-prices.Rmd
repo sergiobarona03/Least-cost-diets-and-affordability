@@ -152,6 +152,7 @@ Por simplicidad, la primera prueba es implementada únicamente para la ciudad de
 
 ```{r, include = TRUE, echo=FALSE, eval = TRUE, warning=FALSE, message = FALSE}
 
+
 ########################################################
 ## Prueba: estimación según variación mensual del IPC ##
 ## Fecha: 22 de junio de 2025                         ##
@@ -316,7 +317,7 @@ for (i in 1:length(city_i)) {
       } else {
         
         # Formato long
-          library(tidyverse)
+        library(tidyverse)
         meses_esp <- c("Ene", "Feb", "Mar", "Abr", "May", "Jun", 
                        "Jul", "Ago", "Sep", "Oct", "Nov", "Dic")
         df_ipc <- var_ipc %>%

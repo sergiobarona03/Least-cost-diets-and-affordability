@@ -78,6 +78,8 @@ resultados_coca <- resultados_coca %>%
     Sex = factor(Sex, labels = c("Hombres", "Mujeres"))
   )
 
+writexl::write_xlsx(resultados_coca, "estimadores-banrep/CALI/input/sipsa_coca_cali.csv")
+
 # --- Función para graficar bandas por grupo demográfico ---
 plot_coca_band <- function(data, sexo, age) {
   data_sexo <- data %>% filter(Sex == sexo & Demo_Group == age)
