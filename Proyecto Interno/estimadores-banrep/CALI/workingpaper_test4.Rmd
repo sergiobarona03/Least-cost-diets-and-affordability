@@ -1,7 +1,7 @@
 ---
 title: "IPC – Exploración, Regresión y Pruebas de Estacionalidad"
 author: "Daniela Valdés Cárdenas"
-date: "2025-08-24"
+date: "2025-09-05"
 output:
   html_document:
     theme: cerulean
@@ -18,7 +18,7 @@ output:
 params:
   ciudad_objetivo: "CALI"
   fecha_tope: !r as.Date("2018-03-01")
-  anio_base: 2008
+  anio_base: 2018
 ---
 
 
@@ -71,204 +71,109 @@ subclase_to6 <- function(x){
                 stringr::str_pad(dig,6,pad="0"))))
   as.character(out)
 }
-norm_articulo <- function(x){ as.character(gsub("[^0-9]","",as.character(x))) }
+norm_articulo7 <- function(x){ as.character(gsub("[^0-9]","",as.character(x))) }
 
-leer_ipc_sheet <- function(path, sheet, ciudad, fecha_tope){
-  df <- suppressMessages(readxl::read_excel(path, sheet = sheet)) %>% clean_names()
-  req <- c("ciudad","ano","mes","subclase","numero_indice")
-  if (!all(req %in% names(df))) return(NULL)
-  df %>%
-    mutate(
-      ciudad = recode(ciudad,
-        "CARTAGENA DE INDIAS"="CARTAGENA",
-        "BOGOTÁ, D.C."="BOGOTÁ D.C."
-      ),
-      mes_num = recode(mes,
-        "Ene"=1,"Feb"=2,"Mar"=3,"Abr"=4,"May"=5,"Jun"=6,
-        "Jul"=7,"Ago"=8,"Sep"=9,"Oct"=10,"Nov"=11,"Dic"=12),
-      fecha = as.Date(sprintf("%d-%02d-01", as.integer(ano), mes_num)),
-      sub8  = norm_subclase_compat(subclase),
-      sub6  = subclase_to6(sub8),
-      lnIPC = log(as.numeric(numero_indice))
-    ) %>%
-    filter(ciudad == params$ciudad_objetivo, fecha <= params$fecha_tope) %>%
-    distinct(fecha, sub6, lnIPC, .keep_all = TRUE)
-}
+# Normalización a 8 dígitos 
+norm_sub8 <- function(x) substr(gsub("[^0-9]", "", as.character(x)), 1, 8)
+
 ```
 
 ## Cargar correlativa, precios e IPC
 
 ```{r}
-# ===== RUTAS ABSOLUTAS =====
-ruta_correlativa <- "C:/Users/danie/OneDrive/Escritorio/Least-cost-diets-and-affordability/Proyecto Interno/var-ipc/XYZ_Correlativa-ENPH-IPC-2008.xlsx"
-ruta_precios     <- "C:/Users/danie/OneDrive/Escritorio/Least-cost-diets-and-affordability/Proyecto Interno/Precios DANE/OUTPUT_DANE/precios_unadj_DANE_1999_2018.xlsx"
-ruta_ipc         <- "C:/Users/danie/OneDrive/Escritorio/Least-cost-diets-and-affordability/Proyecto Interno/var-ipc/IPC.xls"
 
-stopifnot(file.exists(ruta_correlativa), file.exists(ruta_precios), file.exists(ruta_ipc))
+ipc_union_path <- "C:/Users/danie/OneDrive/Escritorio/Least-cost-diets-and-affordability/Proyecto Interno/var-ipc/output_final_union_ipc.xlsx"
 
-# ---------- 1) Correlativa (con FILL DOWN y autodetección de columnas) ----------
+# Meses (por si el archivo trae el mes como texto)
+meses_esp <- c("Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic")
 
-ipc_raw <- readxl::read_excel(ruta_correlativa) %>%
-  janitor::clean_names()
-
-# 1a) RELLENAR HACIA ABAJO (todas las columnas)
-ipc_filled <- ipc_raw %>%
-  mutate(across(everything(), ~na_if(., ""))) %>%   # trata "" como NA
-  tidyr::fill(everything(), .direction = "down")
-
-cat("➡️ Columnas (correlativa) tras clean_names():\n"); print(names(ipc_filled))
-
-# 1b) SUBCLASE (lado COICOP) -> sub8/sub6
-stopifnot("subclase" %in% names(ipc_filled))
-sub8_vec <- norm_subclase_compat(ipc_filled$subclase)
-sub6_vec <- subclase_to6(sub8_vec)
-
-# 1c) ELEGIR AUTOMÁTICAMENTE LA COLUMNA DE ARTÍCULO DEL IPC-2008 (7 dígitos)
-cand_art <- grep("^articulo", names(ipc_filled), value = TRUE)
-stopifnot(length(cand_art) >= 1)
-
-# Heurística: elegir la columna con MÁS valores que lucen de 7 dígitos
-score_col <- function(colname){
-  v7 <- norm_articulo7(ipc_filled[[colname]])
-  sum(!is.na(v7) & nchar(v7) == 7)
+# Helper para elegir columna por nombre alternativo
+pick_col <- function(df, opts, label){
+  nm <- names(df); hit <- opts[opts %in% nm]
+  if (!length(hit)) stop("No encontré columna ", label, ". Tengo: ", paste(nm, collapse=", "))
+  hit[1]
 }
-art_scores <- sapply(cand_art, score_col)
-col_art_right <- cand_art[ which.max(art_scores) ]
 
-cat("✔️ Columna ARTÍCULO elegida:", col_art_right,
-    " (candidatas =", paste(cand_art, collapse=", "), ")\n")
+ipc_union_raw <- readxl::read_excel(ipc_union_path) %>% janitor::clean_names()
 
-articulo_ipc7 <- norm_articulo7(ipc_filled[[col_art_right]])
+col_ciudad   <- pick_col(ipc_union_raw, c("nombre_ciudad","ciudad"), "ciudad")
+col_sub8     <- pick_col(ipc_union_raw, c("cod_subclase","subclase"), "cod_subclase/subclase")
+col_ano      <- pick_col(ipc_union_raw, c("ano","year"), "ano")
+col_mes      <- pick_col(ipc_union_raw, c("mes_num","mes"), "mes/mes_num")
+col_ipc      <- pick_col(ipc_union_raw, c("ipc","numero_indice"), "ipc/numero_indice")
+col_codart   <- pick_col(ipc_union_raw, c("codigo_articulo","cod_articulo","articulo"), "codigo_articulo")
+col_precios  <- pick_col(ipc_union_raw, c("precio_500g","precio"), "precio_500g/precio")
+col_nombre_a <- pick_col(ipc_union_raw, c("articulo","nombre_articulo","nombre_producto"), "articulo (nombre)")
 
-# 1d) Descripciones (OPCIONALES, con fill ya aplicado)
-desc_ipc  <- if ("descripcion_ipc"    %in% names(ipc_filled)) as.character(ipc_filled$descripcion_ipc)    else NA_character_
-desc_coic <- if ("descripcion_coicop" %in% names(ipc_filled)) as.character(ipc_filled$descripcion_coicop) else NA_character_
-gasto_bas <- if ("gasto_basico"       %in% names(ipc_filled)) as.character(ipc_filled$gasto_basico)       else NA_character_
-
-# 1e) Tabla correlativa lista para mapear ARTÍCULO(7d) -> sub6/sub8
-ipc_subclase <- tibble(
-  sub8 = sub8_vec,
-  sub6 = sub6_vec,
-  articulo = articulo_ipc7,
-  descripcion_ipc = dplyr::coalesce(desc_ipc, desc_coic),
-  gasto_basico    = gasto_bas
-) %>%
-  filter(!is.na(sub6), sub6 != "", !is.na(articulo), articulo != "")
-
-# 1f) Mapeo único artículo → sub6/sub8
-mapeo_unico <- ipc_subclase %>%
-  arrange(articulo) %>% group_by(articulo) %>% slice(1) %>% ungroup()
-
-# 1g) Diagnóstico rápido
-cat("✔️ nchar artículo (correlativa):", paste(sort(unique(nchar(mapeo_unico$articulo))), collapse=", "), "\n")
-cat("✔️ Subclases frutas frescas presentes (prefijo sub8=011609): ",
-    sum(substr(ipc_subclase$sub8,1,6)=="011609"), "\n")
-
-# ---------- 2) PRECIOS (asegurar 7 dígitos) ----------
-raw_precios <- readxl::read_excel(ruta_precios) %>% janitor::clean_names()
-stopifnot(all(c("ano","mes_num","nombre_ciudad","codigo_articulo","precio_500g") %in% names(raw_precios)))
-
-# misma normalización de 7 dígitos que usamos en la correlativa
-precios <- raw_precios %>%
+ipc_data <- ipc_union_raw %>%
   transmute(
-    anio       = as.integer(ano),
-    mes        = as.integer(mes_num),
-    ciudad     = as.character(nombre_ciudad),
-    articulo   = norm_articulo7(codigo_articulo),
-    nombre_art = as.character(articulo),
-    precio     = as.numeric(precio_500g),
-    fecha      = as.Date(sprintf("%d-%02d-01", anio, mes))
+    ciudad = dplyr::recode(.data[[col_ciudad]],
+                           "CARTAGENA DE INDIAS" = "CARTAGENA",
+                           "BOGOTÁ, D.C."        = "BOGOTÁ D.C.",
+                           "BOGOTC, D.C."        = "BOGOTÁ D.C.",
+                           "BOGOTC\u0001, D.C."  = "BOGOTÁ D.C."),
+    cod_subclase   = norm_sub8(.data[[col_sub8]]),
+    ano            = as.numeric(.data[[col_ano]]),
+    mes_num        = dplyr::case_when(
+                       suppressWarnings(!any(is.na(as.integer(.data[[col_mes]])))) ~ as.integer(.data[[col_mes]]),
+                       TRUE ~ match(as.character(.data[[col_mes]]), meses_esp)
+                     ),
+    ipc            = as.numeric(.data[[col_ipc]]),
+    codigo_articulo= norm_articulo7(.data[[col_codart]]),
+    articulo       = as.character(.data[[col_nombre_a]]),
+    precio         = as.numeric(.data[[col_precios]])
   ) %>%
-  filter(ciudad == params$ciudad_objetivo, fecha <= params$fecha_tope)
-
-cat("✔️ Filas precios filtrados:", nrow(precios), 
-    " | nchar(artículo) únicos:", paste(unique(nchar(precios$articulo)), collapse=", "), "\n")
-
-# ---------- 3) IPC mensual (var_ipc6) ----------
-sheets_ipc <- readxl::excel_sheets(ruta_ipc)
-leer_all <- function(sh) suppressMessages(leer_ipc_sheet(ruta_ipc, sh, params$ciudad_objetivo, params$fecha_tope))
-scan_ipc <- purrr::map_dfr(sheets_ipc, function(sh){
-  out <- leer_all(sh)
-  if (is.null(out)) tibble(sheet=sh, ok=FALSE, n_sub6=NA_integer_)
-  else tibble(sheet=sh, ok=TRUE, n_sub6=dplyr::n_distinct(out$sub6))
-})
-best_sheet <- scan_ipc %>% dplyr::filter(ok) %>% dplyr::arrange(dplyr::desc(n_sub6)) %>% dplyr::slice(1) %>% dplyr::pull(sheet)
-cat("✔️ Hoja IPC elegida:", best_sheet, "\n")
-
-var_ipc6 <- leer_all(best_sheet) %>% dplyr::transmute(fecha, sub6 = as.character(sub6), lnIPC)
-cat("✔️ Filas var_ipc6:", nrow(var_ipc6), "\n")
-
-# ---------- 4) JOIN precios + correlativa ⇒ df_retail ----------
-df_retail <- precios %>%
-  dplyr::left_join(mapeo_unico, by = "articulo") %>%
-  dplyr::filter(!is.na(sub6), sub6 != "")
-
-cat("✔️ Filas df_retail (con sub6):", nrow(df_retail), "\n")
-
-# (Diagnóstico rápido si algo sale vacío)
-if (nrow(df_retail) == 0) {
-  inter <- intersect(precios$articulo, mapeo_unico$articulo)
-  cat("⚠️ Intersección de artículos (precios vs correlativa):", length(inter), "\n")
-  cat("Ejemplos precios:", head(unique(precios$articulo), 10), "\n")
-  cat("Ejemplos correlativa:", head(unique(mapeo_unico$articulo), 10), "\n")
-}
-
+  filter(ciudad == params$ciudad_objetivo) %>%
+  mutate(fecha = as.Date(sprintf("%d-%02d-01", ano, mes_num))) %>%
+  filter(fecha <= params$fecha_tope)
 
 ```
 
 ## Catálogo y selección de subclases objetivo (frutas frescas)
 
 ```{r}
-# =======================
-# DETECCIÓN AUTOMÁTICA DE FRUTAS EN LA CORRELATIVA
-# =======================
+## === Frutas frescas  ===
+fruta_sub8 <- c("01410100","01410200","01410300","01410400","01410500")
 
-# ---------- 4) FILTRO: SOLO FRUTAS FRESCAS ----------
-# Clase COICOP = 011609 ⇒ sub8 empieza por "011609"
-# Como ya tenemos sub6, usar sub8 del mapeo para rótulo y control
-catalogo_desc <- ipc_subclase %>% distinct(sub6, .keep_all = TRUE)
+# === Filtrar frutas y construir variables para la regresión ===
+dat_fruta <- ipc_data %>%
+  mutate(cod8 = norm_sub8(cod_subclase)) %>%
+  filter(cod8 %in% fruta_sub8) %>%
+  mutate(
+    sub6  = substr(cod8, 2, 7),   
+    lnIPC = log(ipc)
+  ) %>%
+  select(-cod8)
 
-sub6_objetivo <- catalogo_desc %>%
-  filter(substr(sub8, 1, 6) == "011609") %>%   # <— clave
-  distinct(sub6)
+stopifnot(nrow(dat_fruta) > 0)
 
-if (nrow(sub6_objetivo) == 0) {
-  stop("No encontré subclases de 'Frutas frescas' (prefijo sub8=011609) en la correlativa.")
-}
+# === Precio base P0 por artículo en el año base + fallback al primer precio ===
+p0_tabla <- dat_fruta %>%
+  filter(ano == params$anio_base) %>%
+  group_by(codigo_articulo) %>%
+  summarise(p0 = mean(precio, na.rm = TRUE), .groups = "drop")
 
-# ---------- 5) PANEL restringido a frutas frescas ----------
-panel0 <- df_retail %>%
-  inner_join(var_ipc6, by = c("fecha","sub6")) %>%
-  semi_join(sub6_objetivo, by = "sub6")
+p0_fb <- dat_fruta %>%
+  arrange(codigo_articulo, fecha) %>%
+  group_by(codigo_articulo) %>%
+  summarise(p0_fb = dplyr::first(na.omit(precio)), .groups = "drop")
 
-# Precio base P0 (año base) + fallback
-p0_tabla <- df_retail %>%
-  filter(anio == params$anio_base) %>%
-  group_by(articulo) %>% summarise(p0 = mean(precio, na.rm = TRUE), .groups = "drop")
+p0_tabla <- full_join(p0_tabla, p0_fb, by = "codigo_articulo") %>%
+  mutate(p0 = dplyr::coalesce(p0, p0_fb)) %>%
+  select(codigo_articulo, p0)
 
-p0_fb <- df_retail %>%
-  arrange(articulo, fecha) %>%
-  group_by(articulo) %>% summarise(p0_fb = first(na.omit(precio)), .groups = "drop")
-
-p0_tabla <- full_join(p0_tabla, p0_fb, by = "articulo") %>%
-  mutate(p0 = if_else(is.na(p0), p0_fb, p0)) %>%
-  select(articulo, p0)
-
-# Rótulo de subclase (sub8) para la regresión
-art_sub8 <- mapeo_unico %>% distinct(articulo, sub8)
-
-panel_reg <- panel0 %>%
-  left_join(p0_tabla, by = "articulo") %>%
-  left_join(art_sub8, by = "articulo") %>%
-  filter(!is.na(precio), !is.na(p0)) %>%
+# === Panel final para la regresión ===
+panel_reg <- dat_fruta %>%
+  left_join(p0_tabla, by = "codigo_articulo") %>%
+  filter(!is.na(precio), !is.na(p0), p0 > 0) %>%
   mutate(
     ln_rel   = log(precio) - log(p0),
-    subclase = sub8
+    subclase = cod_subclase   # etiqueta con sub8
   ) %>%
   select(subclase, sub6, fecha, articulo, lnIPC, ln_rel)
 
-stopifnot(nrow(panel_reg) > 0, all(substr(panel_reg$subclase,1,6)=="011609"))
-cat("Filas panel_reg (solo frutas frescas):", nrow(panel_reg), "\n")
+stopifnot(nrow(panel_reg) > 0)
+cat("✔️ Filas panel_reg (frutas): ", nrow(panel_reg), "\n")
 ```
 
 # Modelo de regresión lineal (log–log)
