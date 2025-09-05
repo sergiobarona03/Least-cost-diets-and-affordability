@@ -1,0 +1,465 @@
+---
+title: "Estimación de precios minoristas de alimentos con contribuciones PCA"
+author: "Sergio Barona Montoya"
+date: '2025-07-14'
+output:
+  html_document:
+    theme: cerulean
+    highlight: tango
+    toc: yes
+    toc_float: yes
+    number_sections: yes
+    df_print: paged
+  pdf_document:
+    toc: yes
+  word_document:
+    toc: yes
+---
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r, include = FALSE, echo=FALSE, eval = TRUE, warning=FALSE, message = FALSE}
+library(janitor)
+library(tidyverse)
+```
+
+# Presentación
+
+El propósito de este documento es presentar una aproximación metodológica para la estimación de precios minoristas de alimentos a partir de datos suministrados por el DANE, específicamente a partir de los datos utilizados en la construcción del ÍPC. El período es 1999:1 - 2018:3 con frecuencia mensual. Por simplicidad, consideramos únicamente las tres principales ciudades de Colombia: Cali, Bogotá y Medellín.
+
+La estrategia consiste en utilizar el IPC a nivel de subclase, de acuerdo con la clasificación COICOP, bajo el supuesto de que todos los artículos pertenecientes a una misma subclase tienen la misma tasa de variación mensual.
+
+
+# Datos
+
+## Datos de precios minoristas - DANE
+
+La primera fuente corresponde a los precios minoristas reportados por el DANE, utilizados como insumo para el cálculo del Índice de Precios al Consumidor (IPC) (DANE, 2024). El periodo de análisis abarca desde enero de 1999 hasta marzo de 2018 y cubre las 13 principales ciudades del país:
+
+- Bogotá D.C.  
+- Medellín A.M.  
+- Cali A.M.  
+- Barranquilla A.M.  
+- Bucaramanga A.M.  
+- Manizales A.M.  
+- Pereira A.M.  
+- Cúcuta A.M.  
+- Pasto  
+- Ibagué  
+- Montería  
+- Cartagena  
+- Villavicencio  
+
+Una característica relevante de estos datos es su estructura de clasificación, basada en la canasta de seguimiento del IPC 2008. Esta clasificación contempla distintos niveles de agregación: Grupo, Subgrupo, Clase, Gasto Básico y Artículo. A continuación, se presenta la estructura de esta clasificación:
+
+
+```{r, include = TRUE, echo=FALSE, eval = TRUE, warning=FALSE, message = FALSE}
+setwd("C:/Users/Portatil/Desktop/Least-cost-diets-and-affordability/Proyecto Interno")
+ipc_subclase = readxl::read_excel("var-ipc/XYZ_Correlativa-ENPH-IPC-2008.xlsx") %>% janitor::clean_names() %>% mutate(clase = clase_9,
+                                                                                                                      articulo = articulo_11) %>%
+  select(clase, gasto_basico, articulo, descripcion_ipc)
+head(ipc_subclase[11:nrow(ipc_subclase),], 30)
+```
+
+A continuación, se muestra la estructura de la base de datos de precios proporcionada por el DANE:
+
+```{r, include = TRUE, echo=FALSE, eval = TRUE, warning=FALSE, message = FALSE}
+setwd("C:/Users/Portatil/Desktop/Least-cost-diets-and-affordability/Proyecto Interno")
+dane_99_18 = readxl::read_excel("Precios DANE\\OUTPUT_DANE\\precios_unadj_DANE_1999_2018.xlsx")
+
+head(dane_99_18[c("ano", "mes_num", "nombre_ciudad", "codigo_articulo",
+                  "articulo", "precio_500g")], 30)
+```
+
+## Datos del ÍPC - DANE
+
+Para este análisis se emplean datos del Índice de Precios al Consumidor (IPC) a nivel de subclase, según lo reportado por el DANE. La clasificación utilizada corresponde al sistema COICOP, el cual estructura los datos en los siguientes niveles: División, Grupo, Clase, Subclase y Artículo.
+
+Dado el objetivo de estimar precios minoristas, se hace uso exclusivamente del IPC a nivel de subclase. Además, se consideran únicamente los datos agregados por nivel de **ingreso total**.
+
+A continuación, se muestra la estructura de los datos utilizados:
+
+```{r, include = TRUE, echo=FALSE, eval = TRUE, warning=FALSE, message = FALSE}
+setwd("C:/Users/Portatil/Desktop/Least-cost-diets-and-affordability/Proyecto Interno")
+# Cargar variación del IPC
+var_ipc = readxl::read_excel("var-ipc\\IPC.xls") %>% janitor::clean_names()
+
+# Recodificar ciudades
+var_ipc$ciudad[var_ipc$ciudad == "CARTAGENA DE INDIAS"] = "CARTAGENA"
+var_ipc$ciudad[var_ipc$ciudad == "BOGOTÁ, D.C."] = "BOGOTÁ D.C."
+
+# Crear variable codigo_subclase
+var_ipc$cod_subclase = paste0(substr(var_ipc$subclase, 1, 8))
+head(var_ipc[c("ano", "mes", "ciudad","division", "grupo", "clase", "subclase",
+               "cod_subclase", "numero_indice")], 30)
+```
+
+# Metodología
+
+## Conformación de la base de datos
+
+Como se indicó en la sección anterior, las dos fuentes de información ---los precios minoristas y el IPC--- emplean sistemas de clasificación distintos. Mientras que los datos de precios minoristas utilizan la clasificación correspondiente a la canasta del IPC de 2008 (organizada por Grupo, Subgrupo, Clase, Gasto Básico y Artículo), los datos del IPC se encuentran estructurados según la nomenclatura COICOP (División, Grupo, Clase, Subclase, Artículo).
+
+Para integrar ambos sistemas en una única base de datos, se recurre a la siguiente tabla correlativa:
+
+```{r, include = TRUE, echo=FALSE, eval = TRUE, warning=FALSE, message = FALSE}
+setwd("C:/Users/Portatil/Desktop/Least-cost-diets-and-affordability/Proyecto Interno")
+#Tablas correlativas
+correlativa = readxl::read_excel("var-ipc\\correlativa_ipc.xlsx")
+
+# Llenar por celdas combinadas
+correlativa <- correlativa %>%
+    fill(subclase, ipc, .direction = "down") 
+
+head(correlativa, 30)
+
+```
+
+## Estimación de precios minoristas
+
+Para estimar los precios minoristas incompletos, se implementa una estrategia basada en la variación mensual del IPC a nivel de subclase. Para cada artículo en cada ciudad, se separaron los datos en dos subconjuntos:
+
+- Conjunto de entrenamiento hasta enero de 2015 con observaciones sobre precios minoristas.
+
+- Conjunto de validación a partir de enero de 2015, a partir del cual se estimarán los precios usando las variaciones del ÍPC.
+
+Se utilizó el último precio observado del conjunto de entrenamiento (enero de 2015) y se estimaron los precios hacia adelante multiplicando iterativamente por la variación mensual del ÍPC:
+
+\[
+\hat{p}_t = \hat{p}_{t-1} \times \frac{\text{IPC}_t}{\text{IPC}_{t-1}}
+\]
+
+
+Esta operación se repite mes a mes hasta llegar al final del conjunto de validación (marzo de 2018). 
+
+
+
+# Resultados
+
+
+## Prueba 1: 14/07/2025
+
+Por simplicidad, la primera prueba es implementada únicamente para la ciudad de Cali. Las características de la pruebas son las siguientes:
+
+- Ciudad analizada: Cali, Valle del Cauca
+- Periodo de entrenamiento: enero de 1999 a enero de 2015
+- Periodo de validación: febrero de 2015 a marzo de 2018
+- Nivel de desagregación del IPC: Subclase (COICOP).
+- Datos de ponderaciones: No se emplearon ponderaciones.
+
+```{r, include = TRUE, echo=FALSE, eval = TRUE, warning=FALSE, message = FALSE}
+
+
+########################################################
+## Prueba: estimación según variación mensual del IPC ##
+## Fecha: 22 de junio de 2025                         ##
+########################################################
+
+# Cargar librerías
+library(lubridate)
+library(tidyverse)
+
+# Definir directorio de trabajo
+setwd("C:\\Users\\Portatil\\Desktop\\Least-cost-diets-and-affordability\\Proyecto Interno\\")
+
+######################################
+###--------------------------------###
+### Datos sobre precios minoristas ###
+###--------------------------------###
+######################################
+
+# Cargar datos de precios minoristas
+dane_99_18 = readxl::read_excel("Precios DANE\\OUTPUT_DANE\\precios_unadj_DANE_1999_2018.xlsx")
+
+# Filtrar para las tres ciudades principales
+ciudad.input = c("CALI")
+dane_99_18 = dane_99_18 %>% filter(nombre_ciudad %in% ciudad.input)
+
+# Recodificar fecha
+dane_99_18$fecha = as.Date(paste(dane_99_18$ano, 
+                                 dane_99_18$mes_num, 
+                                 "01", sep = "-"))
+
+# Crear la variable "código subclase"
+dane_99_18$cod_subclase = paste0("0",substr(dane_99_18$codigo_articulo, 1, 6), "0")
+
+# Eliminamos > 2018-3
+dane_99_18 = dane_99_18 %>% filter(fecha < "2018-04-01")
+
+# Prueba con una ciudad y una alimento
+city_i = levels(as.factor(dane_99_18$nombre_ciudad))
+food_j = levels(as.factor(dane_99_18$articulo))
+
+# Base de datos fallidos
+list.fail = vector(mode = "list")
+
+# Métricas 
+resultados_metricas <- data.frame(
+  ciudad = character(),
+  articulo = character(),
+  rmse = numeric(),
+  mape = numeric(),
+  stringsAsFactors = FALSE
+)
+
+
+# Antes del bucle, recuperar las contribuciones a la variabilidad total
+var_ipc_base = readxl::read_excel("var-ipc\\IPC.xls") %>% janitor::clean_names()
+pca_contrib = readxl::read_excel("margen-dist\\pca\\resultados_pca.xlsx",
+                                 sheet = 2) %>% janitor::clean_names()
+pca_contrib$articulo = pca_contrib$producto
+
+################################################
+################################################
+### Pasos para calcular el parámetro de ajuste
+
+s_i_data <- pca_contrib %>%
+  filter(!is.na(contribucion_pc1)) %>%
+  group_by(subclase) %>%
+  mutate(
+    l_i = sqrt(contribucion_pc1 / 100),
+    mean_l = mean(l_i),
+    s_i = l_i / mean_l
+  ) %>%
+  ungroup() %>%
+  select(subclase, articulo, s_i)
+
+
+
+################################################
+################################################
+
+# Bucle
+for (i in 1:length(city_i)) {
+  for (j in 1:length(food_j)) {
+    print(paste0(city_i[i], " - ", food_j[j]))
+    
+    # Base de datos aux.
+    df.aux = dane_99_18 %>% filter(nombre_ciudad == city_i[i] &
+                                     articulo == food_j[j])
+    
+    # Filtrar fechas_75
+    train.df = df.aux %>% dplyr::filter(fecha <= "2015-01-01")
+    test.df = df.aux %>% filter(fecha >= "2015-01-01")
+    
+    if (length(test.df$precio_500g) == 0) {
+      df.aux2 = dane_99_18 %>% filter(articulo == food_j[j])
+      list.fail[[length(list.fail) + 1]] <- data.frame(
+        ciudad = city_i[i],
+        cod_articulo = unique(df.aux2$codigo_articulo),
+        cod_subclase = unique(df.aux2$cod_subclase),
+        articulo = food_j[j]
+      )
+    } else {
+      
+      # Recuperar código en tablas correlativas
+      # Tabla correlativa
+      correlativa = readxl::read_excel("var-ipc\\correlativa_ipc.xlsx")
+      # Llenar por celdas combinadas
+      correlativa <- correlativa %>%
+        fill(subclase, ipc, .direction = "down") %>%
+        mutate(cod_subclase = paste0("0",
+                                     gasto_basico, "00"))
+      
+      # Recuperar código ipc
+      test.df2 = test.df %>% left_join(correlativa[c("cod_subclase",
+                                                     "subclase")],
+                                       by = "cod_subclase")
+      
+      # Condicional (si hay más de un código que coincide, entonces
+      # usamos una correlativa más desagregada)
+      if (length(levels(as.factor(test.df2$subclase))) > 1){
+        corr_producto = readxl::read_excel("var-ipc\\correlativa_ipc_articulos.xlsx") %>%
+          mutate(codigo_articulo = cod_dane, 
+                 subclase = cod_ipc)
+        
+        test.df = test.df %>% left_join(corr_producto[c("codigo_articulo",
+                                                        "subclase")],
+                                        by = "codigo_articulo")
+        
+      } else {
+        test.df = test.df2
+      }
+      
+      # Código de subclase (formato)
+      test.df$subclase = paste0(test.df$subclase,"00")
+      
+      #######################################
+      ###---------------------------------###
+      ### Variación del ÍPC: datos > 2015 ###
+      ###---------------------------------###
+      #######################################
+      
+      # Cargar variación del IPC
+      var_ipc = var_ipc_base
+      # Recodificar ciudades
+      var_ipc$ciudad[var_ipc$ciudad == "CARTAGENA DE INDIAS"] = "CARTAGENA"
+      var_ipc$ciudad[var_ipc$ciudad == "BOGOTÁ, D.C."] = "BOGOTÁ D.C."
+      
+      # Crear variable codigo_subclase
+      var_ipc$cod_subclase = paste0(substr(var_ipc$subclase, 1, 8))
+      
+      # Filtrar para la ciudad de interés
+      var_ipc = var_ipc %>% filter(ciudad == city_i[i] & 
+                                     as.numeric(cod_subclase) == as.numeric(unique(test.df$subclase))) 
+      
+      
+      if (length(var_ipc$numero_indice) == 0) {
+        list.fail[[length(list.fail) + 1]] <- data.frame(
+          ciudad = city_i[i],
+          cod_articulo = unique(df.aux$codigo_articulo),
+          cod_subclase = unique(df.aux$cod_subclase),
+          articulo = unique(df.aux$articulo)
+        )
+      } else {
+        
+        # Formato long
+        library(tidyverse)
+        meses_esp <- c("Ene", "Feb", "Mar", "Abr", "May", "Jun", 
+                       "Jul", "Ago", "Sep", "Oct", "Nov", "Dic")
+        df_ipc <- var_ipc %>%
+          mutate(
+            mes_num = match(mes, meses_esp),
+            ipc = numero_indice,
+            ano = as.numeric(ano)
+          ) %>%
+          select(ano, mes_num, ipc) %>%
+          arrange(ano, mes_num)
+        
+        # Merge
+        ipc_df = test.df %>% full_join(df_ipc, by = c("ano", "mes_num")) %>%
+          select(fecha, ano, mes_num, ciudad, nombre_ciudad, 
+                 cod_subclase,
+                 codigo_articulo, articulo, precio_500g,ipc)%>%
+          arrange(fecha) %>%
+          mutate(precio_hat = NA)
+        
+        # Recuperar contribuciones del IPC
+        pca_contrib.x = s_i_data %>% filter(articulo == unique(ipc_df$articulo)[!is.na(unique(ipc_df$articulo))])
+        alpha = unique(pca_contrib.x$s_i, na.rm = TRUE)[1]
+        
+        alpha[is.na(alpha)] = 1
+        
+        if((length(pca_contrib.x$s_i) != 0) & (!round(alpha, 0) %in% c(0.5))){
+          ipc_df = ipc_df %>% left_join(pca_contrib.x, by = "articulo")
+          ipc_df$s_i = max(ipc_df$s_i, na.rm = TRUE)
+        } else {
+          ipc_df$s_i = 1
+        }
+        
+        # Llenar precios hacia adelante usando la variación del IPC
+        ipc_df$precio_hat[ipc_df$fecha == "2015-01-01" &
+                            !is.na(ipc_df$fecha)] = ipc_df$precio_500g[ipc_df$fecha == "2015-01-01" &
+                                                                         !is.na(ipc_df$fecha)] 
+        for (k in 2:nrow(ipc_df)) {
+          if (is.na(ipc_df$precio_hat[k])) {
+            ipc_df$precio_hat[k] = (ipc_df$precio_hat[k - 1] * (ipc_df$ipc[k] / ipc_df$ipc[k - 1])^ipc_df$s_i)
+          }
+        }
+        
+        # Unir con la base de datos
+        test.df2 = test.df %>% left_join(ipc_df[c("fecha", "ipc",
+                                                  "precio_hat")],
+                                         by = "fecha") %>%
+          select(fecha, nombre_ciudad, articulo, precio_500g,
+                 precio_hat)
+        
+        # Unir con la base de datos de entrenamiento
+        test.df2 = bind_rows(train.df, test.df2)
+        
+        # Cálculo de la métrica sobre el conjunto de validación
+        valid_df <- test.df2 %>% filter(!is.na(precio_hat))
+        # RMSE
+        rmse <- sqrt(mean((valid_df$precio_500g - valid_df$precio_hat)^2))
+        
+        # MAPE
+        mape <- mean(abs(valid_df$precio_500g - valid_df$precio_hat) / valid_df$precio_500g) * 100
+        
+        resultados_metricas <- resultados_metricas %>%
+          add_row(
+            ciudad = unique(valid_df$nombre_ciudad),
+            articulo = unique(valid_df$articulo),
+            rmse = rmse,
+            mape = mape
+          )
+        
+        # Validar la estimación:
+        plot_aux = test.df2 %>%
+          ggplot(aes(x = fecha)) +
+          geom_line(aes(y = precio_500g, color = "Precio real"), size = 1) +
+          geom_line(aes(y = precio_hat, color = "Precio estimado"), linetype = "dashed", size = 1) +
+          labs(
+            title = "Comparación entre precio real y estimado",
+            subtitle = paste0(
+              unique(valid_df$nombre_ciudad), " - ", unique(valid_df$articulo),
+              "\nRMSE = ", round(rmse, 2), 
+              " | MAPE = ", round(mape, 2), "%"
+            ),
+            x = "Fecha",
+            y = "Precio (500g)",
+            color = " "
+          ) +
+          scale_color_manual(values = c("Precio real" = "black", "Precio estimado" = "red")) +
+          theme_bw() +
+          theme(
+            legend.position = "bottom",
+            plot.title = element_text(face = "bold")
+          )
+        
+        print(plot_aux)
+        
+      }
+      
+    }
+    
+  }
+}
+
+
+readr::write_csv(resultados_metricas, "300725_resultados_metricas_ipc.csv")
+
+
+
+```
+
+## Prueba 2: 16/07/2025
+
+
+
+# Notas
+
+- En el caso de "FECULA DE MAÍZ", no se puede realizar una estimación a partir del procedimiento anterior, porque el producto salió de la canasta después de 2008.
+
+
+```{r, include = TRUE, echo=FALSE, eval = TRUE, warning=FALSE, message = FALSE}
+
+# Cargar resultados
+setwd("C:\\Users\\Portatil\\Desktop\\Least-cost-diets-and-affordability\\Proyecto Interno\\")
+resultados_metricas = read.csv("pca_300725_resultados_metricas_ipc.csv")
+
+# Asegúrate de que las columnas estén en formato numérico
+resultados_metricas$rmse <- as.numeric(resultados_metricas$rmse)
+resultados_metricas$mape <- as.numeric(resultados_metricas$mape)
+
+# Alimentos con MAPE mayor a 5%
+mape_5 = resultados_metricas %>% filter(mape > 5)
+print("Alimentos con MAPE > 5%:")
+print(mape_5)
+
+# Alimentos con MAPE mayor a 10%
+mape_10 = resultados_metricas %>% filter(mape > 10)
+print("Alimentos con MAPE > 10%:")
+print(mape_10)
+
+# Métrica global: promedio de RMSE y MAPE
+# Opción 1: Promedio simple
+rmse_promedio <- mean(resultados_metricas$rmse, na.rm = TRUE)
+mape_promedio <- mean(resultados_metricas$mape, na.rm = TRUE)
+
+cat("RMSE promedio:", round(rmse_promedio, 2), "\n")
+cat("MAPE promedio:", round(mape_promedio, 2), "%\n")
+
+```
