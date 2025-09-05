@@ -8,6 +8,7 @@ library(tidyverse)
 library(lubridate)
 library(readxl)
 library(janitor)
+library(writexl)
 
 # Definir directorio de trabajo
 setwd("C:\\Users\\Portatil\\Desktop\\Least-cost-diets-and-affordability\\Proyecto Interno\\")
@@ -44,8 +45,7 @@ ipc_data <- read_excel("var-ipc\\IPC.xls") %>%
 
 # Función para procesar cada alimento
 procesar_alimento <- function(articulo, datos) {
-  articulo = unique(dane_data$articulo)[1]
-  datos = dane_data
+
   df_aux <- filter(datos, articulo == !!articulo)
   
   if (nrow(df_aux) == 0) return(NULL)
@@ -82,4 +82,4 @@ output_final <- map_dfr(unique(dane_data$articulo),
                         ~procesar_alimento(.x, dane_data))
 
 # Guardar resultados
-write_xlsx(output_final, "margen-dist\\pca\\v3_input_pca_0925.xlsx")
+write_xlsx(output_final, "margen-dist\\pca\\v4_input_pca_0925.xlsx")
