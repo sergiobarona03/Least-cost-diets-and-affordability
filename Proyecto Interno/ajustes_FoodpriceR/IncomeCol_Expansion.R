@@ -2,11 +2,12 @@
 #           Definición de la función             #
 #------------------------------------------------#
 
-# Se debe analizar si la expansión
-# de la muestra es previa o posterior a la expansión
-
-
 IncomeCol_Expansion  <- function(Month, Year, City, Share.n=NULL) {
+  
+  Month = 9
+  Year = 2022
+  City = "Cali"
+  
   
   # Función para validar parámetros
   validar_parametros <- function(parametro, tipo, rango = NULL, longitud = NULL) {
@@ -15,7 +16,8 @@ IncomeCol_Expansion  <- function(Month, Year, City, Share.n=NULL) {
     }
     
     if (!is.null(tipo)) {
-      tipo_funcion <- switch(tipo,
+    
+        tipo_funcion <- switch(tipo,
                              "numeric" = is.numeric,
                              "character" = is.character,
                              "list" = is.list,
@@ -63,7 +65,8 @@ IncomeCol_Expansion  <- function(Month, Year, City, Share.n=NULL) {
   # Carga de librerías
   Librerias_base <- c("here", "readxl", "tidyverse", "knitr", "moments", "xgboost", "maditr",
                       "mice", "VIM", "dplyr", "finalfit", "plyr", "hdd", "zip", "httr",
-                      "caret", "nnet", "quantreg", "gridExtra", "ggpubr", "cowplot")
+                      "caret", "nnet", "quantreg", "gridExtra", "ggpubr", "cowplot" ,
+                      "Hmisc", "reshape2")
   if (!require("pacman")) install.packages("pacman")
   pacman::p_load(char = Librerias_base, character.only = TRUE)
   
@@ -704,7 +707,7 @@ IncomeCol_Expansion  <- function(Month, Year, City, Share.n=NULL) {
   # Si el número de meses trabajados es 998 o 999 o si la razón edad/años trabajados < 1.2, se imputa el promedio en grupos de p6430
   
   # Cálculo del promedio por grupos según p6430
-  avg_meses <- df_total %>% group_by(p6430) %>% summarize(avg = mean(meses_trab, na.rm = TRUE))
+  avg_meses <- df_total %>% group_by(p6430) %>% dplyr::summarize(avg = mean(meses_trab, na.rm = TRUE)) %>% na.omit()
   df_total$ratio_edad_tt <- df_total$edad / (df_total$meses_trab / 12)
   
   # Definición de la condición general (valor faltante o razón < 1.2)
@@ -726,7 +729,7 @@ IncomeCol_Expansion  <- function(Month, Year, City, Share.n=NULL) {
   # Si las horas trabajadas son faltantes (=== 999), entonces se imputa el promedio en grupos de p6430
   
   # Calcular el promedio por grupos de acuerdo con p6430
-  avg_horas_sa <- df_total %>% group_by(p6430) %>% summarize(avg = mean(horas_sa, na.rm = TRUE))
+  avg_horas_sa <- df_total %>% group_by(p6430) %>% dplyr::summarize(avg = mean(horas_sa, na.rm = TRUE))
   
   # Imputación de valores faltantes en horas trabajadas en segunda actividad
   df_total$horas_sa[df_total$horas_sa == 998] = 121
@@ -2309,11 +2312,11 @@ IncomeCol_Expansion  <- function(Month, Year, City, Share.n=NULL) {
     df.aux <- df.aux[c("id", "vn1", "vi1")]
     colnames(df.aux) = c("id", "VN1","VI1")
     
-    plot.aux <- melt(df.aux, id.vars = "id")
+    plot.aux <- reshape2::melt(df.aux, id.vars = "id")
     
     plot.aux$value = plot.aux$value/1000
     
-    vlines.aux <- plot.aux %>% group_by(variable) %>% summarize(Mean = round(mean(value, na.rm = T),1),
+    vlines.aux <- plot.aux %>% group_by(variable) %>% dplyr::summarize(Mean = round(mean(value, na.rm = T),1),
                                                                 Sd = round(sd(value, na.rm = T),1),
                                                                 Median = round(median(value, na.rm = T),1),
                                                                 Q1 = round(quantile(value, 0.25, na.rm = T),1),
@@ -2344,6 +2347,7 @@ IncomeCol_Expansion  <- function(Month, Year, City, Share.n=NULL) {
                         logical3 = "trab_familiares", logical4 = "asalariado",
                         y.bp = c(0, 7500), x.hist = c(0, 7500), y.hist = c(0, 0.0009),
                         xy.min.box = c(4000, 0.0006), xy.max.box = c(4500, 0.00065))
+  
   imputed_impa <- impa_output
   colnames(imputed_impa)[which(colnames(imputed_impa) == "vi1")] = "IMPAES"
   df_total <- merge(df_total, imputed_impa[c("id","IMPAES")], by = "id", all.x = T)
@@ -2625,25 +2629,27 @@ IncomeCol_Expansion  <- function(Month, Year, City, Share.n=NULL) {
   # INICIO DEL MÓDULO 3 ORGINAL #
   #-----------------------------#
   
-  gastos_ingresos_exp <- dataset_def %>%
-    dplyr::slice(rep(1:n(), times = dataset_def$fex_c18)) %>%
-    na.omit()
+  # AQUÍ ESTÁ EL CAMBIO
+  # LA CLASIFICACIÓN POR DECILES USARÁ PESOS MUESTRALES (W)
   
-  gastos_ingresos_exp$per_capita = gastos_ingresos_exp$ingresos/gastos_ingresos_exp$nug
-  dataset_def_deciles = gastos_ingresos_exp %>% mutate(deciles = ntile(per_capita, 10))
-  dataset_def_deciles$deciles = revalue(as.factor(dataset_def_deciles$deciles),
-                                        c("1" = "Decil 1", "2" = "Decil 2",
-                                          "3" = "Decil 3", "4" = "Decil 4",
-                                          "5" = "Decil 5", "6" = "Decil 6",
-                                          "7" = "Decil 7", "8" = "Decil 8",
-                                          "9" = "Decil 9", "10" = "Decil 10"))
+  dataset_def$per_capita <- dataset_def$ingresos / dataset_def$nug
+  
+  deciles_cut <- wtd.quantile(dataset_def$per_capita,
+                              weights = dataset_def$fex_c18,
+                              probs = seq(0, 1, 0.1))
+  
+  dataset_def$deciles <- cut(dataset_def$per_capita,
+                             breaks = deciles_cut,
+                             labels = paste0("Decil ", 1:10),
+                             include.lowest = TRUE)
+
   #-------------------------------------------------#
   #               Tabla de resumen:                 #
   #    ingreso (mean & max.) y gasto (mean & max.)  #
   #-------------------------------------------------#
-  geih_ingresos = dataset_def_deciles
-  dataset_def_deciles = dataset_def_deciles
+  geih_ingresos = dataset_def
   # Hallar el ingreso promedio por decil
+  dataset_def_deciles = dataset_def
   deciles_grupos = c("Decil 1", "Decil 2",
                      "Decil 3", "Decil 4",
                      "Decil 5", "Decil 6",
@@ -2936,9 +2942,9 @@ IncomeCol_Expansion  <- function(Month, Year, City, Share.n=NULL) {
   #    ingreso (mean & max.) y gasto (mean & max.)  #
   #-------------------------------------------------#
   
-  
   dataset_def_deciles$per_capita_year = dataset_def_deciles$ingreso_alimentos_per_capita*12
-  dataset_def_deciles= dataset_def_deciles %>% dplyr::select(deciles,id_hogar,nug,ingresos,per_capita,share,ingreso_alimentos,ingreso_alimentos_per_capita,per_capita_year)
+  dataset_def_deciles= dataset_def_deciles %>% dplyr::select(deciles,id_hogar,nug,fex_c18, ingresos,per_capita,share,ingreso_alimentos,
+                                                             ingreso_alimentos_per_capita,per_capita_year)
   
   
   # cambiando nombres
@@ -2946,6 +2952,7 @@ IncomeCol_Expansion  <- function(Month, Year, City, Share.n=NULL) {
     "deciles",
     "household_id",
     "ung",
+    "fex_c18",
     "income",
     "per_capita_income",
     "share",
