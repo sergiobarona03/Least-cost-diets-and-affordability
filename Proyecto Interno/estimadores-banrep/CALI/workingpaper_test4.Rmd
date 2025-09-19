@@ -133,7 +133,7 @@ ipc_data <- ipc_union_raw %>%
 
 ```{r}
 ## === Frutas frescas  ===
-fruta_sub8 <- c("01410100","01410200","01410300","01410400","01410500")
+fruta_sub8 <- c("01410500")
 
 # === Filtrar frutas y construir variables para la regresión ===
 dat_fruta <- ipc_data %>%
