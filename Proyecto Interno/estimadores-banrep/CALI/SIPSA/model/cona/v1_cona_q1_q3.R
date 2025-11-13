@@ -9,11 +9,10 @@ library(FoodpriceR)
 library(tidyverse)
 
 # Definir directorio de trabajo
-# Definir directorio de trabajo
 setwd("C:\\Users\\Portatil\\Desktop\\Least-cost-diets-and-affordability\\Proyecto Interno\\")
 
-# Cargar base de datos
-input_cali_hat <- read.csv("estimadores-banrep/CALI/input/010825_q1_q3_comp_price_data_cali.csv")
+# --- Cargar base de datos ---
+input_cali_hat <- read.csv("estimadores-banrep/CALI/SIPSA/input/v1/v1_q1_q3_comp_price_data_cali.csv")
 
 # Selección y recodificación de nutrientes
 input_cali_hat <- input_cali_hat %>%
@@ -46,6 +45,7 @@ escenarios <- c("precio_q1_100g", "precio_q2_100g", "precio_q3_100g")
 
 # Inicializar resultados
 resultados <- list()
+resultados_comp <- list()
 
 for (k in seq_along(escenarios)) {
   var_precio <- escenarios[k]
@@ -64,6 +64,7 @@ for (k in seq_along(escenarios)) {
                   by = "month")
   
   output_k <- vector("list", length(fechas_k))
+  compose_k <-vector("list", length(fechas_k))
   
   for (t in seq_along(fechas_k)) {
     message(paste0(" - Fecha ", t, ": ", fechas_k[t]))
@@ -87,6 +88,12 @@ for (k in seq_along(escenarios)) {
       output_k[[t]] <- cona.aux$cost
       output_k[[t]]$fecha = fechas_k[t]
       output_k[[t]]$escenario = var_precio
+      
+      compose_k[[t]] <- cona.aux$comp
+      compose_k[[t]]$fecha = fechas_k[t]
+      compose_k[[t]]$escenario = var_precio
+      
+      
     }, error = function(e) {
       warning(paste("Error en CoCA para fecha", fechas_k[t], ":", e$message))
       output_k[[t]] <- data.frame(Food = NA,
@@ -97,16 +104,27 @@ for (k in seq_along(escenarios)) {
                                   Cost_1000kcal = NA)
       output_k[[t]]$fecha = fechas_k[t]
       output_k[[t]]$escenario = var_precio
+      
+      compose_k[[t]] <- data.frame(Food = NA,
+                                   quantity = NA,
+                                   Demo_Group = NA,
+                                   Sex = NA)
+      compose_k[[t]]$fecha = fechas_k[t]
+      compose_k[[t]]$escenario = var_precio
+      
     })
   }
   
   resultados[[k]] <- output_k
+  resultados_comp[[k]] <- compose_k
+  
   
   message(paste0("Escenario ", k, " terminado.\n"))
   
 }
 
 resultados_cona <- bind_rows(resultados)
+resultados_comp <- bind_rows(resultados_comp)
 
 print(head(resultados_cona, 20))
 
@@ -126,7 +144,9 @@ resultados_cona <- resultados_cona %>%
                  labels = c("Hombres", "Mujeres"))
   )
 
-writexl::write_xlsx(resultados_cona, "estimadores-banrep/CALI/input/sipsa_cona_cali.csv")
+writexl::write_xlsx(resultados_cona, "estimadores-banrep/CALI/SIPSA/output/v1/v1_sipsa_cona_cali.csv")
+writexl::write_xlsx(resultados_comp, "estimadores-banrep/CALI/SIPSA/output/v1/v1_sipsa_cona_cali_comp.csv")
+
 
 # Función para preparar datos y graficar según sexo
 plot_cona_band <- function(data, sexo, age) {
@@ -167,7 +187,9 @@ for (sx in levels(resultados_cona$Sex)) {
   for (agx in resultados_cona %>% filter(Sex == sx) %>% 
        mutate(Ages = as.factor(as.character(Demo_Group))) %>%
        dplyr::select(Ages) %>% pull() %>% levels()) {
-    print(plot_coca_band(resultados_cona, sx, agx))
+    ggsave(plot_coca_band(resultados_cona, sx, agx),
+           filename = paste0("estimadores-banrep/CALI/SIPSA/output/v1/cona_",
+                             sx,"_",agx,".png"), dpi = 300)
   }
   
 }
@@ -180,7 +202,7 @@ cona_1000kcal = resultados_cona %>% group_by(fecha, escenario) %>%
 cona_wide <- cona_1000kcal %>%
   pivot_wider(names_from = escenario, values_from = mean_1000kcal)
 
-ggplot(cona_wide, aes(x = fecha)) +
+plot_cona_wide = ggplot(cona_wide, aes(x = fecha)) +
   geom_ribbon(aes(ymin = precio_q1_100g, ymax = precio_q3_100g),
               fill = "red", alpha = 0.15) +
   geom_line(aes(y = precio_q1_100g), color = "red", linetype = 2, size = 0.7) +
@@ -198,3 +220,6 @@ ggplot(cona_wide, aes(x = fecha)) +
     axis.text.x = element_text(angle = 45, hjust = 1)
   )
 
+ggsave(plot_coca_wide,
+       filename = "estimadores-banrep/CALI/SIPSA/output/v1/v1_cona_1000kcal.png", 
+       dpi = 300)

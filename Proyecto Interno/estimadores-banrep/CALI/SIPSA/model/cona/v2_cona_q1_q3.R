@@ -10,11 +10,11 @@ library(tidyr)
 library(ggplot2)
 library(writexl)
 
-# --- Definir directorio de trabajo ---
+# Definir directorio de trabajo
 setwd("C:\\Users\\Portatil\\Desktop\\Least-cost-diets-and-affordability\\Proyecto Interno\\")
 
 # --- Cargar base de datos ---
-input_cali_hat <- read.csv("estimadores-banrep/CALI/Resultados-10-2025/input/010825_q1_q3_comp_price_data_cali.csv")
+input_cali_hat <- read.csv("estimadores-banrep/CALI/SIPSA/input/v2/v2_q1_q3_comp_price_data_cali.csv")
 
 # --- Selección y recodificación de nutrientes ---
 input_cali_hat <- input_cali_hat %>%
@@ -47,6 +47,7 @@ escenarios <- c("precio_q1_100g", "precio_q2_100g", "precio_q3_100g")
 
 # --- Inicializar lista de resultados ---
 resultados <- list()
+resultados_comp <- list()
 
 # --- Bucle principal de estimación por escenario ---
 for (k in seq_along(escenarios)) {
@@ -66,6 +67,7 @@ for (k in seq_along(escenarios)) {
                   by = "month")
   
   output_k <- vector("list", length(fechas_k))
+  compose_k <-vector("list", length(fechas_k))
   
   for (t in seq_along(fechas_k)) {
     message(paste0(" - Fecha ", t, ": ", fechas_k[t]))
@@ -90,6 +92,11 @@ for (k in seq_along(escenarios)) {
       output_k[[t]] <- cona.aux$cost
       output_k[[t]]$fecha = fechas_k[t]
       output_k[[t]]$escenario = var_precio
+      
+      compose_k[[t]] <- cona.aux$comp
+      compose_k[[t]]$fecha = fechas_k[t]
+      compose_k[[t]]$escenario = var_precio
+      
     }, error = function(e) {
       warning(paste("Error en CoNA para fecha", fechas_k[t], ":", e$message))
       output_k[[t]] <- data.frame(
@@ -102,15 +109,26 @@ for (k in seq_along(escenarios)) {
       )
       output_k[[t]]$fecha = fechas_k[t]
       output_k[[t]]$escenario = var_precio
+      
+      compose_k[[t]] <- data.frame(Food = NA,
+                                   quantity = NA,
+                                   Demo_Group = NA,
+                                   Sex = NA)
+      compose_k[[t]]$fecha = fechas_k[t]
+      compose_k[[t]]$escenario = var_precio
+      
     })
   }
   
   resultados[[k]] <- output_k
+  resultados_comp[[k]] <- compose_k
+  
   message(paste0("Escenario ", k, " terminado.\n"))
 }
 
 # --- Consolidar resultados ---
 resultados_cona <- bind_rows(resultados)
+resultados_comp <- bind_rows(resultados_comp)
 
 # --- Limpieza y factores ---
 resultados_cona <- resultados_cona %>%
@@ -121,7 +139,9 @@ resultados_cona <- resultados_cona %>%
   )
 
 writexl::write_xlsx(resultados_cona ,
-                    "estimadores-banrep/CALI/Resultados-10-2025/cona/010825_cona_cali.xlsx")
+                    "estimadores-banrep/CALI/SIPSA/output/v2/v2_cona_cali.xlsx")
+writexl::write_xlsx(resultados_comp,
+                    "estimadores-banrep/CALI/SIPSA/output/v2/v2_sipsa_cona_cali_comp.csv")
 
 
 # ============================================================
@@ -161,7 +181,7 @@ g_cona_facet_male <- ggplot(cona_plot_data %>%
 
 # --- Mostrar y guardar ---
 ggsave(g_cona_facet_male,
-       filename = "estimadores-banrep/CALI/Resultados-10-2025/cona/010825_cona_male_cali.png",
+       filename = "estimadores-banrep/CALI/SIPSA/output/v2/v2_cona_male_cali.png",
        dpi = 600, width = 15, height = 9)
 
 # --- Gráfico facetado principal: Mujeres ---
@@ -192,7 +212,7 @@ g_cona_facet_female <- ggplot(cona_plot_data %>%
 
 # --- Mostrar y guardar ---
 ggsave(g_cona_facet_female,
-       filename = "estimadores-banrep/CALI/Resultados-10-2025/cona/010825_cona_female_cali.png",
+       filename = "estimadores-banrep/CALI/SIPSA/output/v2/v2_cona_female_cali.png",
        dpi = 600, width = 15, height = 12)
 
 # ============================================================
@@ -223,7 +243,7 @@ g_cona_agg <- ggplot(cona_1000kcal, aes(x = fecha)) +
 
 # --- Mostrar y guardar gráfico agregado ---
 ggsave(g_cona_agg,
-       filename = "estimadores-banrep/CALI/Resultados-10-2025/cona/010825_cona_1000kcal_cali.png",
+       filename = "estimadores-banrep/CALI/SIPSA/output/v2/v2_cona_1000kcal_cali.png",
        dpi = 600, width = 15, height = 9)
 
 

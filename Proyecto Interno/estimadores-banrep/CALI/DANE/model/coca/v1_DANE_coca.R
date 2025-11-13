@@ -9,7 +9,7 @@ library(RColorBrewer)
 setwd("C:/Users/Portatil/Desktop/Least-cost-diets-and-affordability/Proyecto Interno")
 
 # --- Cargar base de datos ---
-input_cali_hat <- read.csv("estimadores-banrep/CALI/estimadores-DANE/input/010925_comp_price_data_cali.csv")
+input_cali_hat <- read.csv("estimadores-banrep/CALI/DANE/input/v1/v1_comp_price_data_cali.csv")
 
 # Filtrar ciudad
 input_cali_hat <- input_cali_hat %>% filter(nombre_ciudad == "CALI")
@@ -95,7 +95,8 @@ resultados_coca <- resultados_coca %>%
   )
 
 
-writexl::write_xlsx(resultados_coca, "estimadores-banrep/CALI/estimadores-DANE/010925_dane_coca_cali.csv")
+writexl::write_xlsx(resultados_coca,
+                    "estimadores-banrep/CALI/DANE/output/v1/v1_dane_coca_cali.csv")
 
 # --- Función para graficar bandas por grupo demográfico ---
 plot_coca_band <- function(data, sexo, age) {
@@ -128,7 +129,9 @@ for (sx in levels(resultados_coca$Sex)) {
   for (agx in resultados_coca %>% filter(Sex == sx) %>% 
        mutate(Ages = as.factor(as.character(Demo_Group))) %>%
        dplyr::select(Ages) %>% pull() %>% levels()) {
-    print(plot_coca_band(resultados_coca, sx, agx))
+    ggsave(plot_coca_band(resultados_coca,sx, agx),
+           filename = paste0("estimadores-banrep/CALI/DANE/output/v1/coca_",
+                             sx,"_",agx,".png"), dpi = 300)
   }
 
 }
@@ -142,7 +145,7 @@ coca_wide <- coca_1000kcal %>%
   pivot_wider(names_from = escenario, values_from = mean_1000kcal)
 
 # --- Gráfico agregado ---
-ggplot(coca_wide, aes(x = fecha)) +
+plot_coca_wide = ggplot(coca_wide, aes(x = fecha)) +
   geom_line(aes(y = precio_100g), color = "red", linetype = 2, size = 0.7) +
   labs(
     title = "CoCA - Evolución del costo por 1000 kcal",
@@ -155,3 +158,8 @@ ggplot(coca_wide, aes(x = fecha)) +
   theme(
     axis.text.x = element_text(angle = 45, hjust = 1)
   )
+
+
+ggsave(plot_coca_wide,
+       filename = "estimadores-banrep/CALI/DANE/output/v1/v1_coca_1000kcal.png", 
+       dpi = 300)

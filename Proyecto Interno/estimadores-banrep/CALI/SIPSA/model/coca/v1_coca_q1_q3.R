@@ -117,7 +117,7 @@ for (sx in levels(resultados_coca$Sex)) {
        mutate(Ages = as.factor(as.character(Demo_Group))) %>%
        dplyr::select(Ages) %>% pull() %>% levels()) {
     ggsave(plot_coca_band(resultados_coca,sx, agx),
-           filename = paste0("estimadores-banrep/CALI/SIPSA/output/v1/",
+           filename = paste0("estimadores-banrep/CALI/SIPSA/output/v1/coca_",
                              sx,"_",agx,".png"), dpi = 300)
   }
 

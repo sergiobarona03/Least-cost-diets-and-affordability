@@ -15,7 +15,7 @@ library(writexl)
 setwd("C:/Users/Portatil/Desktop/Least-cost-diets-and-affordability/Proyecto Interno")
 
 # --- Cargar base de datos ---
-input_cali_hat <- read.csv("estimadores-banrep/CALI/Resultados-10-2025/estimadores-DANE/input/291025_comp_price_data_cali.csv")
+input_cali_hat <- read.csv("estimadores-banrep/CALI/DANE/input/v2/v2_comp_price_data_cali.csv")
 
 # --- Filtrar ciudad ---
 input_cali_hat <- input_cali_hat %>% filter(nombre_ciudad == "CALI")
@@ -103,7 +103,7 @@ resultados_coca <- resultados_coca %>%
 
 # --- Guardar resultados ---
 writexl::write_xlsx(resultados_coca,
-                    "estimadores-banrep/CALI/Resultados-10-2025/estimadores-DANE/coca/291025_dane_coca_cali.xlsx"
+                    "estimadores-banrep/CALI/DANE/output/v2/v2_dane_coca_cali.xlsx"
 )
 
 # ============================================================
@@ -140,7 +140,7 @@ g_coca_facet_male <- ggplot(
   )
 
 ggsave(g_coca_facet_male,
-       filename = "estimadores-banrep/CALI/Resultados-10-2025/estimadores-DANE/coca/291025_dane_coca_male_cali.png",
+       filename = "estimadores-banrep/CALI/DANE/output/v2/v2_dane_coca_male_cali.png",
        dpi = 600, width = 15, height = 9
 )
 
@@ -168,7 +168,7 @@ g_coca_facet_female <- ggplot(
   )
 
 ggsave(g_coca_facet_female,
-       filename = "estimadores-banrep/CALI/Resultados-10-2025/estimadores-DANE/coca/291025_dane_coca_female_cali.png",
+       filename = "estimadores-banrep/CALI/DANE/output/v2/v2_dane_coca_female_cali.png",
        dpi = 600, width = 15, height = 9
 )
 
@@ -193,6 +193,6 @@ g_coca_agg <- ggplot(coca_1000kcal, aes(x = fecha, y = mean_1000kcal)) +
   theme(axis.text.x = element_text(angle = 45, hjust = 1))
 
 ggsave(g_coca_agg,
-       filename = "estimadores-banrep/CALI/Resultados-10-2025/estimadores-DANE/coca/291025_dane_coca_1000kcal_cali.png",
+       filename = "estimadores-banrep/CALI/DANE/output/v2/v2_dane_coca_1000kcal_cali.png",
        dpi = 600, width = 15, height = 9
 )
