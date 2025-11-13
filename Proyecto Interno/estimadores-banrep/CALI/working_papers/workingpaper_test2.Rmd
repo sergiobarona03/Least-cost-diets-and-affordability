@@ -1,0 +1,314 @@
+---
+title: "Documento de trabajo 08/25: Primeras estimaciones"
+author: "Sergio Barona Montoya"
+date: "2025-07-14"
+output:
+  html_document:
+    theme: cerulean
+    highlight: tango
+    toc: true
+    toc_float: true
+    number_sections: true
+    df_print: paged
+    code_folding: show
+  pdf_document:
+    toc: true
+  word_document:
+    toc: true
+---
+
+```{r setup, include=FALSE}
+# ================== OPCIONES GLOBALES ==================
+knitr::opts_chunk$set(
+  echo = FALSE, message = FALSE, warning = FALSE,
+  fig.align = "center", fig.width = 8, fig.height = 4.5, dpi = 200, out.width = "100%"
+)
+options(knitr.kable.NA = "")
+
+# ====================== PAQUETES =======================
+pkgs <- c("tidyverse","readxl","janitor","lubridate","kableExtra","scales","stringr","tidyr","ggplot2")
+to_install <- pkgs[!sapply(pkgs, requireNamespace, quietly = TRUE)]
+if (length(to_install)) install.packages(to_install)
+invisible(lapply(pkgs, library, character.only = TRUE))
+
+# ====================== ROOT DEL PROYECTO ======================
+base_dir <- "C:/Users/Portatil/Desktop/Least-cost-diets-and-affordability/Proyecto Interno"
+knitr::opts_knit$set(root.dir = base_dir)  # << CLAVE: todos los chunks usan este root
+setwd(base_dir)                            # útil también si corres interactivo
+
+# ===================== HELPERS UI ======================
+tab_clean <- function(df, caption = NULL){
+  df |>
+    kableExtra::kbl(caption = caption, booktabs = TRUE, align = "l") |>
+    kableExtra::kable_paper(full_width = FALSE) |>
+    kableExtra::row_spec(0, bold = TRUE) |>
+    kableExtra::scroll_box(height = "380px")
+}
+
+silent_source <- function(file){
+  invisible(capture.output(
+    suppressWarnings(suppressMessages(source(file, local = TRUE))),
+    type = "output"
+  ))
+}
+
+# Diagnóstico (puedes borrar luego)
+cat("WD:", normalizePath(getwd()), "\n")
+cat("Existe XYZ?:", file.exists("var-ipc/XYZ_Correlativa-ENPH-IPC-2008.xlsx"), "\n")
+
+```
+
+# Presentación
+
+# Datos
+
+## Datos de precios minoristas - DANE
+
+La primera fuente corresponde a los precios minoristas reportados por el DANE, utilizados como insumo para el cálculo del Índice de Precios al Consumidor (IPC) (DANE, 2024). El periodo de análisis abarca desde enero de 1999 hasta marzo de 2018 y cubre las 13 principales ciudades del país:
+
+- Bogotá D.C.  
+- Medellín A.M.  
+- Cali A.M.  
+- Barranquilla A.M.  
+- Bucaramanga A.M.  
+- Manizales A.M.  
+- Pereira A.M.  
+- Cúcuta A.M.  
+- Pasto  
+- Ibagué  
+- Montería  
+- Cartagena  
+- Villavicencio  
+
+Una característica relevante de estos datos es su estructura de clasificación, basada en la canasta de seguimiento del IPC 2008. Esta clasificación contempla distintos niveles de agregación: Grupo, Subgrupo, Clase, Gasto Básico y Artículo. A continuación, se presenta la estructura de esta clasificación:
+
+```{r}
+ipc_subclase <- readxl::read_excel("var-ipc/XYZ_Correlativa-ENPH-IPC-2008.xlsx") %>%
+  janitor::clean_names() %>%
+  mutate(clase = clase_9, articulo = articulo_11) %>%
+  select(clase, gasto_basico, articulo, descripcion_ipc)
+
+head(ipc_subclase[11:nrow(ipc_subclase),], 30)
+```
+
+A continuación, se muestra la estructura de la base de datos de precios proporcionada por el DANE:
+
+```{r}
+dane_99_18 <- readxl::read_excel("Precios DANE/OUTPUT_DANE/precios_unadj_DANE_1999_2018.xlsx")
+
+tab_clean(
+  head(dane_99_18[c("ano","mes_num","nombre_ciudad","codigo_articulo","articulo","precio_500g")], 30),
+  caption = "Estructura de la base de precios DANE (fragmento)"
+)
+```
+
+## Datos del ÍPC - DANE
+
+Para este análisis se emplean datos del Índice de Precios al Consumidor (IPC) a nivel de subclase, según lo reportado por el DANE. La clasificación utilizada corresponde al sistema COICOP, el cual estructura los datos en los siguientes niveles: División, Grupo, Clase, Subclase y Artículo.
+
+Dado el objetivo de estimar precios minoristas, se hace uso exclusivamente del IPC a nivel de subclase. Además, se consideran únicamente los datos agregados por nivel de **ingreso total**.
+
+A continuación, se muestra la estructura de los datos utilizados:
+
+```{r}
+var_ipc <- readxl::read_excel("var-ipc/IPC.xls") |>
+  janitor::clean_names()
+
+# Normalizaciones de texto
+var_ipc$ciudad[var_ipc$ciudad == "CARTAGENA DE INDIAS"] <- "CARTAGENA"
+var_ipc$ciudad[var_ipc$ciudad == "BOGOTÁ, D.C."]         <- "BOGOTÁ D.C."
+var_ipc$cod_subclase <- substr(var_ipc$subclase, 1, 8)
+
+tab_clean(
+  head(var_ipc[c("ano","mes","ciudad","division","grupo","clase","subclase","cod_subclase","numero_indice")], 30),
+  caption = "IPC por subclase (COICOP) — fragmento"
+)
+```
+
+# Metodología
+
+## Conformación de la base de datos
+
+Como se indicó en la sección anterior, las dos fuentes de información ---los precios minoristas y el IPC--- emplean sistemas de clasificación distintos. Mientras que los datos de precios minoristas utilizan la clasificación correspondiente a la canasta del IPC de 2008 (organizada por Grupo, Subgrupo, Clase, Gasto Básico y Artículo), los datos del IPC se encuentran estructurados según la nomenclatura COICOP (División, Grupo, Clase, Subclase, Artículo).
+
+Para integrar ambos sistemas en una única base de datos, se recurre a la siguiente tabla correlativa:
+
+```{r}
+correlativa <- readxl::read_excel("var-ipc/correlativa_ipc.xlsx") |>
+  tidyr::fill(subclase, ipc, .direction = "down")
+
+tab_clean(head(correlativa, 30), caption = "Tabla correlativa COICOP ↔ IPC 2008 (fragmento)")
+```
+
+## Análisis sobre el margen de comercialización
+
+El margen de comercialización se estima comparando el precio minorista y el precio mayorista de cada producto, para cuantificar la diferencia relativa entre ambos.
+
+Cualquiera que sea el producto $k$, el margen se define como:
+
+$$
+\text{Margen}_{k} = \frac{P^{\text{min}}_k - P^{\text{may}}_k}{P^{\text{may}}_k}
+$$
+
+donde $P_{k}^{min}$ corresponde al precio minorista y $P_{k}^{may}$ corresponde al precio mayorista del producto $k$. Para el análisis de los márgenes de comercialización, se examina su distribución a lo largo del tiempo. En particular, se calcula para cada producto el margen mediano (Q2) y los márgenes correspondientes al primer cuartil (Q1) y el tercer cuartil (Q3)
+
+## Estimación de métricas basadas en dietas de costo mínimo
+
+### CoCA - Costo mínimo de una dieta suficiente en energía
+
+El CoCA se estima seleccionando el alimento —o conjunto de alimentos— que proporciona la cantidad de calorías necesaria para satisfacer el Requerimiento Energético Estimado (EER, por sus siglas en inglés).\
+Siguiendo la literatura previa [3,9], para un grupo demográfico *i*, el CoCA se calcula mediante el siguiente modelo de programación lineal:
+
+$$
+\begin{aligned}
+\text{Minimizar:} \quad & \sum_{j=1}^n p_j x_j \\
+\text{sujeto a:} \quad & \sum_{j=1}^n e_j x_j = \text{EER}_i \\
+& x_j \geq 0 \quad \forall j
+\end{aligned}
+$$
+
+donde:
+
+-   $x_j$ es la cantidad (en gramos) del alimento *j* seleccionada para un individuo del grupo *i*\
+-   $p_j$ es el precio minorista del alimento *j*\
+-   $e_j$ es el contenido energético (en kcal/gramo) del alimento *j*\
+-   $\text{EER}_i$ es el Requerimiento Energético Estimado para un individuo del grupo demográfico *i*
+
+La solución óptima de este modelo corresponde a construir una dieta compuesta por el alimento con menor precio por kilocaloría.
+
+### CoNA – Costo mínimo de una dieta adecuada en nutrientes.
+
+El CoNA se determina a partir del conjunto de alimentos disponibles que, para una ubicación y período de estudio determinados, permiten satisfacer el (EER) al menor costo posible, cumpliendo además con los límites inferior y superior de ingesta de macro- y micronutrientes. Para un grupo demográfico $i$, la métrica CoNA se obtiene resolviendo el siguiente modelo de programación lineal:
+
+$$
+\text{CoNA}(i) = \min_{x_1, \dots, x_n} \sum_{j=1}^n p_j x_j
+$$
+
+sujeto a:
+
+$$
+\sum_{j=1}^n e_j x_j = \text{EER}_i
+$$
+
+$$
+\sum_{j=1}^n a_{kj} x_j \leq U_{ik} \quad \forall k
+$$
+
+$$
+\sum_{j=1}^n a_{kj} x_j \geq L_{ik} \quad \forall k
+$$
+
+$$
+x_j \geq 0
+$$
+
+Donde:
+
+-   $x_j$ es la cantidad —en gramos— del alimento $j$ en la dieta óptima.
+-   $p_j$ corresponde al precio minorista del alimento $j$.
+-   $e_j$ es el contenido energético (kcal) por gramo del alimento $j$.
+-   $a_{kj}$ indica el contenido del nutriente $k$ en el alimento $j$.
+-   $L_{ik}$ y $U_{ik}$ son, respectivamente, los límites inferior y superior de ingesta para el nutriente $k$ en el grupo demográfico $i$.
+
+# Resultados
+
+## Margen de comercialización estimados
+
+```{r}
+# Pipeline de integración (silenciado)
+silent_source("margen-dist/v1-join-ipc-sipsa.R")
+
+# Preparación
+whole_tres <- retail_whole_18 |>
+  filter(nombre_ciudad %in% c("MEDELLÍN","CALI","BOGOTÁ D.C.")) |>
+  rename(precio_500g_ipc  = precio_500g,
+         precio_500g_sipsa = precio_medio)
+
+data_min_may <- whole_tres |>
+  select(cod_mun, ciudad, nombre_ciudad, Year, mes, Month, Alimento, retail,
+         codigo_articulo, precio_500g_sipsa, precio_500g_ipc) |>
+  rename(mes_num = Month, ano = Year, sipsa = Alimento, articulo = retail) |>
+  mutate(fecha = as.Date(paste(ano, mes_num, "01", sep = "-"))) |>
+  filter(nombre_ciudad == "CALI")
+
+# Subclase y margen
+data_min_may$cod_subclase <- paste0("0", substr(data_min_may$codigo_articulo, 1, 6), "0")
+
+margen_articulo <- data_min_may |>
+  group_by(articulo) |>
+  mutate(factor = precio_500g_ipc / precio_500g_sipsa,
+         margen = (factor - 1) * 100) |>
+  ungroup() |>
+  filter(margen > 0)
+
+subclases <- unique(margen_articulo$cod_subclase)
+subclase_objetivo <- if ("01410500" %in% subclases) "01410500" else subclases[1]
+```
+
+### Subclase destacada
+
+```{r}
+df_sub <- subset(margen_articulo, cod_subclase == subclase_objetivo)
+
+ggplot(df_sub, aes(x = articulo, y = margen)) +
+  geom_boxplot(outlier.shape = 16, outlier.size = 2, alpha = 0.85, width = 0.7) +
+  labs(
+    title = paste("Distribución de márgenes — Subclase", subclase_objetivo),
+    x = "Artículo", y = "Margen (%)"
+  ) +
+  theme_bw(base_size = 14) +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+### Vista general (facetas por subclase más frecuentes)
+
+```{r}
+top_subs <- margen_articulo |>
+  count(cod_subclase, sort = TRUE) |>
+  slice_head(n = min(9, n())) |>
+  pull(cod_subclase)
+
+ggplot(filter(margen_articulo, cod_subclase %in% top_subs),
+       aes(x = articulo, y = margen)) +
+  geom_boxplot(outlier.size = 0.8) +
+  facet_wrap(~ cod_subclase, scales = "free_x") +
+  labs(title = "Márgenes por subclase — Cali (vista general)",
+       x = "Artículo", y = "Margen (%)") +
+  theme_minimal(base_size = 12) +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+## Precios a partir de los márgenes de comercialización
+
+```{r}
+# Este script dibuja las comparaciones (minorista vs mayorista vs estimado)
+silent_source("margen-dist/v2-margen-producto.R")
+```
+
+## Estimación de métricas
+
+### Estimación CoCA
+
+```{r, include = TRUE, echo=FALSE, eval = TRUE, warning=FALSE, message = FALSE}
+
+silent_source("estimadores-banrep/CALI/coca/v1_coca_q1_q3.R")
+
+if (exists("coca_resultados")) {
+  tab_clean(coca_resultados, caption = "Resultados CoCA (Q1, Mediana, Q3)")
+}
+
+```
+
+### Estimación CoNA
+
+```{r, include = TRUE, echo=FALSE, eval = TRUE, warning=FALSE, message = FALSE}
+
+silent_source("estimadores-banrep/CALI/cona/v1_cona_q1_q3.R")
+
+if (exists("cona_resultados")) {
+  tab_clean(cona_resultados, caption = "Resultados CoNA (Q1, Mediana, Q3)")
+}
+
+```
+
+# Referencias
