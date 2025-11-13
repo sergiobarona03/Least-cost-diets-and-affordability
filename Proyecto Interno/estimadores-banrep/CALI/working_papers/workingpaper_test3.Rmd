@@ -1,0 +1,421 @@
+---
+title: "IPC – Exploración, Regresión y Pruebas de Estacionalidad"
+author: "Daniela Valdés Cárdenas"
+date: "2025-08-24"
+output:
+  html_document:
+    theme: cerulean
+    highlight: tango
+    toc: true
+    toc_float: true
+    number_sections: true
+    df_print: paged
+    code_folding: show
+  pdf_document:
+    toc: true
+  word_document:
+    toc: true
+params:
+  ciudad_objetivo: "CALI"
+  fecha_tope: !r as.Date("2018-03-01")
+  anio_base: 2018
+---
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, message = FALSE, warning = FALSE)
+```
+
+```{r}
+library(knitr)
+library(fs)
+library(readxl)
+library(dplyr)
+library(tidyr)
+library(janitor)
+library(purrr)
+library(broom)
+library(stringr)
+library(tibble)
+library(ggplot2)
+```
+
+# Exploración de datos
+
+En esta sección cargamos datos, definimos funciones de estandarización de códigos y evidenciamos por qué no todas las subclases del IPC aparecen para la ciudad objetivo. La idea es dejar una traza clara: qué hay en cada fuente y qué se cruza con qué.
+
+## Carga de librerías y funciones auxiliares
+
+Cargamos paquetes y declaramos normalizadores. Usamos dos representaciones de subclase:
+
+-   subclase (8 dígitos) de la correlativa ENPH–IPC (formato “0 + 6 + 0”, p. ej. 01510100).
+
+-   sub6 (6 dígitos) como clave de unión con el IPC mensual (p. ej. 151010). La conversión 8→6 dígitos evita pérdidas por formato en el join.
+
+```{r}
+# --- Normalizadores (fuerzan character y evitan lógicos) ---
+norm_subclase_compat <- function(x){
+  dig <- gsub("[^0-9]","",as.character(x))
+  n <- nchar(dig)
+  out <- ifelse(n == 6, paste0("0",dig,"0"),
+         ifelse(n >= 8, substr(dig,1,8),
+         ifelse(n == 7, paste0("0",dig),
+                stringr::str_pad(dig,8,side="right",pad="0"))))
+  as.character(out)
+}
+# Alias usado en tu código más abajo
+norm_sub8 <- norm_subclase_compat
+
+subclase_to6 <- function(x){
+  dig <- gsub("[^0-9]","",as.character(x))
+  n <- nchar(dig)
+  out <- ifelse(n >= 8, substr(dig,2,7),
+         ifelse(n == 6, dig,
+         ifelse(n == 7, substr(dig,1,6),
+                stringr::str_pad(dig,6,side="left",pad="0"))))
+  as.character(out)
+}
+
+norm_articulo7 <- function(x){ as.character(gsub("[^0-9]","",as.character(x))) }
+# Alias por compatibilidad con tu mutate previo
+norm_articulo <- norm_articulo7
+
+```
+
+## Cargar correlativa, precios e IPC
+
+A continuación, leemos la correlativa ENPH–IPC (para mapear artículo → subclase), los precios del DANE, y escanemos todas las hojas del IPC.xls para seleccionar automáticamente la hoja con mayor cobertura de subclases para la ciudad.
+
+```{r}
+
+# --- Cargar correlativa, precios e IPC ---
+ipc_union_path <- "C:/Users/danie/OneDrive/Escritorio/Least-cost-diets-and-affordability/Proyecto Interno/var-ipc/output_final_union_ipc.xlsx"
+
+meses_esp <- c("Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic")
+
+pick_col <- function(df, opts, label){
+  nm <- names(df); hit <- opts[opts %in% nm]
+  if (!length(hit)) stop("No encontré columna ", label, ". Tengo: ", paste(nm, collapse=", "))
+  hit[1]
+}
+
+ipc_union_raw <- readxl::read_excel(ipc_union_path) %>% janitor::clean_names()
+
+col_ciudad   <- pick_col(ipc_union_raw, c("nombre_ciudad","ciudad"), "ciudad")
+col_sub8     <- pick_col(ipc_union_raw, c("cod_subclase","subclase"), "cod_subclase/subclase")
+col_ano      <- pick_col(ipc_union_raw, c("ano","year"), "ano")
+col_mes      <- pick_col(ipc_union_raw, c("mes_num","mes"), "mes/mes_num")
+col_ipc      <- pick_col(ipc_union_raw, c("ipc","numero_indice"), "ipc/numero_indice")
+col_codart   <- pick_col(ipc_union_raw, c("codigo_articulo","cod_articulo","articulo"), "codigo_articulo")
+col_precios  <- pick_col(ipc_union_raw, c("precio_500g","precio"), "precio_500g/precio")
+col_nombre_a <- pick_col(ipc_union_raw, c("articulo","nombre_articulo","nombre_producto"), "articulo (nombre)")
+
+ipc_data <- ipc_union_raw %>%
+  transmute(
+    ciudad = dplyr::recode(.data[[col_ciudad]],
+                           "CARTAGENA DE INDIAS" = "CARTAGENA",
+                           "BOGOTÁ, D.C."        = "BOGOTÁ D.C.",
+                           "BOGOTC, D.C."        = "BOGOTÁ D.C.",
+                           "BOGOTC\u0001, D.C."  = "BOGOTÁ D.C."),
+    cod_subclase    = norm_sub8(.data[[col_sub8]]),
+    ano             = as.numeric(.data[[col_ano]]),
+    mes_num         = dplyr::case_when(
+                        suppressWarnings(!any(is.na(as.integer(.data[[col_mes]])))) ~ as.integer(.data[[col_mes]]),
+                        TRUE ~ match(as.character(.data[[col_mes]]), meses_esp)
+                      ),
+    ipc             = as.numeric(.data[[col_ipc]]),
+    codigo_articulo = norm_articulo7(.data[[col_codart]]),
+    articulo        = as.character(.data[[col_nombre_a]]),
+    precio          = as.numeric(.data[[col_precios]])
+  ) %>%
+  filter(ciudad == params$ciudad_objetivo) %>%
+  mutate(fecha = as.Date(sprintf("%d-%02d-01", ano, mes_num))) %>%
+  filter(fecha <= params$fecha_tope)
+
+# --- Derivar objetos requeridos por el Embudo desde ipc_data ---
+# precios: artículo, fecha, año y precio (tal como lo usa el embudo)
+precios <- ipc_data %>%
+  transmute(
+    articulo = as.character(articulo),
+    fecha,
+    anio   = ano,
+    precio = as.numeric(precio)
+  )
+
+# mapeo_unico: artículo -> subclase (8 dígitos). Si un artículo aparece con
+# varias subclases, se queda con la más frecuente.
+mapeo_unico <- ipc_data %>%
+  transmute(
+    articulo = as.character(articulo),
+    subclase = norm_subclase_compat(cod_subclase)
+  ) %>%
+  count(articulo, subclase, name = "n") %>%
+  group_by(articulo) %>%
+  slice_max(n, with_ties = FALSE) %>%
+  ungroup() %>%
+  select(articulo, subclase)
+
+# --- IPC en 6 dígitos y log(IPC) por fecha ---
+var_ipc6 <- ipc_data %>%
+  # por seguridad, descarta IPC <= 0 para evitar -Inf
+  filter(!is.na(ipc), ipc > 0) %>%
+  mutate(
+    sub6  = subclase_to6(cod_subclase),
+    lnIPC = log(ipc)
+  ) %>%
+  filter(!is.na(sub6), sub6 != "", !is.na(lnIPC)) %>%
+  distinct(fecha, sub6, lnIPC)
+
+
+
+```
+
+## Embudo
+
+Construimos el panel (lnIPC + precios relativos) y mostramos un embudo con conteos por etapa para saber dónde se pierden observaciones: mapeo, unión con IPC y disponibilidad de P0.
+
+```{r}
+# --- Embudo: construcción del panel ---
+df <- precios %>%
+  mutate(articulo = norm_articulo(articulo)) %>%
+  left_join(mapeo_unico, by = "articulo")
+
+# P0 base y fallback seguro
+p0_tabla <- df %>%
+  filter(anio == params$anio_base) %>%
+  group_by(articulo) %>%
+  summarise(p0 = suppressWarnings(mean(precio, na.rm = TRUE)), .groups = "drop")
+p0_tabla <- p0_tabla %>%
+  mutate(p0 = ifelse(is.nan(p0), NA_real_, p0))
+
+fallback_p0 <- df %>%
+  arrange(articulo, fecha) %>%
+  group_by(articulo) %>%
+  summarise(
+    p0_fb = {
+      v <- precio[!is.na(precio)]
+      if (length(v)) v[1] else NA_real_
+    },
+    .groups = "drop"
+  )
+
+p0_tabla <- full_join(p0_tabla, fallback_p0, by = "articulo") %>%
+  mutate(p0 = dplyr::coalesce(p0, p0_fb)) %>%
+  select(articulo, p0)
+
+# Intersección de subclases con IPC (para evitar caídas por cobertura)
+subs_ipc6 <- var_ipc6 %>% distinct(sub6)
+
+df_ok <- df %>%
+  mutate(sub8 = norm_subclase_compat(subclase),
+         sub6 = subclase_to6(sub8)) %>%
+  filter(!is.na(sub6), sub6 != "") %>%
+  semi_join(subs_ipc6, by = "sub6")
+
+n0 <- nrow(precios)
+n1 <- nrow(df)
+n2 <- nrow(df_ok)
+df2 <- df_ok %>% inner_join(var_ipc6, by = c("fecha","sub6"))
+n3 <- nrow(df2)
+n4 <- nrow(df2 %>% left_join(p0_tabla, by = "articulo"))
+panel <- df2 %>% left_join(p0_tabla, by = "articulo") %>%
+  filter(!is.na(precio), !is.na(p0)) %>%
+  mutate(ln_rel = log(precio) - log(p0)) %>%
+  transmute(subclase = sub8, fecha, articulo, lnIPC, ln_rel)
+
+n5 <- nrow(panel)
+
+embudo <- tibble(
+  etapa = c("precios", "df (join mapeo)", "df intersección subclase con IPC",
+            "tras join IPC", "tras join P0", "panel final"),
+  n = c(n0, n1, n2, n3, n4, n5)
+)
+
+panel <- panel %>%
+  mutate(
+    subclase = as.character(subclase),
+    articulo = as.character(articulo)
+  )
+```
+
+# Modelo de regresión lineal (log–log)
+
+La especificación es:
+
+$$
+\log(IPC_t)\;=\;\alpha_0\;+\;\sum_{j=1}^{n}\beta_j\,\log\!\left(\frac{P_{jt}}{P_{j0}}\right)\;+\;\varepsilon_t .
+$$
+
+donde:
+
+$$
+\log\!\left(\frac{P_{jt}}{P_{j0}}\right)\;\equiv\;\text{ln_rel}_{jt}.
+$$
+
+Estimamos por subclase (cada subclase tiene su combinación de artículos).
+
+
+
+## Especificación y estimación por subclase
+
+```{r}
+.build_wide <- function(d) {
+  d_wide <- tidyr::pivot_wider(
+    d,
+    names_from   = articulo,
+    values_from  = ln_rel,
+    names_prefix = "ln_rel_",
+    values_fill  = NA_real_,
+    names_repair = "unique"  
+  )
+
+  xvars <- grep("^ln_rel_", names(d_wide), value = TRUE)
+  if (length(xvars) == 0) return(NULL)
+
+  # descarta columnas totalmente NA
+  na_all <- vapply(d_wide[xvars], function(v) all(is.na(v)), logical(1))
+  xkeep  <- xvars[!na_all]
+  if (length(xkeep) == 0) return(NULL)
+
+  dat <- d_wide[, c("lnIPC", xkeep), drop = FALSE]
+
+  # al menos 3 observaciones de lnIPC (útiles para OLS simple)
+  n_eff <- sum(!is.na(dat$lnIPC))
+  if (n_eff < 3) return(NULL)
+
+  list(dat = dat, xkeep = xkeep)
+}
+
+# --- Especificación y estimación por subclase ---
+lm_dyn <- purrr::possibly(function(d) {
+  built <- .build_wide(d)
+  if (is.null(built)) return(tibble())
+  fit <- lm(lnIPC ~ ., data = built$dat, na.action = na.exclude)
+  broom::tidy(fit) %>%
+    filter(term != "(Intercept)", !is.na(estimate)) %>%
+    mutate(term = as.character(term))
+}, otherwise = tibble())
+
+glance_dyn <- purrr::possibly(function(d) {
+  built <- .build_wide(d)
+  if (is.null(built)) return(tibble())
+  fit <- lm(lnIPC ~ ., data = built$dat, na.action = na.exclude)
+  broom::glance(fit) %>% mutate(n_regresores = length(built$xkeep))
+}, otherwise = tibble())
+
+# Estimación
+res_coef <- panel %>%
+  group_by(subclase) %>%
+  group_modify(~ lm_dyn(.x)) %>%
+  ungroup() %>%
+  mutate(alimento = sub("^ln_rel_", "", term)) %>%
+  select(subclase, alimento, estimate, std.error, statistic, p.value)
+
+res_modelo <- panel %>%
+  group_by(subclase) %>%
+  group_modify(~ glance_dyn(.x)) %>%
+  ungroup()
+
+# Vistas rápidas
+head(res_coef, 20)
+res_modelo %>% arrange(desc(adj.r.squared)) %>% head(10)
+
+```
+
+## Inclusión/exclusión de regresores
+
+Reportamos qué artículos entraron al modelo por subclase y cuáles quedaron fuera por colinealidad o falta total de datos.
+
+```{r}
+safe_inclusion_map <- purrr::possibly(function(d) {
+  built <- .build_wide(d)
+  if (is.null(built)) {
+    return(tibble(alimento = character(), estado = character()))
+  }
+
+  fit <- lm(lnIPC ~ ., data = built$dat, na.action = na.exclude)
+
+  coef_names <- setdiff(names(coef(fit)), "(Intercept)")
+
+  x_in    <- intersect(built$xkeep, coef_names) 
+  x_alias <- setdiff(built$xkeep, x_in)          
+
+  tibble(
+    alimento = sub("^ln_rel_", "", c(x_in, x_alias)),
+    estado   = c(rep("incluido", length(x_in)),
+                 rep("excluido_por_aliasing", length(x_alias)))
+  )
+}, otherwise = tibble(alimento = character(), estado = character()))
+
+mapa_inclusion <- panel %>%
+  group_by(subclase) %>%
+  group_modify(~ safe_inclusion_map(.x)) %>%
+  ungroup()
+
+mapa_inclusion %>% count(estado)
+
+```
+
+# Pruebas de estacionalidad y tendencia
+
+```{r}
+# install.packages(c("tseries","urca","seastests"))
+library(tseries)
+library(urca)
+library(seastests)
+```
+
+```{r}
+series_lnIPC <- panel %>%
+  distinct(subclase, fecha, lnIPC) %>%
+  arrange(subclase, fecha) %>%
+  group_by(subclase) %>%
+  summarise(fecha_min = min(fecha), fecha_max = max(fecha), n = n(), .groups = "drop")
+
+testear_subclase <- function(sub_id){
+  df <- panel %>% filter(subclase == sub_id) %>% arrange(fecha) %>%
+    distinct(fecha, lnIPC)
+  # construir ts mensual
+  start_year  <- as.numeric(format(min(df$fecha), "%Y"))
+  start_month <- as.numeric(format(min(df$fecha), "%m"))
+  ts_ln <- ts(df$lnIPC, start = c(start_year, start_month), frequency = 12)
+
+  # ADF (H0: raíz unitaria)
+  adf_p <- tryCatch(tseries::adf.test(na.omit(ts_ln), alternative = "stationary")$p.value,
+                    error = function(e) NA_real_)
+  # KPSS (H0: estacionaria)
+  kpss_p <- tryCatch(tseries::kpss.test(na.omit(ts_ln), null = "Level")$p.value,
+                     error = function(e) NA_real_)
+  # Estacionalidad (WO)
+  seas_flag <- tryCatch(seastests::isSeasonal(na.omit(ts_ln), test = "wo"),
+                        error = function(e) NA)
+
+  tibble(
+    subclase = sub_id,
+    adf_p = adf_p,
+    kpss_p = kpss_p,
+    estacional = seas_flag
+  )
+}
+
+res_tests <- panel %>%
+  distinct(subclase) %>%
+  pull(subclase) %>%
+  map_dfr(testear_subclase) %>%
+  mutate(
+    clasificacion = case_when(
+      !is.na(adf_p)  & adf_p < 0.05 & !is.na(kpss_p) & kpss_p > 0.1 ~ "Estacionaria (ADF rechaza RU, KPSS no rechaza)",
+      !is.na(adf_p)  & adf_p >= 0.05 & !is.na(kpss_p) & kpss_p < 0.1 ~ "No estacionaria (posible RU)",
+      TRUE ~ "Indefinida / revisar"
+    )
+  )
+
+head(res_tests, 15)
+
+```
+
+```{r}
+# Conteo por clasificación y estacionalidad
+res_tests %>% count(clasificacion)
+res_tests %>% count(estacional)
+```
