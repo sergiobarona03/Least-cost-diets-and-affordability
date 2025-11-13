@@ -1,5 +1,0 @@
-
-Con la incorporación de nuevos alimentos (al cubrir la información faltante sobre la composición nutricional), 
-se pierde el ajuste entre los datos del DANE y la estimación  a partir de SIPSA. 
-
-Esto se concluye a partir de la comparación entre DANE_cona.R y v2_DANE_cona.R
