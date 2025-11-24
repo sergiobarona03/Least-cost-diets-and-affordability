@@ -238,7 +238,7 @@ for (i in 1:length(city_i)) {
 #########################################
 
 # Carpetas de salida
-out_dir_norm <- "margen-dist/output-ciudades/CALI/normalidad"
+out_dir_norm <- "margen-dist/output-ciudades/CALI/pruebas_distr"
 if (!dir.exists(out_dir_norm)) dir.create(out_dir_norm, recursive = TRUE)
 viz_dir <- file.path(out_dir_norm, "viz_simple")
 if (!dir.exists(viz_dir)) dir.create(viz_dir, recursive = TRUE)
