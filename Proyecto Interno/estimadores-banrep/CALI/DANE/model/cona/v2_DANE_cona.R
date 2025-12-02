@@ -163,8 +163,8 @@ library(scales)
 library(RColorBrewer)
 
 
-writexl::write_xlsx(resultados_cona %>% na.omit(), "estimadores-banrep/CALI/DANE/input/v2/v2_dane_cona_cali.xlsx")
-writexl::write_xlsx(resultados_cona_comp %>% na.omit(), "estimadores-banrep/CALI/DANE/input/v2/v2_dane_cona_cali_comp.xlsx")
+writexl::write_xlsx(resultados_cona %>% na.omit(), "estimadores-banrep/CALI/DANE/output/v2/v2_dane_cona_cali.xlsx")
+writexl::write_xlsx(resultados_cona_comp %>% na.omit(), "estimadores-banrep/CALI/DANE/output/v2/v2_dane_cona_cali_comp.xlsx")
 
 
 # Función para preparar datos y graficar según sexo
