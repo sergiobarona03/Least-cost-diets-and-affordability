@@ -9,12 +9,13 @@ library(dplyr)
 library(tidyr)
 library(ggplot2)
 library(writexl)
+library(FoodpriceR)
 
 # Definir directorio de trabajo
-setwd("C:\\Users\\danie\\OneDrive\\Escritorio\\Least-cost-diets-and-affordability\\Proyecto Interno\\")
+setwd("C:/Users/sergio.barona/Desktop/Least-cost-diets-and-affordability/Proyecto Interno")
 
 # --- Cargar base de datos ---
-input_cali_hat <- read.csv("estimadores-banrep/CALI/SIPSA/input/v3/v3_q1_q3_comp_price_data_cali.csv")
+input_cali_hat <- read.csv("estimadores-banrep/CALI/SIPSA/input/v3/111225_q1_q3_margen_producto.csv")
 
 # --- Selección y recodificación de nutrientes ---
 input_cali_hat <- input_cali_hat %>%

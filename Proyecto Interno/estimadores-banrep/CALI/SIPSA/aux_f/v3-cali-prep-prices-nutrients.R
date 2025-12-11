@@ -9,7 +9,7 @@ library(lubridate)
 library(tidyverse)
 
 # Definir directorio de trabajo
-setwd("C:\\Users\\danie\\OneDrive\\Escritorio\\Least-cost-diets-and-affordability\\Proyecto Interno\\")
+setwd("C:/Users/sergio.barona/Desktop/Least-cost-diets-and-affordability/Proyecto Interno")
 
 ##------------------------------------##
 ## Cargar datos de precios mayoristas ##
@@ -92,8 +92,19 @@ whole_18_mean <- whole_18 %>%
 ## Cargar mapeo: DANE (IPC) - SIPSA   ##
 ##------------------------------------##
 
-# Cargar el mapeo de ambas bases:
-ipc_sipsa <- readxl::read_excel("Time-series\\mapeo_retail_sipsa_v2.xlsx")
+# Cargar datos de composición nutricional
+sipsa_tcac <- readxl::read_excel("composicion-nut/1823_mapeo_sipsa_tcac v1.0_2025.xlsx") %>%
+  janitor::clean_names() %>%
+  rename(food_sipsa = alimento_nombre_sipsa)
+
+# Cargar mapeo IPC - SIPSA
+ipc_sipsa = readxl::read_excel("composicion-nut\\Copia_DANE_4_DIC_2025act.xlsx") %>%
+  janitor::clean_names() %>% mutate(retail = articulo_dane) %>%
+  select(retail, mapeo_sipsa, codigo_tcac)
+
+# Recuperar el nombre de sipsa
+ipc_sipsa = merge(ipc_sipsa, sipsa_tcac[c("codigo_tcac", "food_sipsa")], by = "codigo_tcac") %>%
+  rename(sipsa = food_sipsa)
 
 # Añadir al mayorista las denominaciones de SIPSA
 whole_18_mean <- whole_18_mean %>%
@@ -104,20 +115,20 @@ whole_18_mean <- whole_18_mean %>%
 ##----------------------------------------------------##
 
 # Cargar la distribución del margen
-q1_q3_productos <- read.csv("margen-dist/output-ciudades/CALI/300725_q1_q3_margen_producto.csv")
+q1_q3_productos <- read.csv("margen-dist/output-ciudades/CALI/111225_q1_q3_margen_producto.csv")
 
 # Añadir el margen (q1-q3) a la base de datos
 whole_18_mean <- merge(
   whole_18_mean,
   q1_q3_productos,
-  by.x = "retail",
-  by.y = "articulo"
+  by.x = "Alimento",
+  by.y = "alimento_sipsa"
 )
 
 # Estimación de precios minoristas
-whole_18_mean$precio_hat_q1 <- whole_18_mean$precio_medio * (1 + (whole_18_mean$m_q1 / 100))
-whole_18_mean$precio_hat_q2 <- whole_18_mean$precio_medio * (1 + (whole_18_mean$m_q2 / 100))
-whole_18_mean$precio_hat_q3 <- whole_18_mean$precio_medio * (1 + (whole_18_mean$m_q3 / 100))
+whole_18_mean$precio_hat_q1 <- whole_18_mean$precio_medio * (1 + (whole_18_mean$q1 / 100))
+whole_18_mean$precio_hat_q2 <- whole_18_mean$precio_medio * (1 + (whole_18_mean$q2 / 100))
+whole_18_mean$precio_hat_q3 <- whole_18_mean$precio_medio * (1 + (whole_18_mean$q3 / 100))
 
 # Guardar input para Cali
 input_cali <- whole_18_mean %>%
@@ -126,7 +137,7 @@ input_cali <- whole_18_mean %>%
          year = Year,
          month = Month) %>%
   select(cod_mun, year, month, food_sipsa,
-         m_q1, m_q2, m_q3,
+         q1, q2, q3,
          precio_hat_q1, precio_hat_q2, precio_hat_q3)
 
 readr::write_csv(
@@ -134,17 +145,12 @@ readr::write_csv(
   "estimadores-banrep/CALI/SIPSA/input/v3/v3_q1_q3_price_data_cali.csv"
 )
 
-# 👉 ESTE ES EL OBJETO QUE VAMOS A ENRIQUECER CON COMPOSICIÓN NUTRICIONAL
+# ESTE ES EL OBJETO QUE VAMOS A ENRIQUECER CON COMPOSICIÓN NUTRICIONAL
 input_cali_hat <- input_cali
 
 ##-------------------------------------------------##
 ## Cargar base de datos de composición nutricional ##
 ##-------------------------------------------------##
-
-# Cargar datos de composición nutricional
-sipsa_tcac <- readxl::read_excel("composicion-nut/1823_mapeo_sipsa_tcac v1.0_2025.xlsx") %>%
-  janitor::clean_names() %>%
-  rename(food_sipsa = alimento_nombre_sipsa)
 
 # Seleccionar variables y eliminar duplicados
 sipsa_tcac <- sipsa_tcac[, -(35:39)] %>%
@@ -172,5 +178,5 @@ input_cali_hat <- input_cali_hat %>%
 
 readr::write_csv(
   input_cali_hat,
-  "estimadores-banrep/CALI/SIPSA/input/v3/v3_q1_q3_comp_price_data_cali.csv"
+  "estimadores-banrep/CALI/SIPSA/input/v3/111225_q1_q3_margen_producto.csv"
 )

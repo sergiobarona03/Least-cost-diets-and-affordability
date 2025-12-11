@@ -10,7 +10,7 @@ library(tidyr)
 library(ggplot2)
 library(scales)
 
-setwd("C:\\Users\\danie\\OneDrive\\Escritorio\\Least-cost-diets-and-affordability\\Proyecto Interno\\")
+setwd("C:/Users/sergio.barona/Desktop/Least-cost-diets-and-affordability/Proyecto Interno")
 
 sipsa_cona <- read_excel(
   "estimadores-banrep/CALI/Resultados-10-2025/cona/010825_cona_cali.xlsx"

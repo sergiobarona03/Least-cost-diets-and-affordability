@@ -9,7 +9,7 @@ library(FoodpriceR)
 library(tidyverse)
 
 # Definir directorio de trabajo
-setwd("C:\\Users\\danie\\OneDrive\\Escritorio\\Least-cost-diets-and-affordability\\Proyecto Interno\\")
+setwd("C:/Users/sergio.barona/Desktop/Least-cost-diets-and-affordability/Proyecto Interno")
 
 # Cargar base de datos
 input_cali_hat <- read.csv("estimadores-banrep/CALI/DANE/input/v6/v6_comp_price_data_cali.csv")
