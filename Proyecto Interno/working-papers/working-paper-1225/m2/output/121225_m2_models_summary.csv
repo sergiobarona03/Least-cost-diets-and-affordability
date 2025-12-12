@@ -1,0 +1,71 @@
+alimento_sipsa,n_total,n_train,n_test,arima,i,ma,sar,si,sma
+Aguacate papelillo,63,44,19,2,0,0,0,1,0
+Ahuyama,63,44,19,2,1,0,0,1,1
+Arracacha amarilla,63,44,19,2,0,2,0,0,0
+Arroz de primera,63,44,19,2,0,0,0,0,1
+Arveja verde en vaina pastusa,63,44,19,0,0,2,0,0,0
+Arveja verde seca importada,63,44,19,2,0,0,0,0,0
+Avena en hojuelas,63,44,19,1,0,0,1,0,0
+Avena molida,63,44,19,1,0,0,0,0,0
+Azúcar morena,63,44,19,2,0,0,0,0,1
+Azúcar sulfitada,63,44,19,2,0,0,1,0,1
+Banano criollo,63,44,19,2,0,0,0,0,0
+Bocachico importado congelado,63,44,19,1,0,2,1,1,0
+Café molido,63,44,19,0,1,1,0,0,0
+"Carne de cerdo, costilla",63,44,19,0,1,0,0,0,1
+"Carne de cerdo, espinazo",63,44,19,1,0,0,0,0,0
+"Carne de res, cadera",63,44,19,1,1,0,0,0,0
+"Carne de res, costilla",63,44,19,0,2,1,1,0,0
+"Carne de res, falda",63,44,19,0,1,0,1,1,0
+"Carne de res, lomo de brazo",43,30,13,0,0,1,0,0,0
+"Carne de res, lomo fino",43,30,13,0,1,0,0,1,0
+"Carne de res, pecho",63,44,19,1,1,0,0,0,0
+"Carne de res, punta de anca",63,44,19,4,0,0,0,0,0
+Cebolla cabezona blanca bogotana,63,44,19,0,1,3,0,0,0
+Cebolla cabezona blanca pastusa,63,44,19,0,1,2,0,0,0
+Cebolla cabezona roja importada,39,27,12,1,1,0,0,1,0
+Curuba,63,44,19,2,1,0,0,0,0
+Fríjol verde cargamanto,63,44,19,0,1,0,1,1,0
+Habichuela,63,44,19,1,0,0,1,0,0
+Harina de trigo,63,44,19,1,0,0,0,0,1
+Harina precocida de maíz,63,44,19,0,2,1,0,0,0
+Huevo blanco extra,40,28,12,0,0,2,0,0,0
+Huevo rojo A,63,44,19,1,0,0,0,0,0
+Huevo rojo AA,63,44,19,1,0,0,0,0,0
+Huevo rojo extra,50,35,15,1,0,0,0,0,0
+Leche en polvo,63,44,19,1,0,1,0,0,0
+Lechuga Batavia,63,44,19,0,1,3,0,0,0
+Lenteja importada,63,44,19,1,1,0,1,1,0
+Limón Tahití,63,44,19,0,1,0,0,1,0
+Lomitos de atún en lata,63,44,19,1,0,0,1,1,0
+Lulo,63,44,19,1,0,0,0,0,0
+Mango común,39,27,12,2,1,0,0,1,0
+Manzana roja importada,63,44,19,1,0,2,0,0,0
+Manzana royal gala importada,63,44,19,0,1,1,1,1,0
+Manzana verde importada,63,44,19,2,0,0,1,1,0
+Maracuyá,63,44,19,1,0,1,1,1,0
+Margarina,63,44,19,0,2,1,0,0,0
+Mora de Castilla,63,44,19,0,1,0,1,1,0
+Naranja Sweet,51,35,16,0,1,1,0,0,0
+Naranja Valencia,51,35,16,0,1,1,0,1,0
+Panela redonda morena,63,44,19,2,0,0,0,0,0
+Papa Betina,51,35,16,2,0,0,0,1,0
+Papa capira,63,44,19,0,1,0,0,0,0
+Papa criolla limpia,63,44,19,1,0,0,0,0,0
+Papa criolla sucia,63,44,19,1,0,0,0,0,0
+Papa nevada,51,35,16,1,0,0,0,0,0
+Papa parda pastusa,63,44,19,0,1,0,0,0,0
+Papa suprema,63,44,19,0,1,0,0,0,0
+Papa única,63,44,19,0,1,0,0,0,0
+Pastas alimenticias,63,44,19,2,0,0,0,0,0
+Pechuga de pollo,63,44,19,1,0,0,0,0,0
+Piña gold,63,44,19,0,1,0,1,1,0
+Piña manzana,63,44,19,1,0,0,0,0,0
+Pollo entero congelado sin vísceras,63,44,19,3,0,0,0,0,0
+Queso campesino,63,44,19,0,1,0,0,0,0
+Repollo blanco,63,44,19,0,1,0,0,0,0
+Sal yodada,63,44,19,1,1,0,0,0,1
+Tilapia roja entera congelada,63,44,19,1,0,0,1,0,0
+Tomate de árbol,63,44,19,0,1,2,0,1,0
+Tomate larga vida,63,44,19,1,0,0,0,0,0
+Zanahoria,63,44,19,2,1,0,0,0,0
