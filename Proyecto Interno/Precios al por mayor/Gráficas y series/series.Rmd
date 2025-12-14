@@ -1,0 +1,247 @@
+---
+title: "Series de tiempo"
+output: html_document
+date: "`r Sys.Date()`"
+---
+
+```{r set knitr options, echo = FALSE}
+knitr::opts_chunk$set(echo = FALSE, message = FALSE, warning = FALSE)
+```
+
+# Librerías
+
+```{r}
+library(dplyr)
+library(tidyverse)
+library(lubridate)
+library(RColorBrewer)
+library(fpp3)
+library(plotly)
+library(dygraphs)
+library(xts)
+library(knitr)
+library(stringi)
+library(htmlwidgets)
+```
+
+# Cargar bases
+
+```{r}
+path_bases <- "C:\\Users\\danie\\OneDrive\\Escritorio\\Least-cost-diets-and-affordability\\Proyecto Interno\\Precios al por mayor\\Bases historicas"
+
+files_rds <- list.files(path_bases, pattern = "\\.rds$", full.names = TRUE)
+lista_bases <- lapply(files_rds, readRDS)
+
+dataset <- bind_rows(lista_bases) %>%
+  mutate(
+    Fecha      = as.Date(Fecha),
+    Grupo      = as.character(Grupo),
+    Alimento   = as.character(Alimento),
+    Mercado    = as.character(Mercado),
+    Precio_kg  = as.numeric(Precio_kg),
+    Month      = as.integer(Month),
+    Year       = as.integer(Year),
+
+    # Ciudad
+    Ciudad = trimws(sub(",.*", "", Mercado)),
+    Ciudad = case_when(
+      Ciudad %in% c("Bogotá", "Bogotá, D.C.") ~ "Bogotá",
+      TRUE ~ Ciudad
+    ),
+
+    # normalizar
+    Grupo = stri_trans_general(Grupo, "Latin-ASCII"),
+    Grupo = toupper(Grupo),
+    Grupo = trimws(Grupo)
+  ) %>%
+  filter(
+    !is.na(Fecha), !is.na(Grupo), !is.na(Alimento),
+    !is.na(Mercado), !is.na(Precio_kg),
+    Ciudad %in% c("Bogotá", "Medellín", "Cali")
+  )
+```
+
+# Exploración: ¿qué grupos tienen menos alimentos?
+
+```{r}
+# Conteo de alimentos por Grupo 
+
+resumen_grupos <- dataset %>%
+distinct(Grupo, Alimento) %>%
+count(Grupo, name = "n_alimentos") %>%
+arrange(n_alimentos)
+
+kable(resumen_grupos, caption = "Número de alimentos por Grupo (orden ascendente)")
+
+```
+
+```{r}
+ggplot(resumen_grupos, aes(x = reorder(Grupo, n_alimentos), y = n_alimentos)) +
+geom_col() +
+coord_flip() +
+labs(
+title = "Grupos con menos alimentos (conteo de Alimento único)",
+x = "Grupo",
+y = "Número de alimentos"
+)
+```
+
+## Seleccionar 2 grupos con menos alimentos
+```{r}
+grupos_objetivo <- resumen_grupos %>% slice(1:2) %>% pull(Grupo)
+grupos_objetivo
+```
+
+
+# Preparar series mensuales de Precio_kg (por Mercado, Grupo, Alimento)
+```{r}
+# Año-mes para tsibble (fpp3)
+
+dataset_ts <- dataset %>%
+  mutate(Year_Month = yearmonth(Fecha)) %>%
+  group_by(Year_Month, Ciudad, Grupo, Alimento) %>%
+  summarise(
+    Precio_kg_prom = mean(Precio_kg, na.rm = TRUE),
+    .groups = "drop"
+  )
+
+# Filtrar solo los 2 grupos objetivo
+
+dataset_ts_2g <- dataset_ts %>% filter(Grupo %in% grupos_objetivo)
+glimpse(dataset_ts_2g)
+
+```
+
+# Listado de alimentos incluidos por Ciudad y Grupo
+
+```{r alimentos-lista, results='asis'}
+N_list <- 10 
+
+alimentos_incluidos <- dataset %>%
+  filter(Grupo %in% grupos_objetivo) %>%
+  distinct(Ciudad, Grupo, Alimento) %>%
+  arrange(Ciudad, Grupo, Alimento)
+
+# Resumen: cuántos alimentos por ciudad-grupo
+resumen_alimentos <- alimentos_incluidos %>%
+  count(Ciudad, Grupo, name = "n_alimentos")
+
+kable(resumen_alimentos,
+      caption = "Número de alimentos incluidos por Ciudad y Grupo")
+
+```
+
+
+# Series de tiempo con fpp3 (precio por kg)
+
+## 1) Líneas por alimento (facet por grupo, mercado)
+```{r lineas-top, fig.width=18, fig.height=9}
+N <- 8
+
+# Top N alimentos por Ciudad–Grupo
+top_foods <- dataset_ts_2g %>%
+  group_by(Ciudad, Grupo, Alimento) %>%
+  summarise(score = mean(Precio_kg_prom, na.rm = TRUE), .groups = "drop") %>%
+  group_by(Ciudad, Grupo) %>%
+  slice_max(score, n = N, with_ties = FALSE) %>%
+  ungroup()
+
+dataset_ts_top <- dataset_ts_2g %>%
+  semi_join(top_foods, by = c("Ciudad","Grupo","Alimento")) %>%
+  mutate(
+    Serie = paste(Ciudad, Grupo, Alimento, sep = " / ")
+  )
+
+tsibble_top <- dataset_ts_top %>%
+  as_tsibble(
+    key   = c(Serie, Ciudad, Grupo, Alimento),
+    index = Year_Month
+  ) %>%
+  group_by_key() %>%
+  fill_gaps(Precio_kg_prom = NA) %>%
+  ungroup()
+
+# ---- COLORES ----
+colores_base <- c(
+  "red", "blue", "darkgreen", "orange",
+  "purple", "brown", "darkcyan", "gold",
+  "deeppink", "darkolivegreen",
+  "steelblue", "firebrick"
+)
+
+n_series <- n_distinct(tsibble_top$Serie)
+pal <- rep(colores_base, length.out = n_series)
+
+autoplot(tsibble_top, Precio_kg_prom) +
+  facet_grid(Grupo ~ Ciudad, scales = "free_y") +
+  scale_colour_manual(values = pal) +
+  labs(
+    title = paste0(
+      "Precio promedio mensual (Top ", N,
+      " alimentos por Ciudad–Grupo)"
+    ),
+    x = "Mes",
+    y = "Precio_kg (promedio mensual)"
+  ) +
+  theme_minimal(base_size = 13) +
+  theme(
+    legend.position = "none",
+    strip.text = element_text(size = 12, face = "bold"),
+    plot.title = element_text(face = "bold")
+  )
+
+```
+
+```{r mapa-colores, results='asis'}
+mapa_series <- sort(unique(tsibble_top$Serie))
+
+mapa_colores <- tibble(
+  Serie = mapa_series,
+  Color = pal[seq_along(mapa_series)]
+)
+
+kable(
+  mapa_colores, 
+  caption = "Mapa de Serie por Color (nombres de color)"
+)
+```
+
+
+## 2) gg_season (estacionalidad)
+```{r ggseason, fig.width=14, fig.height=8}
+tsibble_top %>%
+  gg_season(Precio_kg_prom, period = "year") +
+  facet_wrap(~ Ciudad + Grupo, scales = "free_y", ncol = 3) +
+  labs(
+    title = paste0("Estacionalidad mensual del precio (kg) — Top ", N, " alimentos"),
+    x = "Mes",
+    y = "Precio_kg (promedio mensual)",
+    colour = "Alimento"
+  ) +
+  theme_minimal() +
+  theme(
+    strip.text = element_text(size = 12, face = "bold"),
+    axis.text.x = element_text(angle = 45, hjust = 1),
+    legend.position = "right"
+  )
+```
+
+## 3) gg_subseries (subseries por mes)
+```{r ggsubseries, fig.width=14, fig.height=8}
+tsibble_top %>%
+  gg_subseries(Precio_kg_prom) +
+  facet_wrap(~ Ciudad + Grupo, scales = "free_y", ncol = 3) +
+  labs(
+    title = paste0("Subseries mensuales del precio (kg) — Top ", N, " alimentos"),
+    x = "Mes",
+    y = "Precio_kg (promedio mensual)",
+    colour = "Alimento"
+  ) +
+  theme_minimal() +
+  theme(
+    strip.text = element_text(size = 12, face = "bold"),
+    axis.text.x = element_text(angle = 45, hjust = 1),
+    legend.position = "right"
+  )
+```
+
