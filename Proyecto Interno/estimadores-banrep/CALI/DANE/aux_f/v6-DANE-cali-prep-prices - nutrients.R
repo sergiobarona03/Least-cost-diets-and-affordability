@@ -8,7 +8,7 @@ library(lubridate)
 library(tidyverse)
 
 # Definir directorio de trabajo
-setwd("C:\\Users\\danie\\OneDrive\\Escritorio\\Least-cost-diets-and-affordability\\Proyecto Interno\\")
+setwd("C:\\Users\\sergio.barona\\Desktop\\Least-cost-diets-and-affordability\\Proyecto Interno\\")
 
 ##-------------------------------------------##
 ## Cargar datos de precios minoristas (2018) ##
@@ -113,6 +113,31 @@ input_cali_hat = retail_99_18
 ##-------------------------------------------------##
 ## Cargar base de datos de composición nutricional ##
 ##-------------------------------------------------##
+
+# Se garantiza el mapeo 1:1
+# cuartiles_margen = read.csv("margen-dist/output-ciudades/CALI/111225_q1_q3_margen_producto.csv")
+
+# Recuperar el mapeo
+# Cargar datos de composición nutricional
+# sipsa_tcac <- readxl::read_excel("composicion-nut/1823_mapeo_sipsa_tcac v1.0_2025.xlsx") %>%
+ # janitor::clean_names() %>%
+  # rename(food_sipsa = alimento_nombre_sipsa)
+
+# Cargar mapeo IPC - SIPSA
+# ipc_sipsa = readxl::read_excel("composicion-nut\\Copia_DANE_4_DIC_2025act.xlsx") %>%
+ # janitor::clean_names() %>% mutate(retail = articulo_dane) %>%
+ #  select(retail, mapeo_sipsa, codigo_tcac)
+
+# Recuperar el nombre de sipsa
+# ipc_sipsa = merge(ipc_sipsa, sipsa_tcac[c("codigo_tcac", "food_sipsa")], by = "codigo_tcac") %>%
+  # rename(sipsa = food_sipsa) %>% select(c("retail", "sipsa"))
+
+# cuartiles_ipc_sipsa = merge(cuartiles_margen, ipc_sipsa,
+                            # by.x = "alimento_sipsa", by.y = "sipsa") 
+# filter_foods = levels(as.factor(cuartiles_ipc_sipsa$retail))
+
+# Filtrar input
+# input_cali_hat = input_cali_hat %>% filter(articulo %in% filter_foods)
 
 # Cargar datos de composición nutricional
 dane_tcac = readxl::read_excel("composicion-nut\\Copia_DANE_4_DIC_2025act.xlsx") %>%

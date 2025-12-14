@@ -9,7 +9,7 @@ library(lubridate)
 library(tidyverse)
 
 # Definir directorio de trabajo
-setwd("C:/Users/danie/OneDrive/Escritorio/Least-cost-diets-and-affordability/Proyecto Interno")
+setwd( "C:/Users/sergio.barona/Desktop/Least-cost-diets-and-affordability/Proyecto Interno")
 
 # Cargar datos
 source("margen-dist/v1-join-ipc-sipsa.R")
@@ -109,7 +109,7 @@ cuartiles_articulo <- margen_articulo %>%
 
 # Guardar el margen por artículo
 readr::write_csv(cuartiles_articulo,
-                 "margen-dist/output-ciudades/CALI/300725_q1_q3_margen_producto.csv")
+                 "margen-dist/output-ciudades/CALI/111225_q1_q3_margen_producto.csv")
 
 
 # Asociar los margenes a cada producto según artículo
