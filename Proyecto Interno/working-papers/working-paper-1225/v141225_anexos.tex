@@ -1,0 +1,198 @@
+% Options for packages loaded elsewhere
+\PassOptionsToPackage{unicode}{hyperref}
+\PassOptionsToPackage{hyphens}{url}
+\documentclass[
+]{article}
+\usepackage{xcolor}
+\usepackage[margin=2.5cm]{geometry}
+\usepackage{amsmath,amssymb}
+\setcounter{secnumdepth}{-\maxdimen} % remove section numbering
+\usepackage{iftex}
+\ifPDFTeX
+  \usepackage[T1]{fontenc}
+  \usepackage[utf8]{inputenc}
+  \usepackage{textcomp} % provide euro and other symbols
+\else % if luatex or xetex
+  \usepackage{unicode-math} % this also loads fontspec
+  \defaultfontfeatures{Scale=MatchLowercase}
+  \defaultfontfeatures[\rmfamily]{Ligatures=TeX,Scale=1}
+\fi
+\usepackage{lmodern}
+\ifPDFTeX\else
+  % xetex/luatex font selection
+\fi
+% Use upquote if available, for straight quotes in verbatim environments
+\IfFileExists{upquote.sty}{\usepackage{upquote}}{}
+\IfFileExists{microtype.sty}{% use microtype if available
+  \usepackage[]{microtype}
+  \UseMicrotypeSet[protrusion]{basicmath} % disable protrusion for tt fonts
+}{}
+\makeatletter
+\@ifundefined{KOMAClassName}{% if non-KOMA class
+  \IfFileExists{parskip.sty}{%
+    \usepackage{parskip}
+  }{% else
+    \setlength{\parindent}{0pt}
+    \setlength{\parskip}{6pt plus 2pt minus 1pt}}
+}{% if KOMA class
+  \KOMAoptions{parskip=half}}
+\makeatother
+\usepackage{graphicx}
+\makeatletter
+\newsavebox\pandoc@box
+\newcommand*\pandocbounded[1]{% scales image to fit in text height/width
+  \sbox\pandoc@box{#1}%
+  \Gscale@div\@tempa{\textheight}{\dimexpr\ht\pandoc@box+\dp\pandoc@box\relax}%
+  \Gscale@div\@tempb{\linewidth}{\wd\pandoc@box}%
+  \ifdim\@tempb\p@<\@tempa\p@\let\@tempa\@tempb\fi% select the smaller of both
+  \ifdim\@tempa\p@<\p@\scalebox{\@tempa}{\usebox\pandoc@box}%
+  \else\usebox{\pandoc@box}%
+  \fi%
+}
+% Set default figure placement to htbp
+\def\fps@figure{htbp}
+\makeatother
+\setlength{\emergencystretch}{3em} % prevent overfull lines
+\providecommand{\tightlist}{%
+  \setlength{\itemsep}{0pt}\setlength{\parskip}{0pt}}
+\usepackage{bookmark}
+\IfFileExists{xurl.sty}{\usepackage{xurl}}{} % add URL line breaks if available
+\urlstyle{same}
+\hypersetup{
+  pdftitle={Anexos técnicos},
+  pdfauthor={Pontificia Universidad Javeriana, Cali},
+  hidelinks,
+  pdfcreator={LaTeX via pandoc}}
+
+\title{Anexos técnicos}
+\usepackage{etoolbox}
+\makeatletter
+\providecommand{\subtitle}[1]{% add subtitle to \maketitle
+  \apptocmd{\@title}{\par {\large #1 \par}}{}{}
+}
+\makeatother
+\subtitle{Documento de trabajo 1225}
+\author{Pontificia Universidad Javeriana, Cali}
+\date{14 de diciembre de 2025}
+
+\begin{document}
+\maketitle
+
+\section{Anexos técnicos}\label{anexos-tuxe9cnicos}
+
+En esta sección se presentan los anexos técnicos que complementan el
+análisis principal del documento. Cada anexo desarrolla en detalle los
+resultados empíricos, tablas y representaciones gráficas asociadas a las
+metodologías implementadas para la estimación y validación de los
+precios minoristas de los alimentos.
+
+\subsection{Anexo A. Metodología I: Aproximación a partir del
+IPC}\label{anexo-a.-metodologuxeda-i-aproximaciuxf3n-a-partir-del-ipc}
+
+Este anexo presenta los resultados completos de la metodología basada en
+la variación mensual del IPC a nivel de subclase. Se incluyen las
+comparaciones entre precios reales y precios estimados para todas las
+subclases y ciudades analizadas, así como las métricas de desempeño
+correspondientes.
+
+\includegraphics[width=1\linewidth]{m0/output_ipc_fill/plots_grouped/CALI__page_01}
+\includegraphics[width=1\linewidth]{m0/output_ipc_fill/plots_grouped/CALI__page_02}
+\includegraphics[width=1\linewidth]{m0/output_ipc_fill/plots_grouped/CALI__page_03}
+\includegraphics[width=1\linewidth]{m0/output_ipc_fill/plots_grouped/CALI__page_04}
+\includegraphics[width=1\linewidth]{m0/output_ipc_fill/plots_grouped/CALI__page_05}
+\includegraphics[width=1\linewidth]{m0/output_ipc_fill/plots_grouped/CALI__page_06}
+\includegraphics[width=1\linewidth]{m0/output_ipc_fill/plots_grouped/CALI__page_07}
+\includegraphics[width=1\linewidth]{m0/output_ipc_fill/plots_grouped/CALI__page_08}
+\includegraphics[width=1\linewidth]{m0/output_ipc_fill/plots_grouped/CALI__page_09}
+\includegraphics[width=1\linewidth]{m0/output_ipc_fill/plots_grouped/CALI__page_10}
+\includegraphics[width=1\linewidth]{m0/output_ipc_fill/plots_grouped/CALI__page_11}
+\includegraphics[width=1\linewidth]{m0/output_ipc_fill/plots_grouped/CALI__page_12}
+
+\subsection{Anexo B. Metodología II: Estimación a partir del margen
+mediano (Q1 --
+Q3)}\label{anexo-b.-metodologuxeda-ii-estimaciuxf3n-a-partir-del-margen-mediano-q1-q3}
+
+Este anexo documenta los resultados obtenidos a partir del cálculo de
+los márgenes de comercialización implícitos, incluyendo la distribución
+de los márgenes y los percentiles utilizados para la estimación de
+precios minoristas.
+
+\includegraphics[width=1\linewidth]{m1/output/121225_m1_forecast_by_food_page_01}
+\includegraphics[width=1\linewidth]{m1/output/121225_m1_forecast_by_food_page_02}
+\includegraphics[width=1\linewidth]{m1/output/121225_m1_forecast_by_food_page_03}
+\includegraphics[width=1\linewidth]{m1/output/121225_m1_forecast_by_food_page_04}
+\includegraphics[width=1\linewidth]{m1/output/121225_m1_forecast_by_food_page_05}
+\includegraphics[width=1\linewidth]{m1/output/121225_m1_forecast_by_food_page_06}
+\includegraphics[width=1\linewidth]{m1/output/121225_m1_forecast_by_food_page_07}
+\includegraphics[width=1\linewidth]{m1/output/121225_m1_forecast_by_food_page_08}
+\includegraphics[width=1\linewidth]{m1/output/121225_m1_forecast_by_food_page_09}
+
+\subsection{Anexo C. Metodología III: Regresión lineal en niveles y
+primeras
+diferencias}\label{anexo-c.-metodologuxeda-iii-regresiuxf3n-lineal-en-niveles-y-primeras-diferencias}
+
+En este anexo se presentan los resultados detallados de los modelos de
+regresión lineal estimados en niveles logarítmicos, incorporando efectos
+estacionales mediante variables dummy mensuales.
+
+\includegraphics[width=1\linewidth]{m6/output_dummies/m6_dummies_grouped_page_01}
+\includegraphics[width=1\linewidth]{m6/output_dummies/m6_dummies_grouped_page_02}
+\includegraphics[width=1\linewidth]{m6/output_dummies/m6_dummies_grouped_page_03}
+\includegraphics[width=1\linewidth]{m6/output_dummies/m6_dummies_grouped_page_04}
+\includegraphics[width=1\linewidth]{m6/output_dummies/m6_dummies_grouped_page_05}
+\includegraphics[width=1\linewidth]{m6/output_dummies/m6_dummies_grouped_page_06}
+\includegraphics[width=1\linewidth]{m6/output_dummies/m6_dummies_grouped_page_07}
+\includegraphics[width=1\linewidth]{m6/output_dummies/m6_dummies_grouped_page_08}
+\includegraphics[width=1\linewidth]{m6/output_dummies/m6_dummies_grouped_page_09}
+
+\subsection{Anexo D. Metodología IV: Regresión lineal en primeras
+diferencias}\label{anexo-d.-metodologuxeda-iv-regresiuxf3n-lineal-en-primeras-diferencias}
+
+Este anexo recoge los resultados de la estimación en primeras
+diferencias, aplicada para evitar problemas de no estacionariedad y
+correlaciones espurias, conforme a las pruebas de raíz unitaria
+realizadas.
+
+\includegraphics[width=1\linewidth]{m7/output_dummies/m7_dummies_grouped_page_01}
+\includegraphics[width=1\linewidth]{m7/output_dummies/m7_dummies_grouped_page_02}
+\includegraphics[width=1\linewidth]{m7/output_dummies/m7_dummies_grouped_page_03}
+\includegraphics[width=1\linewidth]{m7/output_dummies/m7_dummies_grouped_page_04}
+\includegraphics[width=1\linewidth]{m7/output_dummies/m7_dummies_grouped_page_05}
+\includegraphics[width=1\linewidth]{m7/output_dummies/m7_dummies_grouped_page_06}
+\includegraphics[width=1\linewidth]{m7/output_dummies/m7_dummies_grouped_page_07}
+\includegraphics[width=1\linewidth]{m7/output_dummies/m7_dummies_grouped_page_08}
+
+\subsection{Anexo E. Metodología V: Modelo de Corrección de Error
+(ECM)}\label{anexo-e.-metodologuxeda-v-modelo-de-correcciuxf3n-de-error-ecm}
+
+Este anexo desarrolla en detalle los resultados del modelo de corrección
+de error, incluyendo la relación de largo plazo entre precios mayoristas
+y minoristas, así como la dinámica de ajuste de corto plazo.
+
+\includegraphics[width=1\linewidth]{m5/output_ecm/m5_ecm_grouped_page_01}
+\includegraphics[width=1\linewidth]{m5/output_ecm/m5_ecm_grouped_page_02}
+\includegraphics[width=1\linewidth]{m5/output_ecm/m5_ecm_grouped_page_03}
+\includegraphics[width=1\linewidth]{m5/output_ecm/m5_ecm_grouped_page_04}
+\includegraphics[width=1\linewidth]{m5/output_ecm/m5_ecm_grouped_page_05}
+\includegraphics[width=1\linewidth]{m5/output_ecm/m5_ecm_grouped_page_06}
+\includegraphics[width=1\linewidth]{m5/output_ecm/m5_ecm_grouped_page_07}
+\includegraphics[width=1\linewidth]{m5/output_ecm/m5_ecm_grouped_page_08}
+
+\subsection{Anexo F. Metodología VI: Modelo de Corrección de Error
+Asimétrico
+(A-ECM)}\label{anexo-f.-metodologuxeda-vi-modelo-de-correcciuxf3n-de-error-asimuxe9trico-a-ecm}
+
+Este anexo presenta los resultados del modelo ECM asimétrico, diseñado
+para capturar posibles diferencias en la velocidad y el patrón de ajuste
+ante aumentos y reducciones en el precio mayorista.
+
+\includegraphics[width=1\linewidth]{m4/output/m4_ecm_grouped_page_01}
+\includegraphics[width=1\linewidth]{m4/output/m4_ecm_grouped_page_02}
+\includegraphics[width=1\linewidth]{m4/output/m4_ecm_grouped_page_03}
+\includegraphics[width=1\linewidth]{m4/output/m4_ecm_grouped_page_04}
+\includegraphics[width=1\linewidth]{m4/output/m4_ecm_grouped_page_05}
+\includegraphics[width=1\linewidth]{m4/output/m4_ecm_grouped_page_06}
+\includegraphics[width=1\linewidth]{m4/output/m4_ecm_grouped_page_07}
+\includegraphics[width=1\linewidth]{m4/output/m4_ecm_grouped_page_08}
+
+\end{document}

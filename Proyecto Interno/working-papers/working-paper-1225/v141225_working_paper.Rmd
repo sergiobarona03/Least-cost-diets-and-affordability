@@ -1,0 +1,384 @@
+---
+title: "Documento de trabajo 1225: Metodología para la predicción de los precios minoristas de los alimentos localmente disponibles en las principales ciudades de Colombia"
+author: "Pontificia Universidad Javeriana, Cali"
+date: "14 de diciembre de 2025"
+output: html_document
+---
+
+```{r set knitr options, echo = FALSE}
+knitr::opts_chunk$set(echo = FALSE, message = FALSE, warning = FALSE)
+```
+
+```{r, echo = FALSE}
+directorio_base <- "C:/Users/danie/OneDrive/Escritorio/Least-cost-diets-and-affordability/Proyecto Interno"
+```
+
+```{r}
+library(readxl)
+library(tidyr)
+library(tidyverse)
+library(dplyr)
+```
+
+
+## 1. Presentación
+
+## 2. Datos
+
+### 2.1. Insumo del IPC (DANE)
+
+La primera fuente corresponde a los precios minoristas reportados por el DANE, utilizados como insumo para el cálculo del Índice de Precios al Consumidor (IPC) (DANE, 2024). El periodo de análisis abarca desde enero de 1999 hasta marzo de 2018 y cubre las 13 principales ciudades del país:
+
+- Bogotá D.C.
+- Medellín A.M.
+- Cali A.M.
+- Barranquilla A.M.
+- Bucaramanga A.M.
+- Manizales A.M.
+- Pereira A.M.
+- Cúcuta A.M.
+- Pasto
+- Ibagué
+- Montería
+- Cartagena
+- Villavicencio
+
+Una característica relevante de estos datos es su estructura de clasificación, basada en la canasta de seguimiento del IPC 2008. Esta clasificación contempla distintos niveles de agregación: Grupo, Subgrupo, Clase, Gasto Básico y Artículo. A continuación, se presenta la estructura de esta clasificación:
+
+```{r}
+tabla_ipc <- data.frame(
+  Subclase = c("011101","011102","011103","011105","","011106","","011108",
+               "011198","","","011199","011201","011202"),
+  IPC = c("Arroz","Pastas alimenticias","Avena y sus derivados",
+          "Trigo y sus derivados","","Maíz y sus derivados","","Pan",
+          "Otras harinas, cereales y almidones","","",
+          "Otros productos de panadería",
+          "Carne de res y derivados","Carne de Cerdo y Derivados"),
+  Gasto_basico = c("11101","11103","11105","11102","11105","11102","11105",
+                   "11201","11102","11104","11202","11202","15101","15102"),
+  DANE = c("Arroz","Pastas alimenticias","Otros cereales",
+           "Harina de maiz y otras harinas","Otros cereales",
+           "Harina de maiz y otras harinas","Otros cereales","Pan",
+           "Harina de maiz y otras harinas","Cereales preparados",
+           "Otros productos de panadería","Otros productos de panadería",
+           "Res","Cerdo")
+)
+
+knitr::kable(tabla_ipc)
+```
+
+A continuación, se muestra la estructura de la base de datos de precios proporcionada por el DANE:
+
+```{r, echo = FALSE}
+# BASE DANE
+
+dane <- read_excel(
+  paste0( directorio_base, "/Precios DANE/OUTPUT_DANE/precios_IPC_1999_2018.xlsx")
+ )
+
+head(dane, 15)
+```
+
+### 2.2.	Datos de SIPSA
+
+La información sobre los precios mayoristas corresponde a los datos del Sistema de Información de Precios y Abastecimiento del Sector Agropecuario (SIPSA), publicados por el DANE. El SIPSA no sólo informa, con frecuencia diaria, sobre los precios mayoristas de los productos agroalimentarios que se comercializan en el país; sino que, además, proporciona información, con frecuencia quincenal, sobre el nivel de abastecimiento de los alimentos en las ciudades. En este estudio se utilizarán datos de SIPSA para las tres principales ciudades de Colombia (Cali, Bogotá y Medellín) durante el período 2013:1 – 2024:1, con frecuencia mensual.
+
+A continuación, se presenta la estructura de los datos:
+
+```{r, echo = FALSE}
+# BASE SIPSA
+
+sipsa <- read_excel( 
+  paste0(directorio_base, "/working-papers/working-paper-1225/mapeo ipc-sipsa/output/121225_dataset_ipc_sipsa.xlsx")
+  )
+
+head(sipsa, 15)
+```
+
+## 3. Metodologías
+
+En este estudio, se evaluarán tres metodologías para estimar los precios minoristas a partir de la información de precios mayoristas. Primero, se propone el calculo del margen mediano para cada uno de los productos reportados en SIPSA, así como el margen en el percentil 25 y 75. Segundo, se propone la estimación de un modelo SARIMAX, que permita capturar la evolución temporal de los precios minoristas, considerando los precios mayoristas como variable exógena y la variación estacional. En tercer lugar, se propone un modelo dinámico de corrección de errores (ECM), en el cual la dinámica de corto plazo de las variables está determinada por su variación respecto del equilibrio. 
+Para validar el ajuste de las metodologías para la predicción de los precios minoristas, se propone dividir la muestra en dos: un conjunto de datos de entrenamiento, que corresponde al 70% de la muestra total; y un conjunto de datos de validación, que corresponde al 30%. Los métodos son evaluados a partir de las métricas comúnmente empleadas: error cuadrático medio y error absoluto medio porcentual.
+
+### 3.1. Mapeo: IPC-SIPSA
+
+La implementación de las metodologías I-III presupone un mapeo previo entre los alimentos reportados por el DANE en la construcción del IPC y los alimentos reportados por SIPSA (en adelante, mapeo IPC-SIPSA). Es decir, para cada alimento reportado en SIPSA, existe un alimento equivalente en la canasta del IPC. A continuación, se presenta el mapeo:
+
+```{r, echo = FALSE}
+# MAPEO
+source(
+  paste0(
+    directorio_base,
+    "/working-papers/working-paper-1225/mapeo ipc-sipsa/join-ipc-sipsa.R"
+  )
+)
+
+# Cargar datos de composición nutricional
+sipsa_tcac <- readxl::read_excel("composicion-nut/1823_mapeo_sipsa_tcac v1.0_2025.xlsx") %>%
+  janitor::clean_names() %>%
+  rename(food_sipsa = alimento_nombre_sipsa)
+
+# Cargar mapeo IPC - SIPSA
+ipc_sipsa = readxl::read_excel("composicion-nut\\Copia_DANE_4_DIC_2025act.xlsx") %>%
+  janitor::clean_names() %>% 
+  mutate(retail = articulo_dane) %>%
+  select(retail, mapeo_sipsa, codigo_tcac)
+
+# Recuperar el nombre de sipsa
+ipc_sipsa = merge(ipc_sipsa, sipsa_tcac[c("codigo_tcac", "food_sipsa")], by = "codigo_tcac") %>%
+  rename(sipsa = food_sipsa) %>% 
+  distinct()
+
+# Mantener el primer alimento mapeado
+ipc_sipsa <- ipc_sipsa %>%
+  group_by(mapeo_sipsa, sipsa) %>%
+  mutate(
+    retail = retail[which.min(nchar(retail))]
+  ) %>%
+  slice(1) %>%
+  ungroup()
+
+knitr::kable(
+  head(ipc_sipsa, 20),
+  caption = "Mapeo IPC – SIPSA"
+)
+
+```
+
+Nótese que el mapeo no es 1:1, sino n: 1 (muchos: 1). Esto quiere decir que un mismo alimento de la base de datos del IPC puede tener varios alimentos equivalentes en la base de datos de SIPSA. (Un ejemplo: el arroz para seco, que es un alimento del IPC, corresponde tanto al arroz de primera como al arroz de segunda y el arroz excelso en la base de datos de SIPSA).
+
+
+### 3.2. Metodologías
+
+La siguiente tabla resume las metodologías implementadas en este documento de trabajo:
+
+```{r, echo=FALSE}
+tabla_metodologias <- data.frame(
+  No = c("I", "II", "III", "IV", "V", "VI"),
+  Metodología = c(
+    "Ajuste sobre los precios minoristas a partir del IPC",
+    "Estimación del margen mediano (Q2 [Q1, Q3])",
+    "Regresión lineal en niveles, controlando por el efecto estacional.",
+    "Regresión en primeras diferencias, controlando por el efecto estacional.",
+    "Modelo de corrección de error",
+    "Modelo de corrección de error asimétrico"
+  )
+)
+
+knitr::kable(
+  tabla_metodologias,
+  col.names = c("No.", "Metodología")
+)
+```
+
+## 4. Descripción de las metodologías y resultados
+
+### 4.1. Metodología I: Aproximación a partir del IPC
+
+Para estimar los precios minoristas incompletos, se implementa una estrategia basada en la variación mensual del IPC a nivel de subclase. Para cada artículo en cada ciudad, se separaron los datos en dos subconjuntos:
+
+- Conjunto de entrenamiento hasta enero de 2015 con observaciones sobre precios minoristas.
+- Conjunto de validación a partir de enero de 2015, a partir del cual se estimarán los precios usando las variaciones del IPC.
+
+Se utilizó el último precio observado del conjunto de entrenamiento (enero de 2015) y se estimaron los precios hacia adelante multiplicando iterativamente por la variación mensual del IPC:
+
+$$
+\hat{p}_t = \hat{p}_{t-1} \times \frac{IPC_t}{IPC_{t-1}}
+$$
+
+Esta operación se repite mes a mes hasta llegar al final del conjunto de validación (marzo de 2018). Esta metodología proporciona una estimación directa de los precios minorista y evita, por tanto, el tratamiento del problema de la transmisión mayorista-minorista.
+
+**Resultados:**
+
+```{r, echo=FALSE, out.width="100%"}
+
+knitr::include_graphics(c(
+  paste0(
+    directorio_base,
+    "/working-papers/working-paper-1225/m0/output_ipc_fill/plots_grouped/CALI__page_01.png"
+  )
+))
+
+```
+
+### 4.2. Metodología II: Estimación a partir del margen mediano (Q1 – Q3)
+
+La primera metodología propuesta consiste en el cálculo del margen de comercialización para cada uno de los productos reportados por SIPSA. A partir del mapeo IPC-SIPSA, para el alimento k en t, el margen de comercialización se calcula simplemente como:
+
+$$
+\gamma_{k,t}=\frac{P_{min}-P_{may}}{P_{may}} \times 100
+$$
+
+Con base en los márgenes de comercialización estimados, se obtiene la distribución para cada uno de los alimentos reportados por SIPSA. A partir de la distribución, se calcula el margen mediano (Q2), así como el margen en el percentil 25 (Q1) y 75 (Q3).
+
+**Resultados:**
+
+```{r, echo=FALSE, out.width="100%"}
+
+knitr::include_graphics(c(
+  paste0(
+    directorio_base,
+    "/working-papers/working-paper-1225/m1/output/121225_m1_forecast_by_food_page_01.png"
+  )
+))
+
+```
+
+### 4.3. Metodología III: Regresión lineal en niveles y primeras diferencias
+
+Sea $\ln(P_{it}^{min})$ el logaritmo natural del precio minorista, y sea $\ln(P_{it}^{may})$ el logaritmo natural del precio mayorista del alimento $i$ en el período $t$. Para cada alimento $i$, se estima el siguiente modelo de regresión lineal en niveles logarítmicos:
+
+$$
+\ln(P_{it}^{min}) = \alpha_i + \beta_i \ln(P_{it}^{may}) + \sum_{m=1}^{11} \delta_{im} S_{mt} + e_{it}
+$$
+
+donde
+
+$$
+S_{mt} =
+\begin{cases}
+1, & \text{si } t \text{ está en el mes } m \\
+0, & \text{en caso contrario}
+\end{cases}
+$$
+
+Nótese que, para cada alimento $i$, $\beta_i$ mide la elasticidad (o *pass-through* contemporáneo) dl precio minorista respecto del precio mayorista. Esto implica que $\beta_i$ captura el margen de comercialización implícito.
+
+**Resultados:**
+
+```{r, echo=FALSE, out.width="100%"}
+
+knitr::include_graphics(c(
+  paste0(
+    directorio_base,
+    "/working-papers/working-paper-1225/m6/output_dummies/m6_dummies_grouped_page_01.png"
+  )
+))
+
+```
+
+
+### 4.4. Metodología IV: Regresión lineal en niveles y primeras diferencias
+
+A partir de pruebas ADF, se verificó que los precios de los alimentos corresponden a series I(1). La estimación en niveles puede verse afectado por problemas de no estacionariedad y correlaciones espurias. Para garantizar series covarianza-estacionarias, se estima la siguiente especificación:
+
+$$
+\Delta \ln(P_{it}^{min}) = \alpha_i + \beta_i \Delta \ln(P_{it}^{may}) + \sum_{m=1}^{11} \delta_{im} S_{mt} + e_{it}
+$$
+
+En este caso, $\beta_i$ captura la respuesta inmediata del crecimiento del precio minorista ante cambios en el precio mayorista, es decir, captura el *pass-through* de corto plazo.
+
+
+**Resultados:**
+
+```{r, echo=FALSE, out.width="100%"}
+
+knitr::include_graphics(c(
+  paste0(
+    directorio_base,
+    "/working-papers/working-paper-1225/m7/output_dummies/m7_dummies_grouped_page_01.png"
+  )
+))
+
+```
+
+
+### 4.5. Metodología V: Modelo de Corrección de Error (ECM)
+
+Como señala Enders (2014), una característica de las variables cointegradas es que su trayectoria temporal está determinada por la desviación respecto del equilibrio de largo plazo. Esto implica que las dinámicas de corto plazo deben estar influenciadas por su desviación respecto de la relación de largo plazo. El modelo dinámico utilizado para capturar simultáneamente la relación de largo plazo y los ajustes dinámicos de corto plazo es el modelo de corrección de error (ECM).
+
+La relación de equilibrio de largo plazo entre ambos precios viene dada por:
+
+$$
+\ln(P_{it}^{min}) = \alpha_i + \beta_i \ln(P_{it}^{may}) + e_{it}
+$$
+
+**¿Se incorpora el componente estacional?**
+
+Así, el término de corrección de error corresponde al residuo rezagado de la relación de cointegración:
+
+$$
+e_{i,t-1} = \ln(P_{i,t-1}^{min}) - \alpha_i - \beta_i \ln(P_{i,t-1}^{may})
+$$
+
+Note que la expresión anterior captura el desequilibrio en $t-1$. Si $e_{i,t-1} > 0$, el precio minorista está por encima del nivel consistente con el equilibrio de largo plazo (dado el precio mayorista). En consecuencia, la dinámica de corto plazo se captura mediante la siguiente ecuación ECM:
+
+$$
+\Delta \ln(P_{it}^{min}) = c_{i0}
++ \sum_{p=1}^{P} \beta_{ip} \Delta \ln(P_{i,t-p}^{min})
++ \sum_{q=1}^{Q} \gamma_{iq} \Delta \ln(P_{i,t-q}^{may})
++ \theta_i e_{i,t-1}
++ u_t
+$$
+
+Naturalmente, $\beta_{ip}$ captura la dinámica autorregresiva de corto plazo del precio minorista, y $\gamma_{iq}$ captura el impacto de corto plazo de variaciones en el precio mayorista. En general, $\theta_i$ es una medida de la velocidad de ajuste hacia el equilibrio de largo plazo. (Se espera que $\theta_i < 0$, es decir, que desviaciones positivas sean corregidas mediante reducciones en el crecimiento del precio minorista).
+
+
+**Resultados:**
+
+```{r, echo=FALSE, out.width="100%"}
+
+knitr::include_graphics(c(
+  paste0(
+    directorio_base,
+    "/working-papers/working-paper-1225/m5/output_ecm/m5_ecm_grouped_page_01.png"
+  )
+))
+```
+
+
+### 4.6. Metodología VI: Modelo de Corrección de Error (A-ECM) Asimétrico
+
+En tercer lugar, se estima una versión del modelo ECM, de tal forma que se estima un modelo individual para cada ciudad principal. Siguiendo el estudio de Chesnes (2010), se propone la implementación de un modelo ECM para capturar las posibles asimetrías en la velocidad y el patrón de ajuste ante aumento y reducciones en el precio mayorista.
+
+Sea $P_t^R$ el precio minorista observado en la ciudad de análisis en el período $t$, y sea $P_t^W$ el precio mayorista correspondiente. El modelo sigue la forma:
+
+```{r, echo=FALSE, out.width="100%"}
+knitr::include_graphics(
+  paste0(
+    directorio_base,
+    "/working-papers/working-paper-1225/m4/Imagen1.png"
+  )
+)
+```
+
+La expresión $z_{t-1}$ corresponde al término de corrección de error y captura la relación de largo plazo entre el precio minorista y el precio mayorista. Así, se espera que ambos $\beta_3$ sean negativos: si el precio minorista está por encima $z_{t-1} > 0$ (por debajo $z_{t-1} < 0$ del equilibrio, los precios minoristas deberían disminuir (aumentar).
+
+Siguiendo la metodología en dos etapas de Engle & Granger (1987), se estima $\gamma_0$ y $\gamma_1$ a partir de la siguiente ecuación de largo plazo:
+
+
+```{r, echo=FALSE, out.width="100%"}
+knitr::include_graphics(
+  paste0(
+    directorio_base,
+    "/working-papers/working-paper-1225/m4/Imagen2.png"
+    )
+)
+```
+
+**Resultados:**
+
+```{r, echo=FALSE, out.width="100%"}
+
+knitr::include_graphics(c(
+  paste0(
+    directorio_base,
+    "/working-papers/working-paper-1225/m4/output/m4_ecm_grouped_page_01.png"
+  )
+))
+```
+
+## 5. Discusión
+
+### 5.1. Métricas de validación
+
+La siguiente tabla muestra las métricas obtenidas a partir de cada metodología:
+
+### 5.2. Márgenes de comercialización implícitos
+
+Note que algunas de las metodologías implementadas permiten obtener un margen de comercialización implícita 
+
+### 5.3. Validación con márgenes implícitos
+
+## 6. Conclusiones
+
