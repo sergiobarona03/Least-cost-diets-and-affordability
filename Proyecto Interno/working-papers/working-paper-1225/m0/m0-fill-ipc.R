@@ -242,9 +242,12 @@ for (ci in seq_along(city_i)) {
     # Plot
     # -----------------------------
     p <- ggplot(df_fore, aes(x = fecha)) +
-      geom_line(aes(y = precio_500g, color = "Precio real"), linewidth = 0.7) +
-      geom_line(aes(y = precio_hat, color = "Precio estimado"), linewidth = 0.7, linetype = "dashed") +
-      scale_color_manual(values = c("Precio real" = "black", "Precio estimado" = "red")) +
+      geom_line(aes(y = precio_500g, color = "Precio real"),
+                linewidth = 0.4) +
+      geom_line(aes(y = precio_hat, color = "Precio estimado"),
+                linewidth = 0.4, linetype = "dashed") +
+      scale_color_manual(values = c("Precio real" = "black",
+                                    "Precio estimado" = "red")) +
       labs(
         title = "Comparación entre precio real y estimado (IPC subclase)",
         subtitle = paste0(city_name, " - ", food_name,
@@ -254,9 +257,6 @@ for (ci in seq_along(city_i)) {
       ) +
       theme_bw() +
       theme(legend.position = "bottom")
-    
-    out_plot <- file.path(plot_dir, paste0(safe_name(city_name), "__", safe_name(food_name), ".png"))
-    ggsave(out_plot, plot = p, width = 9, height = 5, dpi = 300)
   }
 }
 

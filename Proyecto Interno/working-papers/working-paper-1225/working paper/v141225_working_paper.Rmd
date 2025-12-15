@@ -26,6 +26,10 @@ library(dplyr)
 
 ## 1. Presentación
 
+El documento de trabajo presenta una metodología para la predicción de los precios minoristas de alimentos en las principales ciudades de Colombia, utilizando exclusivamente información oficial del DANE. El análisis se apoya en dos fuentes de datos: los precios minoristas empleados en la construcción del Índice de Precios al Consumidor (IPC), con cobertura mensual entre 1999 y 2018 para trece ciudades, y los precios mayoristas provenientes del Sistema de Información de Precios y Abastecimiento del Sector Agropecuario (SIPSA), con información mensual para Cali, Bogotá y Medellín. Un elemento central del estudio es el mapeo entre los productos del IPC y los reportados por SIPSA, el cual no es uno a uno, sino de tipo muchos a uno, y permite vincular coherentemente ambas bases de datos para el análisis empírico.
+
+A partir de esta información, el documento evalúa seis metodologías para estimar y predecir precios minoristas: una aproximación basada en la variación del IPC, la estimación mediante márgenes medianos de comercialización, modelos de regresión en niveles y en primeras diferencias con control estacional, un modelo de corrección de error (ECM) y una versión asimétrica de este modelo estimada por ciudad. Las metodologías se comparan dividiendo la muestra en conjuntos de entrenamiento y validación, y se evalúan mediante métricas estándar de error. Además, algunas especificaciones permiten derivar márgenes de comercialización implícitos, los cuales son analizados como parte de la discusión y validación de los resultados presentados en el documento
+
 ## 2. Datos
 
 ### 2.1. Insumo del IPC (DANE)
@@ -100,7 +104,7 @@ head(sipsa, 15)
 
 ## 3. Metodologías
 
-En este estudio, se evaluarán tres metodologías para estimar los precios minoristas a partir de la información de precios mayoristas. Primero, se propone el calculo del margen mediano para cada uno de los productos reportados en SIPSA, así como el margen en el percentil 25 y 75. Segundo, se propone la estimación de un modelo SARIMAX, que permita capturar la evolución temporal de los precios minoristas, considerando los precios mayoristas como variable exógena y la variación estacional. En tercer lugar, se propone un modelo dinámico de corrección de errores (ECM), en el cual la dinámica de corto plazo de las variables está determinada por su variación respecto del equilibrio. 
+Con base en las fuentes de información descritas anteriormente, en este estudio se evaluarán tres metodologías para estimar los precios minoristas a partir de la información de precios mayoristas. Primero, se propone el calculo del margen mediano para cada uno de los productos reportados en SIPSA, así como el margen en el percentil 25 y 75. Segundo, se propone la estimación de un modelo SARIMAX, que permita capturar la evolución temporal de los precios minoristas, considerando los precios mayoristas como variable exógena y la variación estacional. En tercer lugar, se propone un modelo dinámico de corrección de errores (ECM), en el cual la dinámica de corto plazo de las variables está determinada por su variación respecto del equilibrio. 
 Para validar el ajuste de las metodologías para la predicción de los precios minoristas, se propone dividir la muestra en dos: un conjunto de datos de entrenamiento, que corresponde al 70% de la muestra total; y un conjunto de datos de validación, que corresponde al 30%. Los métodos son evaluados a partir de las métricas comúnmente empleadas: error cuadrático medio y error absoluto medio porcentual.
 
 ### 3.1. Mapeo: IPC-SIPSA
@@ -189,7 +193,7 @@ $$
 \hat{p}_t = \hat{p}_{t-1} \times \frac{IPC_t}{IPC_{t-1}}
 $$
 
-Esta operación se repite mes a mes hasta llegar al final del conjunto de validación (marzo de 2018). Esta metodología proporciona una estimación directa de los precios minorista y evita, por tanto, el tratamiento del problema de la transmisión mayorista-minorista.
+Esta operación se repite mes a mes hasta llegar al final del conjunto de validación (marzo de 2018). Esta metodología proporciona una estimación directa de los precios minoristas y, por tanto, evita el tratamiento explícito del problema de la transmisión entre precios mayoristas y minoristas.
 
 **Resultados:**
 
@@ -332,32 +336,36 @@ knitr::include_graphics(c(
 
 ### 4.6. Metodología VI: Modelo de Corrección de Error (A-ECM) Asimétrico
 
-En tercer lugar, se estima una versión del modelo ECM, de tal forma que se estima un modelo individual para cada ciudad principal. Siguiendo el estudio de Chesnes (2010), se propone la implementación de un modelo ECM para capturar las posibles asimetrías en la velocidad y el patrón de ajuste ante aumento y reducciones en el precio mayorista.
+En tercer lugar, se estima una versión del modelo ECM que permite especificar un modelo individual para cada ciudad principal. Siguiendo el estudio de Chesnes (2010), se propone la implementación de un modelo ECM para capturar las posibles asimetrías en la velocidad y el patrón de ajuste ante aumento y reducciones en el precio mayorista.
 
 Sea $P_t^R$ el precio minorista observado en la ciudad de análisis en el período $t$, y sea $P_t^W$ el precio mayorista correspondiente. El modelo sigue la forma:
 
-```{r, echo=FALSE, out.width="100%"}
-knitr::include_graphics(
-  paste0(
-    directorio_base,
-    "/working-papers/working-paper-1225/m4/Imagen1.png"
-  )
-)
-```
+$$
+\Delta P^{min}_t
+=
+\sum_{i=0}^{L_1^+}\beta^{+}_{1i}\,\Delta^{+}P^{may}_{t-i}
++
+\sum_{i=0}^{L_1^-}\beta^{-}_{1i}\,\Delta^{-}P^{may}_{t-i}
++
+\sum_{i=1}^{L_2^+}\beta^{+}_{2i}\,\Delta^{+}P^{min}_{t-i}
++
+\sum_{i=1}^{L_2^-}\beta^{-}_{2i}\,\Delta^{-}P^{min}_{t-i}
++
+\beta^{+}_{3}\Big(P^{min}_{t-1}-\gamma_0-\gamma_1 P^{may}_{t-1}\Big)
++
+\beta^{-}_{3}\Big(P^{min}_{t-1}-\gamma_0-\gamma_1 P^{may}_{t-1}\Big)
++
+\varepsilon_t
+$$
 
 La expresión $z_{t-1}$ corresponde al término de corrección de error y captura la relación de largo plazo entre el precio minorista y el precio mayorista. Así, se espera que ambos $\beta_3$ sean negativos: si el precio minorista está por encima $z_{t-1} > 0$ (por debajo $z_{t-1} < 0$ del equilibrio, los precios minoristas deberían disminuir (aumentar).
 
 Siguiendo la metodología en dos etapas de Engle & Granger (1987), se estima $\gamma_0$ y $\gamma_1$ a partir de la siguiente ecuación de largo plazo:
 
+$$
+P^{min}_{t-1}=\gamma_0+\gamma_1 P^{may}_{t-1}+z_{t-1}.
+$$
 
-```{r, echo=FALSE, out.width="100%"}
-knitr::include_graphics(
-  paste0(
-    directorio_base,
-    "/working-papers/working-paper-1225/m4/Imagen2.png"
-    )
-)
-```
 
 **Resultados:**
 

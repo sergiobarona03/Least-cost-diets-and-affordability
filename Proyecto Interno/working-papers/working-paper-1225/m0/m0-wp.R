@@ -7,7 +7,7 @@
 ########################################################
 
 # Directorio 
-base_dir <- "C:/Users/Portatil/Desktop/Least-cost-diets-and-affordability/Proyecto Interno"
+base_dir <- "C:/Users/danie/OneDrive/Escritorio/Least-cost-diets-and-affordability/Proyecto Interno"
 
 # -----------------------------
 # 1. Cargar librerías y definición de directorios
@@ -292,9 +292,9 @@ for (ci in seq_along(city_i)) {
     
     p <- ggplot(df_plot, aes(x = fecha)) +
       geom_line(aes(y = precio_500g, color = "Precio real"),
-                linewidth = 1) +
+                linewidth = 0.4) +
       geom_line(aes(y = precio_hat, color = "Precio estimado"),
-                linewidth = 1, linetype = "dashed") +
+                linewidth = 0.4, linetype = "dashed") +
       scale_color_manual(values = c("Precio real" = "black", "Precio estimado" = "red")) +
       labs(
         title = food_name,
