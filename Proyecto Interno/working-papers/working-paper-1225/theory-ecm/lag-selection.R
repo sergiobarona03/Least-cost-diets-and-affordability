@@ -40,7 +40,7 @@ df <- tibble(
 
 # Construir data para ECM con rezagos p (dy) y q (dx)
 build_ecm_data <- function(df, p = 0, q = 0) {
-  
+
   # Ecuación de largo plazo (EG)
   lr <- lm(y ~ x, data = df)
   df2 <- df %>%
@@ -71,8 +71,6 @@ build_ecm_data <- function(df, p = 0, q = 0) {
 fit_ecm <- function(df, p = 0, q = 0, 
                     criterion = c("AIC", "BIC")) {
   
-  df = df2
-  
   criterion <- match.arg(criterion)
   
   tmp <- build_ecm_data(df, p, q)
@@ -86,6 +84,9 @@ fit_ecm <- function(df, p = 0, q = 0,
   fml <- as.formula(paste("dy ~", paste(rhs, collapse = " + ")))
   
   m <- lm(fml, data = d)
+  
+  xeq <- xtr <- df[c('x')]
+  model1 <- ecm(df$y, xeq, xtr, includeIntercept=TRUE)
   
   crit <- if (criterion == "AIC") AIC(m) else BIC(m)
   
