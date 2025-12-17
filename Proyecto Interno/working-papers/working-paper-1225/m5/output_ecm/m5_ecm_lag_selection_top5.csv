@@ -1,0 +1,351 @@
+alimento_sipsa,criterion,p,q,crit
+Aguacate papelillo,BIC,1,0,-77.77818625846132
+Aguacate papelillo,BIC,1,1,-74.65688317119191
+Aguacate papelillo,BIC,1,5,-74.37121162912845
+Aguacate papelillo,BIC,2,0,-71.18125458859242
+Aguacate papelillo,BIC,1,4,-71.00675480015528
+Ahuyama,BIC,2,2,-85.9441300447154
+Ahuyama,BIC,4,1,-81.85686597711515
+Ahuyama,BIC,2,1,-81.57756204582603
+Ahuyama,BIC,3,2,-81.40045836003614
+Ahuyama,BIC,2,3,-81.03156416944904
+Arracacha amarilla,BIC,1,0,-70.49275521002508
+Arracacha amarilla,BIC,2,0,-67.92543704264938
+Arracacha amarilla,BIC,1,1,-67.26802757703723
+Arracacha amarilla,BIC,2,1,-64.72391386192857
+Arracacha amarilla,BIC,2,2,-63.44489481004129
+Arroz de primera,BIC,1,1,-206.1603222355954
+Arroz de primera,BIC,1,2,-198.13901538525033
+Arroz de primera,BIC,2,1,-197.56022455731647
+Arroz de primera,BIC,0,2,-196.10140399789893
+Arroz de primera,BIC,2,2,-194.48831868314764
+Arveja verde en vaina pastusa,BIC,0,3,-12.941901218409214
+Arveja verde en vaina pastusa,BIC,4,5,-11.71639578858948
+Arveja verde en vaina pastusa,BIC,1,3,-11.574494210597408
+Arveja verde en vaina pastusa,BIC,0,5,-11.551799388731368
+Arveja verde en vaina pastusa,BIC,3,5,-11.40212752051653
+Arveja verde seca importada,BIC,1,6,-172.83163602954752
+Arveja verde seca importada,BIC,6,0,-172.74018393697628
+Arveja verde seca importada,BIC,1,5,-172.70134660409715
+Arveja verde seca importada,BIC,6,5,-172.17996268397653
+Arveja verde seca importada,BIC,6,4,-171.7573634751928
+Avena en hojuelas,BIC,0,0,-197.63617569036117
+Avena en hojuelas,BIC,0,1,-197.07747542187005
+Avena en hojuelas,BIC,1,1,-195.51192376699356
+Avena en hojuelas,BIC,1,0,-194.15536458407996
+Avena en hojuelas,BIC,0,2,-190.1953280138347
+Avena molida,BIC,0,0,-240.5243465601091
+Avena molida,BIC,0,1,-236.03138988342639
+Avena molida,BIC,1,1,-232.34377193834467
+Avena molida,BIC,1,0,-230.0329788671917
+Avena molida,BIC,0,2,-225.56905460685553
+Azúcar morena,BIC,1,0,-181.95781500254748
+Azúcar morena,BIC,1,1,-179.11250595864098
+Azúcar morena,BIC,0,0,-173.61913361963772
+Azúcar morena,BIC,2,0,-172.01152706837186
+Azúcar morena,BIC,0,1,-171.9925069031727
+Azúcar sulfitada,BIC,1,0,-168.08913321264785
+Azúcar sulfitada,BIC,0,0,-167.52662059691144
+Azúcar sulfitada,BIC,1,1,-165.5185984641782
+Azúcar sulfitada,BIC,0,1,-162.31230568098528
+Azúcar sulfitada,BIC,1,2,-159.78803744056196
+Banano criollo,BIC,0,0,-167.02627120308202
+Banano criollo,BIC,0,1,-160.08662583124132
+Banano criollo,BIC,1,0,-159.65886657638427
+Banano criollo,BIC,3,1,-159.33378059253897
+Banano criollo,BIC,3,0,-159.18401391172318
+Bocachico importado congelado,BIC,1,0,-186.5869438777298
+Bocachico importado congelado,BIC,0,0,-186.39356624142812
+Bocachico importado congelado,BIC,1,1,-183.0274840701077
+Bocachico importado congelado,BIC,2,0,-181.19885105079928
+Bocachico importado congelado,BIC,0,1,-179.6246824394878
+Café molido,BIC,0,1,-271.0082868785038
+Café molido,BIC,1,0,-270.94065527499987
+Café molido,BIC,1,1,-267.47083092062314
+Café molido,BIC,2,0,-259.64794042703903
+Café molido,BIC,0,2,-259.27182395714027
+"Carne de cerdo, costilla",BIC,0,0,-225.3461934871304
+"Carne de cerdo, costilla",BIC,0,1,-216.7501776297274
+"Carne de cerdo, costilla",BIC,1,0,-215.4345874655247
+"Carne de cerdo, costilla",BIC,1,1,-213.0148886162052
+"Carne de cerdo, costilla",BIC,0,2,-207.70656578996713
+"Carne de cerdo, espinazo",BIC,0,0,-222.69787068951644
+"Carne de cerdo, espinazo",BIC,0,1,-213.74697513222813
+"Carne de cerdo, espinazo",BIC,1,0,-212.95482544258218
+"Carne de cerdo, espinazo",BIC,1,1,-210.5668978551917
+"Carne de cerdo, espinazo",BIC,2,0,-205.60568327446245
+"Carne de res, cadera",BIC,1,0,-203.14174377471292
+"Carne de res, cadera",BIC,0,0,-202.5143721140983
+"Carne de res, cadera",BIC,1,1,-201.40539307631218
+"Carne de res, cadera",BIC,0,1,-200.5905090519756
+"Carne de res, cadera",BIC,2,0,-193.62576101209234
+"Carne de res, costilla",BIC,0,0,-171.82653485832157
+"Carne de res, costilla",BIC,1,0,-164.310090353561
+"Carne de res, costilla",BIC,0,1,-163.1422127947789
+"Carne de res, costilla",BIC,1,1,-161.33016140210432
+"Carne de res, costilla",BIC,2,0,-155.5982519086722
+"Carne de res, falda",BIC,1,0,-203.39508169888146
+"Carne de res, falda",BIC,0,0,-202.78211201278464
+"Carne de res, falda",BIC,1,1,-200.66733006387534
+"Carne de res, falda",BIC,0,1,-199.4436265306671
+"Carne de res, falda",BIC,2,0,-193.7148112073876
+"Carne de res, lomo de brazo",BIC,6,3,-Inf
+"Carne de res, lomo de brazo",BIC,6,4,-Inf
+"Carne de res, lomo de brazo",BIC,5,5,-Inf
+"Carne de res, lomo de brazo",BIC,6,5,-Inf
+"Carne de res, lomo de brazo",BIC,3,6,-Inf
+"Carne de res, lomo fino",BIC,6,3,-Inf
+"Carne de res, lomo fino",BIC,6,4,-Inf
+"Carne de res, lomo fino",BIC,5,5,-Inf
+"Carne de res, lomo fino",BIC,6,5,-Inf
+"Carne de res, lomo fino",BIC,3,6,-Inf
+"Carne de res, pecho",BIC,1,0,-202.0264892133002
+"Carne de res, pecho",BIC,0,0,-201.0867735738015
+"Carne de res, pecho",BIC,1,1,-200.3408253247988
+"Carne de res, pecho",BIC,0,1,-199.38404246397633
+"Carne de res, pecho",BIC,2,0,-192.49544777754065
+"Carne de res, punta de anca",BIC,0,0,-207.90598328016023
+"Carne de res, punta de anca",BIC,1,0,-207.54567748034455
+"Carne de res, punta de anca",BIC,1,1,-203.8081269534469
+"Carne de res, punta de anca",BIC,0,1,-200.880738794074
+"Carne de res, punta de anca",BIC,2,0,-197.6834095745385
+Cebolla cabezona blanca bogotana,BIC,4,0,-17.71457802118418
+Cebolla cabezona blanca bogotana,BIC,5,0,-17.688663739054064
+Cebolla cabezona blanca bogotana,BIC,2,4,-17.573769805754438
+Cebolla cabezona blanca bogotana,BIC,0,5,-17.112442308211243
+Cebolla cabezona blanca bogotana,BIC,4,4,-16.322184825612737
+Cebolla cabezona blanca pastusa,BIC,4,4,-8.57647645238194
+Cebolla cabezona blanca pastusa,BIC,2,4,-8.472284011762738
+Cebolla cabezona blanca pastusa,BIC,4,0,-7.589962838867805
+Cebolla cabezona blanca pastusa,BIC,4,1,-5.312669338284024
+Cebolla cabezona blanca pastusa,BIC,3,0,-5.286441042048125
+Cebolla cabezona roja importada,BIC,6,0,-Inf
+Cebolla cabezona roja importada,BIC,6,1,-Inf
+Cebolla cabezona roja importada,BIC,5,2,-Inf
+Cebolla cabezona roja importada,BIC,6,2,-Inf
+Cebolla cabezona roja importada,BIC,5,3,-Inf
+Curuba,BIC,0,0,-123.18757310411294
+Curuba,BIC,1,0,-115.77267881973859
+Curuba,BIC,0,1,-115.515993286402
+Curuba,BIC,2,0,-112.77924844214286
+Curuba,BIC,1,1,-112.56224921493467
+Fríjol verde cargamanto,BIC,0,0,-60.27028895592815
+Fríjol verde cargamanto,BIC,0,1,-57.26057054214913
+Fríjol verde cargamanto,BIC,4,5,-55.81296125431598
+Fríjol verde cargamanto,BIC,1,4,-55.02330618140675
+Fríjol verde cargamanto,BIC,0,2,-54.966533168636964
+Habichuela,BIC,4,4,3.6771290780464625
+Habichuela,BIC,4,6,4.110037394775404
+Habichuela,BIC,6,5,4.472774848494026
+Habichuela,BIC,5,6,4.579348117690287
+Habichuela,BIC,4,0,5.572156989875992
+Harina de trigo,BIC,0,0,-224.42025779462477
+Harina de trigo,BIC,0,1,-213.9549377655879
+Harina de trigo,BIC,1,0,-213.89226618867227
+Harina de trigo,BIC,1,1,-210.22820561629328
+Harina de trigo,BIC,0,2,-203.7164364984571
+Harina precocida de maíz,BIC,1,0,-241.62409027931162
+Harina precocida de maíz,BIC,0,0,-241.25231112165653
+Harina precocida de maíz,BIC,1,1,-239.7074347680047
+Harina precocida de maíz,BIC,0,1,-237.44573526468557
+Harina precocida de maíz,BIC,2,0,-230.3888063116373
+Huevo blanco extra,BIC,6,1,-Inf
+Huevo blanco extra,BIC,6,2,-Inf
+Huevo blanco extra,BIC,5,3,-Inf
+Huevo blanco extra,BIC,6,3,-Inf
+Huevo blanco extra,BIC,5,4,-Inf
+Huevo rojo A,BIC,0,0,-225.6453628514547
+Huevo rojo A,BIC,1,0,-222.39359925609497
+Huevo rojo A,BIC,0,1,-219.7488803803748
+Huevo rojo A,BIC,1,1,-218.7668768209183
+Huevo rojo A,BIC,2,0,-212.09396704466477
+Huevo rojo AA,BIC,0,0,-231.71815028001373
+Huevo rojo AA,BIC,1,0,-229.36929146971588
+Huevo rojo AA,BIC,1,1,-226.0022796753771
+Huevo rojo AA,BIC,0,1,-224.30899799447914
+Huevo rojo AA,BIC,2,0,-219.0417801321868
+Huevo rojo extra,BIC,6,6,-224.406743453556
+Huevo rojo extra,BIC,0,0,-179.8553728729083
+Huevo rojo extra,BIC,0,1,-169.16526338530753
+Huevo rojo extra,BIC,1,0,-169.15506974352428
+Huevo rojo extra,BIC,1,1,-165.8729321654625
+Leche en polvo,BIC,0,0,-253.15134401528212
+Leche en polvo,BIC,1,0,-243.8816243577688
+Leche en polvo,BIC,0,1,-243.8771397811258
+Leche en polvo,BIC,1,1,-241.81775178717965
+Leche en polvo,BIC,0,2,-236.70503042864473
+Lechuga Batavia,BIC,4,3,-35.02073451617645
+Lechuga Batavia,BIC,3,3,-34.43491514130527
+Lechuga Batavia,BIC,2,5,-33.757282823968765
+Lechuga Batavia,BIC,3,4,-32.30193456471474
+Lechuga Batavia,BIC,2,4,-31.51537801326677
+Lenteja importada,BIC,1,0,-148.09257554450593
+Lenteja importada,BIC,1,1,-144.53763079400295
+Lenteja importada,BIC,0,0,-142.452739414104
+Lenteja importada,BIC,0,1,-142.0738352707717
+Lenteja importada,BIC,2,0,-139.20936691134708
+Limón Tahití,BIC,0,0,-28.031571569204274
+Limón Tahití,BIC,5,2,-23.37475340965412
+Limón Tahití,BIC,1,0,-22.515585696061514
+Limón Tahití,BIC,0,2,-22.263487244569326
+Limón Tahití,BIC,0,1,-21.990332716922374
+Lomitos de atún en lata,BIC,0,0,-202.31621525460417
+Lomitos de atún en lata,BIC,0,1,-197.65080065135018
+Lomitos de atún en lata,BIC,1,0,-194.97395055813723
+Lomitos de atún en lata,BIC,1,1,-194.53147730801925
+Lomitos de atún en lata,BIC,0,2,-187.99824728007744
+Lulo,BIC,0,0,-61.62429528892213
+Lulo,BIC,1,0,-55.086590488510275
+Lulo,BIC,0,1,-54.98010625367069
+Lulo,BIC,2,0,-52.21183045649817
+Lulo,BIC,1,1,-51.38344387726414
+Mango común,BIC,6,0,-Inf
+Mango común,BIC,6,1,-Inf
+Mango común,BIC,5,2,-Inf
+Mango común,BIC,6,2,-Inf
+Mango común,BIC,5,3,-Inf
+Manzana roja importada,BIC,1,0,-142.360411559145
+Manzana roja importada,BIC,0,0,-141.93207488377902
+Manzana roja importada,BIC,1,1,-140.3374486840223
+Manzana roja importada,BIC,0,1,-135.45285606906367
+Manzana roja importada,BIC,2,0,-133.66461161847832
+Manzana royal gala importada,BIC,0,0,-140.6093466057534
+Manzana royal gala importada,BIC,1,0,-140.47231747971932
+Manzana royal gala importada,BIC,1,1,-137.07313102484085
+Manzana royal gala importada,BIC,0,1,-133.05997160160777
+Manzana royal gala importada,BIC,2,0,-132.37150327808823
+Manzana verde importada,BIC,1,0,-136.17787113353901
+Manzana verde importada,BIC,0,0,-135.3866772477025
+Manzana verde importada,BIC,1,1,-134.2826906596835
+Manzana verde importada,BIC,0,1,-129.9557066521482
+Manzana verde importada,BIC,2,0,-128.58117182549725
+Maracuyá,BIC,3,4,-21.29723868338202
+Maracuyá,BIC,4,3,-20.1583302618251
+Maracuyá,BIC,4,4,-18.20868529348975
+Maracuyá,BIC,0,3,-18.17076908707638
+Maracuyá,BIC,3,3,-17.772446237082363
+Margarina,BIC,1,0,-204.6227073773372
+Margarina,BIC,1,1,-201.39384738417402
+Margarina,BIC,0,0,-197.3139764875927
+Margarina,BIC,2,0,-194.74508100094144
+Margarina,BIC,3,0,-192.951207280345
+Mora de Castilla,BIC,0,2,-71.23344651482597
+Mora de Castilla,BIC,1,2,-70.85978573350224
+Mora de Castilla,BIC,0,0,-69.23448954867267
+Mora de Castilla,BIC,2,2,-67.14627543815547
+Mora de Castilla,BIC,6,3,-66.35838792175176
+Naranja Sweet,BIC,5,6,-67.12471936241423
+Naranja Sweet,BIC,6,6,-66.58412848406405
+Naranja Sweet,BIC,6,3,-63.273987498380706
+Naranja Sweet,BIC,2,6,-62.491380885627606
+Naranja Sweet,BIC,6,4,-62.137735132005545
+Naranja Valencia,BIC,2,0,-51.522786203670606
+Naranja Valencia,BIC,0,0,-49.80536153762451
+Naranja Valencia,BIC,5,6,-48.98836985338704
+Naranja Valencia,BIC,2,1,-48.980412775458845
+Naranja Valencia,BIC,2,2,-48.483590643473804
+Panela redonda morena,BIC,0,0,-231.6687424013747
+Panela redonda morena,BIC,1,0,-227.10643909599176
+Panela redonda morena,BIC,1,1,-223.40335748945864
+Panela redonda morena,BIC,0,1,-220.93997774370015
+Panela redonda morena,BIC,3,0,-220.65293653186893
+Papa Betina,BIC,6,6,-59.208233749785904
+Papa Betina,BIC,5,6,-35.14900710279775
+Papa Betina,BIC,1,0,-17.530679916100773
+Papa Betina,BIC,0,1,-14.83152221466046
+Papa Betina,BIC,1,1,-14.066942264748818
+Papa capira,BIC,0,0,-18.268151749761188
+Papa capira,BIC,1,0,-15.27920443235029
+Papa capira,BIC,0,1,-13.851314852146395
+Papa capira,BIC,1,1,-13.749668992257
+Papa capira,BIC,2,0,-10.170835577159814
+Papa criolla limpia,BIC,5,0,-9.70477427298404
+Papa criolla limpia,BIC,3,0,-9.513926580989235
+Papa criolla limpia,BIC,0,0,-7.906242875196554
+Papa criolla limpia,BIC,4,0,-7.753442398159848
+Papa criolla limpia,BIC,3,1,-7.517069106817644
+Papa criolla sucia,BIC,5,0,-9.652313545520656
+Papa criolla sucia,BIC,3,0,-8.260765192676828
+Papa criolla sucia,BIC,4,0,-6.903424030825164
+Papa criolla sucia,BIC,0,0,-6.7463525927960575
+Papa criolla sucia,BIC,6,0,-6.218633022999782
+Papa nevada,BIC,0,0,-15.150972714615087
+Papa nevada,BIC,0,4,-14.460107017125821
+Papa nevada,BIC,1,4,-12.871884792191423
+Papa nevada,BIC,1,0,-12.611591321959757
+Papa nevada,BIC,0,3,-12.176596214501522
+Papa parda pastusa,BIC,0,0,-19.01546800857342
+Papa parda pastusa,BIC,1,0,-16.351963094582693
+Papa parda pastusa,BIC,1,1,-14.515901684214938
+Papa parda pastusa,BIC,0,1,-14.058263404462856
+Papa parda pastusa,BIC,2,0,-11.084170202604348
+Papa suprema,BIC,0,0,-15.91216195855354
+Papa suprema,BIC,1,0,-13.57638456592128
+Papa suprema,BIC,1,1,-11.22104785025553
+Papa suprema,BIC,0,1,-11.022089178216639
+Papa suprema,BIC,2,0,-8.292385468108101
+Papa única,BIC,0,0,-16.15338510376003
+Papa única,BIC,1,0,-13.738553652270234
+Papa única,BIC,1,1,-11.800718521767124
+Papa única,BIC,0,1,-11.506152721761815
+Papa única,BIC,2,0,-8.647646247408794
+Pastas alimenticias,BIC,0,1,-210.216071524152
+Pastas alimenticias,BIC,1,0,-207.38016509446854
+Pastas alimenticias,BIC,0,0,-207.18670157463947
+Pastas alimenticias,BIC,1,1,-206.49949555100812
+Pastas alimenticias,BIC,0,2,-199.75145811940925
+Pechuga de pollo,BIC,0,0,-222.74098742016372
+Pechuga de pollo,BIC,1,0,-215.41349220234545
+Pechuga de pollo,BIC,0,1,-212.12442192500615
+Pechuga de pollo,BIC,1,1,-212.03005147542183
+Pechuga de pollo,BIC,2,0,-204.58307504227227
+Piña gold,BIC,0,0,-117.63065300644678
+Piña gold,BIC,1,1,-111.1022909171432
+Piña gold,BIC,0,1,-110.62146724770813
+Piña gold,BIC,1,0,-110.47235613520803
+Piña gold,BIC,1,2,-107.35639923654296
+Piña manzana,BIC,0,0,-117.50511361944777
+Piña manzana,BIC,0,1,-112.27047063023835
+Piña manzana,BIC,1,0,-111.37758431290825
+Piña manzana,BIC,1,1,-109.28101321301133
+Piña manzana,BIC,0,2,-104.1504252630306
+Pollo entero congelado sin vísceras,BIC,0,0,-248.78801098309452
+Pollo entero congelado sin vísceras,BIC,1,0,-240.29185871088387
+Pollo entero congelado sin vísceras,BIC,0,1,-238.0834099480463
+Pollo entero congelado sin vísceras,BIC,1,1,-236.5753347750898
+Pollo entero congelado sin vísceras,BIC,2,0,-232.72327960538095
+Queso campesino,BIC,0,0,-268.6194341803916
+Queso campesino,BIC,1,0,-261.35556862999766
+Queso campesino,BIC,0,1,-261.2370062979715
+Queso campesino,BIC,1,1,-257.72772023399546
+Queso campesino,BIC,0,2,-256.29451175779286
+Repollo blanco,BIC,0,2,-40.23059077679421
+Repollo blanco,BIC,0,3,-39.56610846972451
+Repollo blanco,BIC,0,0,-39.14319096419875
+Repollo blanco,BIC,1,2,-39.07468679958009
+Repollo blanco,BIC,1,0,-37.46255246906197
+Sal yodada,BIC,0,0,-240.13121939433643
+Sal yodada,BIC,0,3,-232.35729234240569
+Sal yodada,BIC,1,0,-232.2804728979519
+Sal yodada,BIC,1,3,-231.32021393351823
+Sal yodada,BIC,2,3,-230.36958170885856
+Tilapia roja entera congelada,BIC,0,0,-185.1473078353795
+Tilapia roja entera congelada,BIC,0,1,-177.4852005946753
+Tilapia roja entera congelada,BIC,1,0,-176.95225453774302
+Tilapia roja entera congelada,BIC,1,1,-174.56469131730745
+Tilapia roja entera congelada,BIC,0,2,-168.49758727047333
+Tomate de árbol,BIC,0,0,-38.10465641891416
+Tomate de árbol,BIC,0,1,-34.94349410294918
+Tomate de árbol,BIC,2,0,-34.02125551463339
+Tomate de árbol,BIC,0,2,-33.11305979608661
+Tomate de árbol,BIC,1,0,-32.44062915664633
+Tomate larga vida,BIC,0,1,2.308959586010026
+Tomate larga vida,BIC,1,1,5.67689594147879
+Tomate larga vida,BIC,0,0,6.612085394059022
+Tomate larga vida,BIC,0,2,7.228294851069428
+Tomate larga vida,BIC,2,1,9.018467306038396
+Zanahoria,BIC,0,0,-7.76027914230275
+Zanahoria,BIC,0,1,-3.3706093663063186
+Zanahoria,BIC,1,0,-2.1972387137766702
+Zanahoria,BIC,2,0,-0.060286407532814223
+Zanahoria,BIC,1,1,0.00282390118113085
