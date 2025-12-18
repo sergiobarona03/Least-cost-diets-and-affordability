@@ -187,8 +187,9 @@ plot_heat_cuartiles <- function(ciudad_obj) {
   
   br_2yr  <- make_month_breaks(df$Year_Month, 24)
   
+  # Cuartiles por alimento dentro de cada grupo:
   df <- df %>%
-    group_by(Grupo) %>%
+    group_by(Ciudad, Grupo, Alimento) %>%
     mutate(
       Q = if_else(is.na(Precio_kg_prom), NA_character_, as.character(ntile(Precio_kg_prom, 4))),
       Q = factor(Q, levels = c("1","2","3","4"), labels = c("Q1","Q2","Q3","Q4"))
