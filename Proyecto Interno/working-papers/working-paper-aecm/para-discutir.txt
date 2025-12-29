@@ -1,0 +1,8 @@
+
+1. El modelo ECM utilizado sigue la formulación de Enders, quien propone representar un sistema cointegrado como un VAR en diferencias. Por lo tanto, las especificaciones del modelo ECM siguen la forma: dX{t} = A + Be{t-1} + CdX{t-1} + u{t}. Es decir, no incluye la elasticidad contemporánea de corto-plazo.
+
+2. Se debe verificar: ¿los resultados de la cointegración coinciden en Eviews? Se debe repetir las estimaciones.
+
+3. ¿Cambia algo si se estima el modelo como un VECM? Claramente, sólo nos interesa la causalidad unidireccional de la forma Wholesale -> Retail (no su converso).
+
+4. Revisar en otros estudios: ¿se incluye el efecto contemporáneo? 

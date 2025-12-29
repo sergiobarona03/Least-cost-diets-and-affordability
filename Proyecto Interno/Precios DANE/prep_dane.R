@@ -10,7 +10,7 @@ library(tidyr)
 library(janitor)
 
 # Definir directorio de trabajo
-setwd("C:/Users/Portatil/Desktop/Least-cost-diets-and-affordability/Proyecto Interno/Precios DANE")
+setwd("C:/Users/sergio.barona/Desktop/Least-cost-diets-and-affordability/Proyecto Interno/Precios DANE")
 
 # Leer funciones para la limpieza de datos
 source("f1_prep.R")
