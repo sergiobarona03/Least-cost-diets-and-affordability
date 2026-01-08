@@ -1,0 +1,43 @@
+adf_type,test_stat,cv_1pct,cv_5pct,cv_10pct,cod_mun,item_var,item,variable,n_obs,sa_failed
+drift,-1.8833285439195422,-3.51,-2.89,-2.58,76001,articulo_ipc,ARROZ PARA SECO,log(precio_ipc)_SA_X13,63,FALSE
+trend,-1.1964059805320106,-4.04,-3.45,-3.15,76001,articulo_ipc,ARROZ PARA SECO,log(precio_ipc)_SA_X13,63,FALSE
+drift,-3.0771792409454215,-3.51,-2.89,-2.58,76001,articulo_ipc,CEBOLLA CABEZONA,log(precio_ipc)_SA_X13,63,FALSE
+trend,-3.550475757778384,-4.04,-3.45,-3.15,76001,articulo_ipc,CEBOLLA CABEZONA,log(precio_ipc)_SA_X13,63,FALSE
+drift,-2.5338755727284683,-3.51,-2.89,-2.58,76001,articulo_ipc,PAPA,log(precio_ipc)_SA_X13,63,FALSE
+trend,-2.62974892709164,-4.04,-3.45,-3.15,76001,articulo_ipc,PAPA,log(precio_ipc)_SA_X13,63,FALSE
+drift,-1.546735169453424,-3.51,-2.89,-2.58,76001,articulo_ipc,PLÁTANO,log(precio_ipc)_SA_X13,63,FALSE
+trend,-1.7573303487200758,-4.04,-3.45,-3.15,76001,articulo_ipc,PLÁTANO,log(precio_ipc)_SA_X13,63,FALSE
+drift,-3.540609027375688,-3.51,-2.89,-2.58,76001,articulo_ipc,TOMATE,log(precio_ipc)_SA_X13,63,FALSE
+trend,-3.928586655414421,-4.04,-3.45,-3.15,76001,articulo_ipc,TOMATE,log(precio_ipc)_SA_X13,63,FALSE
+drift,-1.1191679826241028,-3.51,-2.89,-2.58,76001,articulo_ipc,YUCA,log(precio_ipc)_SA_X13,63,FALSE
+trend,-1.3224659476670948,-4.04,-3.45,-3.15,76001,articulo_ipc,YUCA,log(precio_ipc)_SA_X13,63,FALSE
+drift,-2.6319199879469823,-3.51,-2.89,-2.58,76001,articulo_ipc,ZANAHORIA,log(precio_ipc)_SA_X13,63,FALSE
+trend,-4.05434536272971,-4.04,-3.45,-3.15,76001,articulo_ipc,ZANAHORIA,log(precio_ipc)_SA_X13,63,FALSE
+drift,-1.754511337417443,-3.51,-2.89,-2.58,11001,articulo_ipc,ARROZ PARA SECO,log(precio_ipc)_SA_X13,63,FALSE
+trend,-0.9978719652737014,-4.04,-3.45,-3.15,11001,articulo_ipc,ARROZ PARA SECO,log(precio_ipc)_SA_X13,63,FALSE
+drift,-3.27036823415864,-3.51,-2.89,-2.58,11001,articulo_ipc,CEBOLLA CABEZONA,log(precio_ipc)_SA_X13,63,FALSE
+trend,-3.7488821597913917,-4.04,-3.45,-3.15,11001,articulo_ipc,CEBOLLA CABEZONA,log(precio_ipc)_SA_X13,63,FALSE
+drift,-3.2242907605143105,-3.51,-2.89,-2.58,11001,articulo_ipc,PAPA,log(precio_ipc)_SA_X13,63,FALSE
+trend,-3.1712523849694896,-4.04,-3.45,-3.15,11001,articulo_ipc,PAPA,log(precio_ipc)_SA_X13,63,FALSE
+drift,-1.9901148705233362,-3.51,-2.89,-2.58,11001,articulo_ipc,PLÁTANO,log(precio_ipc)_SA_X13,63,FALSE
+trend,-2.265575195695558,-4.04,-3.45,-3.15,11001,articulo_ipc,PLÁTANO,log(precio_ipc)_SA_X13,63,FALSE
+drift,-3.6840067352899055,-3.51,-2.89,-2.58,11001,articulo_ipc,TOMATE,log(precio_ipc)_SA_X13,63,FALSE
+trend,-4.022436054225238,-4.04,-3.45,-3.15,11001,articulo_ipc,TOMATE,log(precio_ipc)_SA_X13,63,FALSE
+drift,-0.8221975109950244,-3.51,-2.89,-2.58,11001,articulo_ipc,YUCA,log(precio_ipc)_SA_X13,63,FALSE
+trend,-0.7855201832995843,-4.04,-3.45,-3.15,11001,articulo_ipc,YUCA,log(precio_ipc)_SA_X13,63,FALSE
+drift,-2.289114927122107,-3.51,-2.89,-2.58,11001,articulo_ipc,ZANAHORIA,log(precio_ipc)_SA_X13,63,FALSE
+trend,-3.3985852518518307,-4.04,-3.45,-3.15,11001,articulo_ipc,ZANAHORIA,log(precio_ipc)_SA_X13,63,FALSE
+drift,-1.8234506932027945,-3.51,-2.89,-2.58,05001,articulo_ipc,ARROZ PARA SECO,log(precio_ipc)_SA_X13,63,FALSE
+trend,-1.1408410436602654,-4.04,-3.45,-3.15,05001,articulo_ipc,ARROZ PARA SECO,log(precio_ipc)_SA_X13,63,FALSE
+drift,-3.502201363726732,-3.51,-2.89,-2.58,05001,articulo_ipc,CEBOLLA CABEZONA,log(precio_ipc)_SA_X13,63,FALSE
+trend,-4.328010150905452,-4.04,-3.45,-3.15,05001,articulo_ipc,CEBOLLA CABEZONA,log(precio_ipc)_SA_X13,63,FALSE
+drift,-2.6566087379001844,-3.51,-2.89,-2.58,05001,articulo_ipc,PAPA,log(precio_ipc)_SA_X13,63,FALSE
+trend,-2.7318095100604816,-4.04,-3.45,-3.15,05001,articulo_ipc,PAPA,log(precio_ipc)_SA_X13,63,FALSE
+drift,-1.2287150414767816,-3.51,-2.89,-2.58,05001,articulo_ipc,PLÁTANO,log(precio_ipc)_SA_X13,63,FALSE
+trend,-1.6670924316639901,-4.04,-3.45,-3.15,05001,articulo_ipc,PLÁTANO,log(precio_ipc)_SA_X13,63,FALSE
+drift,-3.8592809200424187,-3.51,-2.89,-2.58,05001,articulo_ipc,TOMATE,log(precio_ipc)_SA_X13,63,FALSE
+trend,-4.602412431045315,-4.04,-3.45,-3.15,05001,articulo_ipc,TOMATE,log(precio_ipc)_SA_X13,63,FALSE
+drift,-1.4246364708897477,-3.51,-2.89,-2.58,05001,articulo_ipc,YUCA,log(precio_ipc)_SA_X13,63,FALSE
+trend,-1.906027675804912,-4.04,-3.45,-3.15,05001,articulo_ipc,YUCA,log(precio_ipc)_SA_X13,63,FALSE
+drift,-2.373841271947746,-3.51,-2.89,-2.58,05001,articulo_ipc,ZANAHORIA,log(precio_ipc)_SA_X13,63,FALSE
+trend,-3.8420532507675085,-4.04,-3.45,-3.15,05001,articulo_ipc,ZANAHORIA,log(precio_ipc)_SA_X13,63,FALSE

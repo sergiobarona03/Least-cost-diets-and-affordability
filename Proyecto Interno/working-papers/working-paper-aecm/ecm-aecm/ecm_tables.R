@@ -2,6 +2,10 @@
 ## ecm_tables.R
 ## Builds your 5 Excel tables from date_tag_ecm_raw.rds
 ## Each table is exported as a separate .xlsx file
+## NOTE (updated):
+##   - Table 1 is exported in LONG format (not wide)
+##   - Table 2 is exported in LONG format but with b, se, p-value as COLUMNS
+##   - They report only articulo_ipc (no pair)
 ############################################################
 
 library(tidyverse)
@@ -16,44 +20,47 @@ rds_path <- file.path(out_dir, paste0(date_tag, "_ecm_raw.rds"))
 obj <- readRDS(rds_path)
 
 coint_long <- obj$coint_long
-lr_long <- obj$lr_long
-ecm_long <- obj$ecm_long
-lags_long <- obj$lags_long
+lr_long    <- obj$lr_long
+ecm_long   <- obj$ecm_long
+lags_long  <- obj$lags_long
 
 pair_lab <- function(art, ali) paste0(art, " / ", ali)
 
 # -----------------------------
-# Table 1: cointegration p-values
+# Table 1 (LONG): cointegration p-values
+# Structure:
+#   city | articulo_ipc | type | p_value
 # -----------------------------
 tab1 <- coint_long %>%
-  mutate(pair = pair_lab(articulo_ipc, alimento_sipsa)) %>%
-  pivot_longer(starts_with("p_type"),
-               names_to = "type", values_to = "p") %>%
-  mutate(type = recode(type, p_type1 = "Type 1", p_type2 = "Type 2", p_type3 = "Type 3")) %>%
-  unite(col = "col", city, type, sep = " - ") %>%
-  select(pair, col, p) %>%
-  pivot_wider(names_from = col, values_from = p) %>%
-  arrange(pair) %>%
-  select(pair,
-         any_of(c("Cali - Type 1","Cali - Type 2","Cali - Type 3",
-                  "Bogotá - Type 1","Bogotá - Type 2","Bogotá - Type 3",
-                  "Medellín - Type 1","Medellín - Type 2","Medellín - Type 3")))
+  pivot_longer(
+    cols = starts_with("p_type"),
+    names_to = "type",
+    values_to = "p_value"
+  ) %>%
+  mutate(
+    type = recode(type,
+                  p_type1 = "Type 1",
+                  p_type2 = "Type 2",
+                  p_type3 = "Type 3"),
+    p_value = as.numeric(p_value)
+  ) %>%
+  select(city, articulo_ipc, type, p_value) %>%
+  arrange(articulo_ipc, city, type)
 
 # -----------------------------
-# Table 2: long-run beta (b,se,p) by city
+# Table 2 (LONG): long-run beta by city (b, se, p-value as COLUMNS)
+# Structure:
+#   city | articulo_ipc | b | se | p-value
 # -----------------------------
 tab2 <- lr_long %>%
-  mutate(pair = pair_lab(articulo_ipc, alimento_sipsa)) %>%
-  pivot_longer(c(b, se, p_value), names_to = "stat", values_to = "val") %>%
-  mutate(stat = recode(stat, b = "b", se = "se", p_value = "p-value")) %>%
-  unite(col = "col", city, stat, sep = " - ") %>%
-  select(pair, col, val) %>%
-  pivot_wider(names_from = col, values_from = val) %>%
-  arrange(pair) %>%
-  select(pair,
-         any_of(c("Cali - b","Cali - se","Cali - p-value",
-                  "Bogotá - b","Bogotá - se","Bogotá - p-value",
-                  "Medellín - b","Medellín - se","Medellín - p-value")))
+  transmute(
+    city = city,
+    articulo_ipc = articulo_ipc,
+    b = as.numeric(b),
+    se = as.numeric(se),
+    `p-value` = as.numeric(p_value)
+  ) %>%
+  arrange(articulo_ipc, city)
 
 # -----------------------------
 # Nice terms for ECM tables
@@ -78,8 +85,10 @@ build_city_ecm_table <- function(city_name, ecm_long) {
   
   tmp <- ecm_long %>%
     filter(city == city_name) %>%
-    mutate(pair = pair_lab(articulo_ipc, alimento_sipsa),
-           term2 = map_chr(term, nice_term)) %>%
+    mutate(
+      pair  = pair_lab(articulo_ipc, alimento_sipsa),
+      term2 = map_chr(term, nice_term)
+    ) %>%
     filter(!is.na(term2)) %>%
     select(pair, term2, b, se, p_value)
   
@@ -97,18 +106,17 @@ build_city_ecm_table <- function(city_name, ecm_long) {
   bind_rows(out)
 }
 
-tab3 <- build_city_ecm_table("Cali", ecm_long)
-tab4 <- build_city_ecm_table("Bogotá", ecm_long)
+tab3 <- build_city_ecm_table("Cali",     ecm_long)
+tab4 <- build_city_ecm_table("Bogotá",   ecm_long)
 tab5 <- build_city_ecm_table("Medellín", ecm_long)
 
 # -----------------------------
-# (Optional) Save lag-selection top-5 table too (often useful)
+# (Optional) Save lag-selection top-5 table too
 # -----------------------------
 tab_lags <- lags_long %>%
   mutate(pair = pair_lab(articulo_ipc, alimento_sipsa)) %>%
   select(city, pair, k, crit, criterion) %>%
   arrange(city, pair, crit)
-
 
 # -----------------------------
 # Export: EACH TABLE in a separate .xlsx

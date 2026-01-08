@@ -1,8 +1,8 @@
 ###################################################
-## Prueba: Definir alimentos para el análisis    ##
+## Prueba: Definir alimentos para el anC!lisis    ##
 ###################################################
 
-# Cargar librerías
+# Cargar librerC-as
 library(lubridate)
 library(tidyverse)
 library(readxl)
@@ -22,7 +22,7 @@ path.input <- paste0("working-papers\\working-paper-aecm\\input\\",
 coverage_city <- read_excel(path.cover)
 data_merged   <- read_excel(path.input)
 
-# Estandarizar cod_mun (por si viene numérico)
+# Estandarizar cod_mun (por si viene numC)rico)
 coverage_city <- coverage_city %>%
   mutate(cod_mun = sprintf("%05d", as.integer(cod_mun)))
 
@@ -32,8 +32,49 @@ data_merged <- data_merged %>%
 # Eliminar alimentos ad hoc
 coverage_city <- coverage_city %>%
   filter(!alimento_sipsa %in% c("Cebolla cabezona roja importada",
-                                "Tomate riñón",
+                                "Tomate riC1C3n",
                                 "Arroz de segunda"))
+
+# Eliminar alimentos (post an??lisis)
+coverage_city <- coverage_city %>%
+  filter(
+    # PAPA
+    !(articulo_ipc == "PAPA") |
+      (cod_mun == "76001" & alimento_sipsa == "Papa capira") |
+      (cod_mun == "05001" & alimento_sipsa == "Papa capira") |
+      (cod_mun == "11001" & alimento_sipsa == "Papa R-12 negra"),
+    
+    # TOMATE (all cities)
+    !(articulo_ipc == "TOMATE") |
+      (alimento_sipsa == "Tomate larga vida"),
+    
+    # PL??TANO (all cities)
+    !(articulo_ipc %in% c("PLÁTANO", "PLATANO")) |
+      (alimento_sipsa == "Plátano hartón verde"),
+    
+    # YUCA
+    !(articulo_ipc == "YUCA") |
+      (cod_mun == "05001" & alimento_sipsa == "Yuca ICA") |
+      (cod_mun == "76001" & alimento_sipsa == "Yuca ICA") |
+      (cod_mun == "11001" & alimento_sipsa == "Yuca llanera"),
+    
+    # CEBOLLA CABEZONA
+    !(articulo_ipc == "CEBOLLA CABEZONA") |
+      (cod_mun %in% c("05001", "11001") &
+         alimento_sipsa == "Cebolla cabezona blanca") |
+      (cod_mun == "76001" &
+         alimento_sipsa == "Cebolla cabezona blanca bogotana"),
+    
+    # ZANAHORIA  <-- NEW
+    !(articulo_ipc == "ZANAHORIA") |
+      (cod_mun == "05001" & alimento_sipsa == "Zanahoria larga vida") |
+      (cod_mun == "76001" & alimento_sipsa == "Zanahoria bogotana") |
+      (cod_mun == "11001" & alimento_sipsa == "Zanahoria")
+  )
+
+write_xlsx(coverage_city, 
+           paste0("working-papers\\working-paper-aecm\\input\\",
+                  date_tag, "_adj_coverage_ipc_sipsa.xlsx"))
 
 # Dataset para cada ciudad
 cali     <- data_merged %>% filter(cod_mun == "76001")

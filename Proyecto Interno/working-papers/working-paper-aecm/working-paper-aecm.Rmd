@@ -1,0 +1,521 @@
+---
+title: "**Transmisión de precios y ajuste asimétrico al equilibrio: evidencia para las principales ciudades de Colombia mediante modelos de corrección de error [Documento de Trabajo 26/01]**"
+author:
+  - Sergio A. Barona-Montoya^[Department of Economics and Finance, Pontificia Universidad Javeriana, Cali, Colombia. ORCID 0000-0001-8390-6673]
+abstract: |
+  [Abstract text to be added]
+output:
+  pdf_document:
+    citation_package: natbib
+    keep_tex: yes
+    fig_caption: yes
+    number_sections: yes
+    latex_engine: xelatex
+bibliography: refs-ob-rif-informal.bib
+geometry: margin=1in
+fontsize: 12pt
+header-includes:
+- \usepackage{booktabs}
+- \usepackage{longtable}
+- \usepackage{array}
+- \usepackage{multirow}
+- \usepackage{wrapfig}
+- \usepackage{float}
+- \usepackage{colortbl}
+- \usepackage{pdflscape}
+- \usepackage{tabu}
+- \usepackage{threeparttable}
+- \usepackage{threeparttablex}
+- \usepackage[normalem]{ulem}
+- \usepackage{makecell}
+- \usepackage{xcolor}
+- \usepackage{amsmath}
+- \usepackage{amssymb}
+- \usepackage{natbib}
+- \setcitestyle{authoryear,open={(},close={)}}
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+wd_path <- "C:/Users/sergio.barona/Desktop/Least-cost-diets-and-affordability/Proyecto Interno/"
+knitr::opts_knit$set(root.dir = wd_path)
+```
+
+# Introducción
+
+# Datos
+
+## Fuentes de datos: precios minoristas (DANE–IPC)
+
+La primera fuente de información corresponde a los precios minoristas reportados por el Departamento Administrativo Nacional de Estadística (DANE), utilizados como insumo para el cálculo del Índice de Precios al Consumidor (IPC) (DANE, 2024). El periodo de análisis se extiende desde enero de 1999 hasta marzo de 2018 y cubre las trece principales ciudades del país: Bogotá D.C., Medellín A.M., Cali A.M., Barranquilla A.M., Bucaramanga A.M., Manizales A.M., Pereira A.M., Cúcuta A.M., Pasto, Ibagué, Montería, Cartagena y Villavicencio.
+
+Una característica central de esta base de datos es su estructura de clasificación, la cual se fundamenta en la canasta de seguimiento del IPC 2008. Dicha estructura organiza la información de precios a través de distintos niveles jerárquicos de agregación, lo que permite un análisis flexible y consistente de la dinámica de precios a diferentes escalas. En particular, la clasificación distingue entre cinco niveles: grupo, subgrupo, clase, gasto básico y artículo.
+
+```{r, echo=FALSE, warning=FALSE}
+date_tag <- "261225"
+
+retail_99_18 = readxl::read_excel("Precios DANE\\OUTPUT_DANE\\precios_IPC_1999_2018.xlsx")
+
+library(knitr)
+kable(
+  head(retail_99_18),
+  caption = "First rows of the IPC retail price dataset (1999–2018)"
+)
+```
+
+El nivel de **grupo** corresponde a la agregación más amplia de bienes y servicios, y agrupa conjuntos homogéneos de consumo. Cada grupo se subdivide en **subgrupos**, los cuales capturan categorías más específicas dentro de cada conjunto. A su vez, los subgrupos se desagregan en **clases**, que representan una segmentación aún más detallada del consumo. El nivel de **gasto básico** constituye la unidad operativa de seguimiento dentro del IPC y agrupa productos con características similares y patrones de consumo comparables. Finalmente, el nivel de **artículo** corresponde al producto específico cuyo precio es observado y reportado de manera directa.
+
+Esta estructura jerárquica garantiza coherencia entre los distintos niveles de agregación y permite analizar la transmisión de precios desde desagregaciones finas hasta agregados más amplios, lo cual resulta particularmente relevante para la estimación de modelos de corrección de error y modelos de corrección de error asimétricos a nivel urbano.
+
+## Fuentes de datos: precios mayoristas (SIPSA - DANE)
+
+La información sobre los precios mayoristas corresponde a los datos del Sistema de Información de Precios y Abastecimiento del Sector Agropecuario (SIPSA), publicados por el DANE. El SIPSA no sólo informa, con frecuencia diaria, sobre los precios mayoristas de los productos agroalimentarios que se comercializan en el país; sino que, además, proporciona información, con frecuencia quincenal, sobre el nivel de abastecimiento de los alimentos en las ciudades. En este estudio se utilizarán datos de SIPSA para las tres principales ciudades de Colombia (Cali, Bogotá y Medellín) durante el período 2013:1 – 2024:1, con frecuencia mensual.
+
+A continuación, se presenta la estructura de los datos:
+
+```{r, echo=FALSE, warning=FALSE}
+# Lista output
+whole_list = vector(mode = "list", length = length(2013:2018))
+
+# Cargar series de sipsa
+for (k in 2013:2018) {
+  whole_list[[k]] = readRDS(paste0("Precios al por mayor\\Bases historicas\\", k,".rds"))
+}
+
+# whole_18 significa whole hasta 2018
+whole_18 <- do.call(rbind, whole_list)
+
+library(knitr)
+
+kable(
+  head(whole_18),
+  caption = "First rows of the SIPSA wholesale price dataset (2013–2018)"
+)
+```
+
+
+# Metodología
+
+## Mapeo IPC–SIPSA
+
+La implementación de la metodología presupone un mapeo previo entre los alimentos reportados por el DANE en la construcción del IPC y los alimentos reportados por SIPSA (en adelante, **mapeo IPC–SIPSA**). En términos operativos, este procedimiento establece correspondencias entre ambas fuentes con el fin de asegurar comparabilidad conceptual y estadística en las series de precios. En particular, para cada alimento reportado en SIPSA se identifica un alimento equivalente dentro de la canasta del IPC. A continuación, se presenta el mapeo IPC–SIPSA.
+
+```{r, echo=FALSE, warning=FALSE}
+library(readxl)
+ipc_sipsa = read_excel(paste0("working-papers\\working-paper-aecm\\input\\",
+                             date_tag, "_mapeo_ipc_sipsa_ajustado.xlsx"))
+
+library(knitr)
+
+kable(
+  head(ipc_sipsa),
+  caption = "Mapeo IPC-SIPSA"
+)
+```
+
+Es importante destacar que el mapeo no sigue una relación uno a uno, sino una relación **n a 1** (muchos a uno). En consecuencia, un mismo alimento definido en la base del IPC puede agrupar varios alimentos equivalentes reportados en SIPSA. (Por ejemplo, el ítem *arroz para seco* en el IPC puede corresponder, en SIPSA, a categorías como *arroz de primera*, *arroz de segunda* y *arroz excelso*). Este tipo de correspondencia refleja diferencias en el nivel de desagregación y en los criterios de clasificación entre las dos fuentes, y constituye un elemento central para la correcta construcción de series comparables en el análisis de transmisión de precios.
+
+La siguiente tabla presenta el mapeo final utilizado en el análisis posterior:
+
+
+```{r, echo=FALSE, warning=FALSE}
+library(readxl)
+coverage_city = read_excel(paste0("working-papers\\working-paper-aecm\\input\\",
+                  date_tag, "_adj_coverage_ipc_sipsa.xlsx"))
+
+library(knitr)
+
+kable(
+  coverage_city,
+  caption = "Mapeo IPC-SIPSA: Alimentos incluidos en el análisis (Cali, Bogotá, Medellín)"
+)
+```
+
+## Modelo de corrección de error
+
+A partir de pruebas de Dickey–Fuller aumentadas (ADF), se examina la estacionariedad de las series temporales correspondientes a los precios de los alimentos analizados. La existencia de relaciones de cointegración entre los precios minoristas y mayoristas se evalúa mediante la prueba de Engle y Granger (1987).
+
+Como señala Enders (2014), una característica fundamental de las variables cointegradas es que su trayectoria temporal está determinada por las desviaciones respecto del equilibrio de largo plazo. En consecuencia, las dinámicas de corto plazo deben estar condicionadas por dichas desviaciones. El modelo dinámico que permite capturar simultáneamente la relación de largo plazo y los ajustes de corto plazo es el modelo de corrección de error (*Error Correction Model*, ECM).
+
+### Modelo de corrección de error estándar (ECM)
+
+Sea $\ln(P_{it}^{min})$ el logaritmo natural del precio minorista y sea $\ln(P_{it}^{may})$ el logaritmo natural del precio mayorista del alimento $i$ en el período $t$. La relación de equilibrio de largo plazo entre ambos precios viene dada por:
+
+$$
+\ln(P_{it}^{min}) = \alpha_i + \beta_i \ln(P_{it}^{may}) + e_{it}.
+$$
+
+El término de corrección de error corresponde al residuo rezagado de la relación de cointegración:
+
+$$
+e_{i,t-1} = \ln(P_{i,t-1}^{min}) - \alpha_i - \beta_i \ln(P_{i,t-1}^{may}).
+$$
+
+Este término captura el desequilibrio existente en el período $t-1$. Si $e_{i,t-1} > 0$, el precio minorista se encuentra por encima del nivel consistente con el equilibrio de largo plazo, dado el precio mayorista. En este contexto, la dinámica de corto plazo se modela mediante la siguiente especificación ECM:
+
+$$
+\Delta \ln(P_{it}^{min}) =
+c_{i0}
++ \sum_{p=1}^{P} \beta_{ip} \, \Delta \ln(P_{i,t-p}^{min})
++ \sum_{q=1}^{Q} \gamma_{iq} \, \Delta \ln(P_{i,t-q}^{may})
++ \theta_i \, e_{i,t-1}
++ u_{it}.
+$$
+
+En esta ecuación, los coeficientes $\beta_{ip}$ capturan la dinámica autorregresiva de corto plazo del precio minorista, mientras que los coeficientes $\gamma_{iq}$ reflejan el impacto de corto plazo de variaciones en el precio mayorista. El parámetro $\theta_i$ mide la velocidad de ajuste hacia el equilibrio de largo plazo. Se espera que $\theta_i < 0$, de modo que desviaciones positivas del equilibrio sean corregidas mediante reducciones en el crecimiento del precio minorista.
+
+### Modelo de corrección de error asimétrico (A-ECM)
+
+Siguiendo estudios previos sobre transmisión asimétrica de precios (por ejemplo, Chesnes, 2010), se implementa un modelo de corrección de error que permite capturar posibles asimetrías tanto en la velocidad como en el patrón de ajuste ante aumentos y reducciones en los precios. La especificación del modelo de corrección de error asimétrico (A-ECM) adopta la siguiente forma:
+
+$$
+\begin{aligned}
+\Delta \ln(P_t^{min}) =\;&
+\sum_{i=0}^{L_1^+} \beta_{1i}^+ \, \Delta^+ \ln(P_{t-i}^{may})
++ \sum_{i=0}^{L_1^-} \beta_{1i}^- \, \Delta^- \ln(P_{t-i}^{may}) \\
+&+ \sum_{i=0}^{L_2^+} \beta_{2i}^+ \, \Delta^+ \ln(P_{t-i}^{min})
++ \sum_{i=0}^{L_2^-} \beta_{2i}^- \, \Delta^- \ln(P_{t-i}^{min}) \\
+&+ \beta_3^+ \, e_{t-1}^+
++ \beta_3^- \, e_{t-1}^-
++ u_t .
+\end{aligned}
+$$
+
+En esta expresión, $\Delta^+$ y $\Delta^-$ representan las variaciones positivas y negativas de las variables respectivas. El término de corrección de error $e_{t-1}$ captura la relación de equilibrio de largo plazo entre el precio minorista y el precio mayorista y se descompone en sus componentes positivo y negativo, $e_{t-1}^+$ y $e_{t-1}^-$.
+
+Se espera que ambos coeficientes $\beta_3^+$ y $\beta_3^-$ sean negativos. En particular, si el precio minorista se encuentra por encima del equilibrio de largo plazo ($e_{t-1} > 0$), el ajuste debería materializarse a través de una reducción en el crecimiento del precio minorista; de manera análoga, si el precio minorista se sitúa por debajo del equilibrio ($e_{t-1} < 0$), el ajuste debería reflejarse en un aumento de dicho crecimiento.
+
+Siguiendo la metodología en dos etapas propuesta por Engle y Granger (1987), la relación de largo plazo se estima a partir de la siguiente ecuación:
+
+$$
+\ln(P_{t-1}^{min}) = \alpha_0 + \beta_1 \ln(P_{t-1}^{may}) + e_{t-1}.
+$$
+
+Los residuales estimados de esta ecuación se incorporan posteriormente en la especificación A-ECM como términos de corrección de error, permitiendo evaluar empíricamente la presencia de ajustes asimétricos en la transmisión de precios.
+
+# Resultados
+
+## Análisis de series de tiempo
+
+### Comportamiento de los precios minoristas y precios mayoristas
+
+\begin{figure}[htbp]
+\centering
+\includegraphics{output/ts-output/log-levels-plots/261225_log_retail_vs_wholesale_7x3.png}
+\caption{Log retail (IPC) and wholesale (SIPSA) prices by food and city}
+\end{figure}
+
+\begin{figure}[htbp]
+\centering
+\includegraphics{output/ts-output/seasonal-plots/261225_seasonal_retail_vs_wholesale_7x3_x13.png}
+\caption{Log retail (IPC) and wholesale (SIPSA) prices by food and city}
+\end{figure}
+
+### Pruebas de raíz unitaria
+
+```{r adf-table-q1, echo=FALSE, message=FALSE, warning=FALSE}
+library(dplyr)
+library(knitr)
+
+# ---- 1) Choose which results to report (wholesale / retail) ----
+# Assumes you already ran the script and have:
+#   wholesale_results, retail_results
+# If not, read from disk:
+
+retail_results    <- readr::read_csv(file.path("working-papers\\working-paper-aecm\\output\\ts-output\\adf-test\\", paste0(date_tag, "_adf_retail_logSA_X13.csv")))
+
+# ---- 2) Q1-style tidy table: stars + compact columns ----
+make_adf_table <- function(res_df, title_caption) {
+
+  res_df %>%
+    filter(!is.na(test_stat)) %>%
+    mutate(
+      reject_10 = test_stat < cv_10pct,
+      reject_05 = test_stat < cv_5pct,
+      reject_01 = test_stat < cv_1pct,
+      stars = case_when(
+        reject_01 ~ "***",
+        reject_05 ~ "**",
+        reject_10 ~ "*",
+        TRUE ~ ""
+      ),
+      test_stat_fmt = sprintf("%.3f%s", test_stat, stars),
+      cv_1 = sprintf("%.3f", cv_1pct),
+      cv_5 = sprintf("%.3f", cv_5pct),
+      cv_10 = sprintf("%.3f", cv_10pct),
+      adf_type = recode(adf_type, drift = "Intercept", trend = "Intercept + trend")
+    ) %>%
+    select(cod_mun, item, adf_type, test_stat_fmt, cv_1, cv_5, cv_10, n_obs) %>%
+    arrange(cod_mun, item, adf_type) %>%
+    rename(
+      City = cod_mun,
+      Item = item,
+      Specification = adf_type,
+      `ADF statistic` = test_stat_fmt,
+      `CV 1%` = cv_1,
+      `CV 5%` = cv_5,
+      `CV 10%` = cv_10,
+      N = n_obs
+    ) %>%
+    kable(
+      booktabs = TRUE,
+      caption = title_caption,
+      align = "lllcclcl"
+    )
+}
+
+# ---- 3) Print the two tables (Retail + Wholesale) ----
+
+make_adf_table(
+  retail_results,
+  "Augmented Dickey Fuller tests on seasonally adjusted log retail prices (IPC). Notes: X 13 seasonal adjustment is applied to log price series; reported critical values correspond to the Dickey Fuller distribution. Significance: *** p<0.01, ** p<0.05, * p<0.10."
+)
+```
+
+
+```{r adf-table2-q1, echo=FALSE, message=FALSE, warning=FALSE}
+library(dplyr)
+library(knitr)
+
+# ---- 1) Choose which results to report (wholesale / retail) ----
+# Assumes you already ran the script and have:
+#   wholesale_results, retail_results
+# If not, read from disk:
+
+wholesale_results    <- readr::read_csv(file.path("working-papers\\working-paper-aecm\\output\\ts-output\\adf-test\\", paste0(date_tag, "_adf_wholesale_logSA_X13.csv")))
+
+# ---- 2) Q1-style tidy table: stars + compact columns ----
+make_adf_table <- function(res_df, title_caption) {
+
+  res_df %>%
+    filter(!is.na(test_stat)) %>%
+    mutate(
+      reject_10 = test_stat < cv_10pct,
+      reject_05 = test_stat < cv_5pct,
+      reject_01 = test_stat < cv_1pct,
+      stars = case_when(
+        reject_01 ~ "***",
+        reject_05 ~ "**",
+        reject_10 ~ "*",
+        TRUE ~ ""
+      ),
+      test_stat_fmt = sprintf("%.3f%s", test_stat, stars),
+      cv_1 = sprintf("%.3f", cv_1pct),
+      cv_5 = sprintf("%.3f", cv_5pct),
+      cv_10 = sprintf("%.3f", cv_10pct),
+      adf_type = recode(adf_type, drift = "Intercept", trend = "Intercept + trend")
+    ) %>%
+    select(cod_mun, item, adf_type, test_stat_fmt, cv_1, cv_5, cv_10, n_obs) %>%
+    arrange(cod_mun, item, adf_type) %>%
+    rename(
+      City = cod_mun,
+      Item = item,
+      Specification = adf_type,
+      `ADF statistic` = test_stat_fmt,
+      `CV 1%` = cv_1,
+      `CV 5%` = cv_5,
+      `CV 10%` = cv_10,
+      N = n_obs
+    ) %>%
+    kable(
+      booktabs = TRUE,
+      caption = title_caption,
+      align = "lllcclcl"
+    )
+}
+
+# ---- 3) Print the two tables (Retail + Wholesale) ----
+make_adf_table(
+  wholesale_results,
+  "Augmented Dickey Fuller tests on seasonally adjusted log wholesale prices (SIPSA). Notes: X 13 seasonal adjustment is applied to log price series; reported critical values correspond to the Dickey Fuller distribution. Significance: *** p<0.01, ** p<0.05, * p<0.10."
+)
+
+```
+
+## Análisis de cointegración de Engle-Granger
+
+Las Tablas X e Y reportan los resultados de los test de cointegración de Engle-Granger entre los precios minoristas (IPC) y mayoristas (SIPSA), expresados en logaritmos. Puesto que el estadístico dependen de la especificación, la longitud del rezago en la regresión "auxiliar2 se selecciona de acuerdo con criterios de información (AIC y BIC). La Tabla X presenta los resultados cuando la selección del rezago óptimo se realiza a partir de una regresión ADF con constante (especificación "drift"). En contraste, la Tabla Y reporta los resultados correspondientes a una regresión ADF que incluye tanto la constante como la tendencia lineal. Finalmente, la inferencia final sobre la cointegración es implementada usando la función ´coint.test´, que considera los valores críticos y p-valores de MacKinnon.
+
+
+
+```{r coint-eg-q1-tables, echo=FALSE, message=FALSE, warning=FALSE}
+library(dplyr)
+library(knitr)
+library(kableExtra)
+library(readr)
+
+# ------------------------------------------------------------------
+# Load results (or assume they already exist in memory)
+# ------------------------------------------------------------------
+out_dir = "working-papers/working-paper-aecm/output/ts-output/coint-test"
+# If already in memory, comment these lines out
+coint_drift <- read_csv(
+  file.path(out_dir, paste0(date_tag,
+    "_coint_results_SA_logprices_IC_BIC_maxlag12_drift.csv"))
+)
+
+coint_trend <- read_csv(
+  file.path(out_dir, paste0(date_tag,
+    "_coint_results_SA_logprices_IC_BIC_maxlag12_trend.csv"))
+)
+
+# ------------------------------------------------------------------
+# Helper: format EG results for publication
+# ------------------------------------------------------------------
+format_coint_table <- function(df) {
+  df %>%
+    filter(!is.na(EG),
+           type %in% c("type 1", "type 2")) %>%
+    mutate(
+      stars = case_when(
+        p.value < 0.01 ~ "***",
+        p.value < 0.05 ~ "**",
+        p.value < 0.10 ~ "*",
+        TRUE ~ ""
+      ),
+      EG_fmt = sprintf("%.3f%s", EG, stars),
+      p_fmt  = sprintf("%.3f", p.value)
+    ) %>%
+    select(
+      City = city,
+      `Retail item (IPC)` = articulo_ipc,
+      `Wholesale item (SIPSA)` = alimento_sipsa,
+      Specification = type,
+      `EG statistic` = EG_fmt,
+      `p-value` = p_fmt
+    ) %>%
+    arrange(City, `Retail item (IPC)`, Specification)
+}
+
+tbl_drift <- format_coint_table(coint_drift)
+tbl_trend <- format_coint_table(coint_trend)
+
+# ------------------------------------------------------------------
+# Table A: Lag selection using ADF with intercept (drift)
+# ------------------------------------------------------------------
+kable(
+  tbl_drift,
+  booktabs = TRUE,
+  caption = paste0(
+    "Engle–Granger cointegration tests using seasonally adjusted log prices. ",
+    "Lag length selected by BIC from residual ADF regression with intercept."
+  ),
+  align = "lllclccc"
+) %>%
+  kable_styling(
+    latex_options = c("hold_position", "scale_down"),
+    font_size = 9
+  )
+
+cat("\n\n")
+
+# ------------------------------------------------------------------
+# Table B: Lag selection using ADF with intercept and trend
+# ------------------------------------------------------------------
+kable(
+  tbl_trend,
+  booktabs = TRUE,
+  caption = paste0(
+    "Engle–Granger cointegration tests using seasonally adjusted log prices. ",
+    "Lag length selected by BIC from residual ADF regression with intercept and trend."
+  ),
+  align = "lllclccc"
+) %>%
+  kable_styling(
+    latex_options = c("hold_position", "scale_down"),
+    font_size = 9
+  )
+```
+
+Adicionalmente, se consideran dos especificaciones estándar del test de Engle-Granger. La especificación "type 1" corresponde a un modelo sin tendencia; y la especificación "type 2", a un modelo con tendencia lineal. En conjunción con los resultados de las pruebas de raíz unitaria, los resultados de ambas tablas proporcionan evidencia en favor de la presencia de cointegración para los siguientes casos: en Cali, el arroz; en Medellín, el arroz, la papa y la yuca.
+
+
+
+### Modelo de Corrección de Error simétrico (ECM)
+
+A partir de las pruebas de raíz unitaria y el test de cointegración, el análisis subsiguiente considera únicamente los siguientes cuatro alimentos: (1) arroz, (2) papa, (3) plátano y (4) yuca. La siguiente tabla presenta los resultados del modelo de corrección de error simétrico (ECM). La longitud del rezago fue seleccionada a partir de criterios de información (AIC y BIC).
+
+```{r ecm-tables-setup, echo=FALSE, message=FALSE, warning=FALSE}
+library(readxl)
+library(dplyr)
+library(knitr)
+library(kableExtra)
+
+date_tag <- "261225"
+out_dir_ecm <- "working-papers\\working-paper-aecm\\output\\ts-ecm\\"
+
+kable_q1 <- function(df, caption, label){
+  kable(df, format = "latex", booktabs = TRUE, caption = caption, label = label, align = "l") %>%
+    kable_styling(
+      latex_options = c("hold_position", "striped", "scale_down"),
+      font_size = 9
+    )
+}
+```
+
+
+```{r tab-ecm-2-longrun, echo=FALSE, message=FALSE, warning=FALSE}
+tab2 <- read_excel(file.path(out_dir_ecm, paste0(date_tag, "_table2_longrun.xlsx")))
+
+kable_q1(
+  tab2,
+  caption = "Long-run relationship between log retail prices (IPC) and log wholesale prices (SIPSA) by city and pair. The table reports the slope estimate (b), standard error, and p-value from the long-run regression.",
+  label = "tab:longrun"
+)
+```
+
+
+
+```{r tab-ecm-3-cali, echo=FALSE, message=FALSE, warning=FALSE}
+tab3 <- read_excel(file.path(out_dir_ecm, paste0(date_tag, "_table3_ecm_cali.xlsx")))
+
+kable_q1(
+  tab3,
+  caption = "Error correction model (ECM) estimates for Cali. The ECM is estimated under the Enders restriction (same lag length for \\(\\Delta y\\) and \\(\\Delta x\\), no contemporaneous \\(\\Delta x_t\\)).",
+  label = "tab:ecm_cali"
+)
+```
+
+
+
+
+```{r tab-ecm-4-bogota, echo=FALSE, message=FALSE, warning=FALSE}
+tab4 <- read_excel(file.path(out_dir_ecm, paste0(date_tag, "_table4_ecm_bogota.xlsx")))
+
+kable_q1(
+  tab4,
+  caption = "Error correction model (ECM) estimates for Bogotá. The ECM is estimated under the Enders restriction (same lag length for \\(\\Delta y\\) and \\(\\Delta x\\), no contemporaneous \\(\\Delta x_t\\)).",
+  label = "tab:ecm_bogota"
+)
+```
+
+
+```{r tab-ecm-5-medellin, echo=FALSE, message=FALSE, warning=FALSE}
+tab5 <- read_excel(file.path(out_dir_ecm, paste0(date_tag, "_table5_ecm_medellin.xlsx")))
+
+kable_q1(
+  tab5,
+  caption = "Error correction model (ECM) estimates for Medellín. The ECM is estimated under the Enders restriction (same lag length for \\(\\Delta y\\) and \\(\\Delta x\\), no contemporaneous \\(\\Delta x_t\\)).",
+  label = "tab:ecm_medellin"
+)
+```
+
+
+## Análisis de cointegración asimétrica
+
+
+### Modelo de Corrección de Error Asimétrico (A-ECM)
+
+
+### Modelo TAR
+
+
+### Modelo M-TAR
+
+
+
+
+
+
+
+

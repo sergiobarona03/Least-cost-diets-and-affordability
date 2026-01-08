@@ -47,7 +47,7 @@ bogota.mapping <- list(
   "ARROZ PARA SECO"   = c("Arroz de primera"),
   "CEBOLLA CABEZONA"  = c("Cebolla cabezona blanca"),
   "PAPA"              = c("Papa R-12 negra", "Papa parda pastusa", "Papa suprema", "Papa única"),
-  "PLÁTANO"           = c("Plátano guineo", "Plátano hartón verde llanero"),
+  "PLÁTANO"           = c("Plátano guineo", "Plátano hartón verde", "Plátano hartón verde llanero"),
   "TOMATE"            = c("Tomate chonto", "Tomate larga vida"),
   "YUCA"              = c("Yuca llanera"),
   "ZANAHORIA"         = c("Zanahoria")
@@ -113,6 +113,13 @@ dat <- raw %>%
     log_sipsa = log(precio_sipsa)
   ) %>%
   arrange(cod_mun, articulo_ipc, alimento_sipsa, fecha)
+
+# De acuerdo con las pruebas de cointegración
+dat = dat %>% filter(articulo_ipc %in% c("ARROZ PARA SECO",
+                                         "PAPA",
+                                         "PLÁTANO",
+                                         "YUCA"))
+
 
 # -----------------------
 # Collectors

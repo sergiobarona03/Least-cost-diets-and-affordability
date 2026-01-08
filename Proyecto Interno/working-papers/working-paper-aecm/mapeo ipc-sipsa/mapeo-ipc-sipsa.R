@@ -54,5 +54,7 @@ zanahoria.aux = data.frame(codigo_tcac = NA,
 # Añadir el mapeo auxiliar
 ipc_sipsa = rbind(ipc_sipsa, yuca.aux, platano.aux, zanahoria.aux)
 
+write_xlsx(ipc_sipsa, paste0("working-papers\\working-paper-aecm\\input\\",
+                             date_tag, "_mapeo_ipc_sipsa_ajustado.xlsx"))
 
 

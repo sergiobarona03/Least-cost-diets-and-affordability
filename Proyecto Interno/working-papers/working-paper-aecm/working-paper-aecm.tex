@@ -1,0 +1,1140 @@
+% Options for packages loaded elsewhere
+\PassOptionsToPackage{unicode}{hyperref}
+\PassOptionsToPackage{hyphens}{url}
+%
+\documentclass[
+  12pt,
+]{article}
+\usepackage{amsmath,amssymb}
+\usepackage{iftex}
+\ifPDFTeX
+  \usepackage[T1]{fontenc}
+  \usepackage[utf8]{inputenc}
+  \usepackage{textcomp} % provide euro and other symbols
+\else % if luatex or xetex
+  \usepackage{unicode-math} % this also loads fontspec
+  \defaultfontfeatures{Scale=MatchLowercase}
+  \defaultfontfeatures[\rmfamily]{Ligatures=TeX,Scale=1}
+\fi
+\usepackage{lmodern}
+\ifPDFTeX\else
+  % xetex/luatex font selection
+\fi
+% Use upquote if available, for straight quotes in verbatim environments
+\IfFileExists{upquote.sty}{\usepackage{upquote}}{}
+\IfFileExists{microtype.sty}{% use microtype if available
+  \usepackage[]{microtype}
+  \UseMicrotypeSet[protrusion]{basicmath} % disable protrusion for tt fonts
+}{}
+\makeatletter
+\@ifundefined{KOMAClassName}{% if non-KOMA class
+  \IfFileExists{parskip.sty}{%
+    \usepackage{parskip}
+  }{% else
+    \setlength{\parindent}{0pt}
+    \setlength{\parskip}{6pt plus 2pt minus 1pt}}
+}{% if KOMA class
+  \KOMAoptions{parskip=half}}
+\makeatother
+\usepackage{xcolor}
+\usepackage[margin=1in]{geometry}
+\usepackage{longtable,booktabs,array}
+\usepackage{calc} % for calculating minipage widths
+% Correct order of tables after \paragraph or \subparagraph
+\usepackage{etoolbox}
+\makeatletter
+\patchcmd\longtable{\par}{\if@noskipsec\mbox{}\fi\par}{}{}
+\makeatother
+% Allow footnotes in longtable head/foot
+\IfFileExists{footnotehyper.sty}{\usepackage{footnotehyper}}{\usepackage{footnote}}
+\makesavenoteenv{longtable}
+\usepackage{graphicx}
+\makeatletter
+\def\maxwidth{\ifdim\Gin@nat@width>\linewidth\linewidth\else\Gin@nat@width\fi}
+\def\maxheight{\ifdim\Gin@nat@height>\textheight\textheight\else\Gin@nat@height\fi}
+\makeatother
+% Scale images if necessary, so that they will not overflow the page
+% margins by default, and it is still possible to overwrite the defaults
+% using explicit options in \includegraphics[width, height, ...]{}
+\setkeys{Gin}{width=\maxwidth,height=\maxheight,keepaspectratio}
+% Set default figure placement to htbp
+\makeatletter
+\def\fps@figure{htbp}
+\makeatother
+\setlength{\emergencystretch}{3em} % prevent overfull lines
+\providecommand{\tightlist}{%
+  \setlength{\itemsep}{0pt}\setlength{\parskip}{0pt}}
+\setcounter{secnumdepth}{5}
+\usepackage{booktabs}
+\usepackage{longtable}
+\usepackage{array}
+\usepackage{multirow}
+\usepackage{wrapfig}
+\usepackage{float}
+\usepackage{colortbl}
+\usepackage{pdflscape}
+\usepackage{tabu}
+\usepackage{threeparttable}
+\usepackage{threeparttablex}
+\usepackage[normalem]{ulem}
+\usepackage{makecell}
+\usepackage{xcolor}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{natbib}
+\setcitestyle{authoryear,open={(},close={)}}
+\usepackage{booktabs}
+\usepackage{longtable}
+\usepackage{array}
+\usepackage{multirow}
+\usepackage{wrapfig}
+\usepackage{float}
+\usepackage{colortbl}
+\usepackage{pdflscape}
+\usepackage{tabu}
+\usepackage{threeparttable}
+\usepackage{threeparttablex}
+\usepackage[normalem]{ulem}
+\usepackage{makecell}
+\usepackage{xcolor}
+\ifLuaTeX
+  \usepackage{selnolig}  % disable illegal ligatures
+\fi
+\usepackage[]{natbib}
+\bibliographystyle{plainnat}
+\usepackage{bookmark}
+\IfFileExists{xurl.sty}{\usepackage{xurl}}{} % add URL line breaks if available
+\urlstyle{same}
+\hypersetup{
+  pdftitle={Transmisión de precios y ajuste asimétrico al equilibrio: evidencia para las principales ciudades de Colombia mediante modelos de corrección de error {[}Documento de Trabajo 26/01{]}},
+  pdfauthor={Sergio A. Barona-Montoya},
+  hidelinks,
+  pdfcreator={LaTeX via pandoc}}
+
+\title{\textbf{Transmisión de precios y ajuste asimétrico al equilibrio:
+evidencia para las principales ciudades de Colombia mediante modelos de
+corrección de error {[}Documento de Trabajo 26/01{]}}}
+\author{Sergio A. Barona-Montoya\footnote{Department of Economics and
+  Finance, Pontificia Universidad Javeriana, Cali, Colombia. ORCID
+  0000-0001-8390-6673}}
+\date{}
+
+\begin{document}
+\maketitle
+\begin{abstract}
+{[}Abstract text to be added{]}
+\end{abstract}
+
+\section{Introducción}\label{introducciuxf3n}
+
+\section{Datos}\label{datos}
+
+\subsection{Fuentes de datos: precios minoristas
+(DANE--IPC)}\label{fuentes-de-datos-precios-minoristas-daneipc}
+
+La primera fuente de información corresponde a los precios minoristas
+reportados por el Departamento Administrativo Nacional de Estadística
+(DANE), utilizados como insumo para el cálculo del Índice de Precios al
+Consumidor (IPC) (DANE, 2024). El periodo de análisis se extiende desde
+enero de 1999 hasta marzo de 2018 y cubre las trece principales ciudades
+del país: Bogotá D.C., Medellín A.M., Cali A.M., Barranquilla A.M.,
+Bucaramanga A.M., Manizales A.M., Pereira A.M., Cúcuta A.M., Pasto,
+Ibagué, Montería, Cartagena y Villavicencio.
+
+Una característica central de esta base de datos es su estructura de
+clasificación, la cual se fundamenta en la canasta de seguimiento del
+IPC 2008. Dicha estructura organiza la información de precios a través
+de distintos niveles jerárquicos de agregación, lo que permite un
+análisis flexible y consistente de la dinámica de precios a diferentes
+escalas. En particular, la clasificación distingue entre cinco niveles:
+grupo, subgrupo, clase, gasto básico y artículo.
+
+\begin{longtable}[]{@{}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 14\tabcolsep) * \real{0.0617}}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 14\tabcolsep) * \real{0.0864}}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 14\tabcolsep) * \real{0.1728}}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 14\tabcolsep) * \real{0.1975}}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 14\tabcolsep) * \real{0.1975}}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 14\tabcolsep) * \real{0.0988}}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 14\tabcolsep) * \real{0.0988}}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 14\tabcolsep) * \real{0.0864}}@{}}
+\caption{First rows of the IPC retail price dataset
+(1999--2018)}\tabularnewline
+\toprule\noalign{}
+\begin{minipage}[b]{\linewidth}\raggedright
+ano
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+ciudad
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+nombre\_ciudad
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+codigo\_articulo
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+articulo
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+unidad
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+mes
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+precio
+\end{minipage} \\
+\midrule\noalign{}
+\endfirsthead
+\toprule\noalign{}
+\begin{minipage}[b]{\linewidth}\raggedright
+ano
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+ciudad
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+nombre\_ciudad
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+codigo\_articulo
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+articulo
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+unidad
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+mes
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+precio
+\end{minipage} \\
+\midrule\noalign{}
+\endhead
+\bottomrule\noalign{}
+\endlastfoot
+1999 & 05 & MEDELLÍN & 1110101 & ARROZ PARA SECO & 500Grs. & enero &
+588.81 \\
+1999 & 05 & MEDELLÍN & 1110101 & ARROZ PARA SECO & 500Grs. & febrero &
+588.37 \\
+1999 & 05 & MEDELLÍN & 1110101 & ARROZ PARA SECO & 500Grs. & marzo &
+587.72 \\
+1999 & 05 & MEDELLÍN & 1110101 & ARROZ PARA SECO & 500Grs. & abril &
+587.71 \\
+1999 & 05 & MEDELLÍN & 1110101 & ARROZ PARA SECO & 500Grs. & mayo &
+590.53 \\
+1999 & 05 & MEDELLÍN & 1110101 & ARROZ PARA SECO & 500Grs. & junio &
+592.17 \\
+\end{longtable}
+
+El nivel de \textbf{grupo} corresponde a la agregación más amplia de
+bienes y servicios, y agrupa conjuntos homogéneos de consumo. Cada grupo
+se subdivide en \textbf{subgrupos}, los cuales capturan categorías más
+específicas dentro de cada conjunto. A su vez, los subgrupos se
+desagregan en \textbf{clases}, que representan una segmentación aún más
+detallada del consumo. El nivel de \textbf{gasto básico} constituye la
+unidad operativa de seguimiento dentro del IPC y agrupa productos con
+características similares y patrones de consumo comparables. Finalmente,
+el nivel de \textbf{artículo} corresponde al producto específico cuyo
+precio es observado y reportado de manera directa.
+
+Esta estructura jerárquica garantiza coherencia entre los distintos
+niveles de agregación y permite analizar la transmisión de precios desde
+desagregaciones finas hasta agregados más amplios, lo cual resulta
+particularmente relevante para la estimación de modelos de corrección de
+error y modelos de corrección de error asimétricos a nivel urbano.
+
+\subsection{Fuentes de datos: precios mayoristas (SIPSA -
+DANE)}\label{fuentes-de-datos-precios-mayoristas-sipsa---dane}
+
+La información sobre los precios mayoristas corresponde a los datos del
+Sistema de Información de Precios y Abastecimiento del Sector
+Agropecuario (SIPSA), publicados por el DANE. El SIPSA no sólo informa,
+con frecuencia diaria, sobre los precios mayoristas de los productos
+agroalimentarios que se comercializan en el país; sino que, además,
+proporciona información, con frecuencia quincenal, sobre el nivel de
+abastecimiento de los alimentos en las ciudades. En este estudio se
+utilizarán datos de SIPSA para las tres principales ciudades de Colombia
+(Cali, Bogotá y Medellín) durante el período 2013:1 -- 2024:1, con
+frecuencia mensual.
+
+A continuación, se presenta la estructura de los datos:
+
+\begin{longtable}[]{@{}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 12\tabcolsep) * \real{0.1068}}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 12\tabcolsep) * \real{0.0680}}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 12\tabcolsep) * \real{0.2718}}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 12\tabcolsep) * \real{0.3495}}
+  >{\raggedleft\arraybackslash}p{(\columnwidth - 12\tabcolsep) * \real{0.0971}}
+  >{\raggedleft\arraybackslash}p{(\columnwidth - 12\tabcolsep) * \real{0.0583}}
+  >{\raggedleft\arraybackslash}p{(\columnwidth - 12\tabcolsep) * \real{0.0485}}@{}}
+\caption{First rows of the SIPSA wholesale price dataset
+(2013--2018)}\tabularnewline
+\toprule\noalign{}
+\begin{minipage}[b]{\linewidth}\raggedright
+Fecha
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+Grupo
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+Alimento
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+Mercado
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedleft
+Precio\_kg
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedleft
+Month
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedleft
+Year
+\end{minipage} \\
+\midrule\noalign{}
+\endfirsthead
+\toprule\noalign{}
+\begin{minipage}[b]{\linewidth}\raggedright
+Fecha
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+Grupo
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+Alimento
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+Mercado
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedleft
+Precio\_kg
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedleft
+Month
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedleft
+Year
+\end{minipage} \\
+\midrule\noalign{}
+\endhead
+\bottomrule\noalign{}
+\endlastfoot
+2013-01-01 & CARNES & Alas de pollo con costillar & Barranquilla,
+Barranquillita & 3073 & 1 & 2013 \\
+2013-01-01 & CARNES & Alas de pollo con costillar & Barranquilla,
+Granabastos & 3067 & 1 & 2013 \\
+2013-01-01 & CARNES & Alas de pollo con costillar & Bogotá, D.C.,
+Frigorífico Ble Ltda. & 2967 & 1 & 2013 \\
+2013-01-01 & CARNES & Alas de pollo con costillar & Bogotá, D.C.,
+Frigorífico Guadalupe & 2560 & 1 & 2013 \\
+2013-01-01 & CARNES & Alas de pollo con costillar & Cartagena, Bazurto &
+3429 & 1 & 2013 \\
+2013-01-01 & CARNES & Alas de pollo con costillar & Ibagué, Plaza La 21
+& 4307 & 1 & 2013 \\
+\end{longtable}
+
+\section{Metodología}\label{metodologuxeda}
+
+\subsection{Mapeo IPC--SIPSA}\label{mapeo-ipcsipsa}
+
+La implementación de la metodología presupone un mapeo previo entre los
+alimentos reportados por el DANE en la construcción del IPC y los
+alimentos reportados por SIPSA (en adelante, \textbf{mapeo IPC--SIPSA}).
+En términos operativos, este procedimiento establece correspondencias
+entre ambas fuentes con el fin de asegurar comparabilidad conceptual y
+estadística en las series de precios. En particular, para cada alimento
+reportado en SIPSA se identifica un alimento equivalente dentro de la
+canasta del IPC. A continuación, se presenta el mapeo IPC--SIPSA.
+
+\begin{longtable}[]{@{}llll@{}}
+\caption{Mapeo IPC-SIPSA}\tabularnewline
+\toprule\noalign{}
+codigo\_tcac & retail & mapeo\_sipsa & sipsa \\
+\midrule\noalign{}
+\endfirsthead
+\toprule\noalign{}
+codigo\_tcac & retail & mapeo\_sipsa & sipsa \\
+\midrule\noalign{}
+\endhead
+\bottomrule\noalign{}
+\endlastfoot
+26 & FECULA DE MAÍZ & 26 & Fécula de maíz \\
+A010 & ARROZ PARA SECO & A010 & Arroz blanco importado \\
+A010 & ARROZ PARA SECO & A010 & Arroz de primera \\
+A010 & ARROZ PARA SECO & A010 & Arroz de segunda \\
+A010 & ARROZ PARA SECO & A010 & Arroz excelso \\
+A012 & AVENA HOJUELAS & A012 & Avena en hojuelas \\
+\end{longtable}
+
+Es importante destacar que el mapeo no sigue una relación uno a uno,
+sino una relación \textbf{n a 1} (muchos a uno). En consecuencia, un
+mismo alimento definido en la base del IPC puede agrupar varios
+alimentos equivalentes reportados en SIPSA. (Por ejemplo, el ítem
+\emph{arroz para seco} en el IPC puede corresponder, en SIPSA, a
+categorías como \emph{arroz de primera}, \emph{arroz de segunda} y
+\emph{arroz excelso}). Este tipo de correspondencia refleja diferencias
+en el nivel de desagregación y en los criterios de clasificación entre
+las dos fuentes, y constituye un elemento central para la correcta
+construcción de series comparables en el análisis de transmisión de
+precios.
+
+La siguiente tabla presenta el mapeo final utilizado en el análisis
+posterior:
+
+\begin{longtable}[]{@{}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 8\tabcolsep) * \real{0.2099}}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 8\tabcolsep) * \real{0.4074}}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 8\tabcolsep) * \real{0.0988}}
+  >{\raggedleft\arraybackslash}p{(\columnwidth - 8\tabcolsep) * \real{0.1481}}
+  >{\raggedleft\arraybackslash}p{(\columnwidth - 8\tabcolsep) * \real{0.1358}}@{}}
+\caption{Mapeo IPC-SIPSA: Alimentos incluidos en el análisis (Cali,
+Bogotá, Medellín)}\tabularnewline
+\toprule\noalign{}
+\begin{minipage}[b]{\linewidth}\raggedright
+articulo\_ipc
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+alimento\_sipsa
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+cod\_mun
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedleft
+months\_both
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedleft
+months\_any
+\end{minipage} \\
+\midrule\noalign{}
+\endfirsthead
+\toprule\noalign{}
+\begin{minipage}[b]{\linewidth}\raggedright
+articulo\_ipc
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+alimento\_sipsa
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+cod\_mun
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedleft
+months\_both
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedleft
+months\_any
+\end{minipage} \\
+\midrule\noalign{}
+\endhead
+\bottomrule\noalign{}
+\endlastfoot
+ARROZ PARA SECO & Arroz de primera & 05001 & 63 & 63 \\
+ARROZ PARA SECO & Arroz de primera & 11001 & 63 & 63 \\
+ARROZ PARA SECO & Arroz de primera & 76001 & 63 & 63 \\
+CEBOLLA CABEZONA & Cebolla cabezona blanca & 05001 & 63 & 63 \\
+CEBOLLA CABEZONA & Cebolla cabezona blanca & 11001 & 63 & 63 \\
+CEBOLLA CABEZONA & Cebolla cabezona blanca bogotana & 76001 & 63 & 63 \\
+PAPA & Papa R-12 negra & 11001 & 63 & 63 \\
+PAPA & Papa capira & 05001 & 63 & 63 \\
+PAPA & Papa capira & 76001 & 63 & 63 \\
+PLÁTANO & Plátano hartón verde & 05001 & 63 & 63 \\
+PLÁTANO & Plátano hartón verde & 11001 & 63 & 63 \\
+PLÁTANO & Plátano hartón verde & 76001 & 63 & 63 \\
+TOMATE & Tomate larga vida & 05001 & 63 & 63 \\
+TOMATE & Tomate larga vida & 11001 & 63 & 63 \\
+TOMATE & Tomate larga vida & 76001 & 63 & 63 \\
+YUCA & Yuca ICA & 05001 & 63 & 63 \\
+YUCA & Yuca ICA & 76001 & 63 & 63 \\
+YUCA & Yuca llanera & 11001 & 63 & 63 \\
+ZANAHORIA & Zanahoria & 11001 & 63 & 63 \\
+ZANAHORIA & Zanahoria bogotana & 76001 & 63 & 63 \\
+ZANAHORIA & Zanahoria larga vida & 05001 & 63 & 63 \\
+\end{longtable}
+
+\subsection{Modelo de corrección de
+error}\label{modelo-de-correcciuxf3n-de-error}
+
+A partir de pruebas de Dickey--Fuller aumentadas (ADF), se examina la
+estacionariedad de las series temporales correspondientes a los precios
+de los alimentos analizados. La existencia de relaciones de
+cointegración entre los precios minoristas y mayoristas se evalúa
+mediante la prueba de Engle y Granger (1987).
+
+Como señala Enders (2014), una característica fundamental de las
+variables cointegradas es que su trayectoria temporal está determinada
+por las desviaciones respecto del equilibrio de largo plazo. En
+consecuencia, las dinámicas de corto plazo deben estar condicionadas por
+dichas desviaciones. El modelo dinámico que permite capturar
+simultáneamente la relación de largo plazo y los ajustes de corto plazo
+es el modelo de corrección de error (\emph{Error Correction Model},
+ECM).
+
+\subsubsection{Modelo de corrección de error estándar
+(ECM)}\label{modelo-de-correcciuxf3n-de-error-estuxe1ndar-ecm}
+
+Sea \(\ln(P_{it}^{min})\) el logaritmo natural del precio minorista y
+sea \(\ln(P_{it}^{may})\) el logaritmo natural del precio mayorista del
+alimento \(i\) en el período \(t\). La relación de equilibrio de largo
+plazo entre ambos precios viene dada por:
+
+\[
+\ln(P_{it}^{min}) = \alpha_i + \beta_i \ln(P_{it}^{may}) + e_{it}.
+\]
+
+El término de corrección de error corresponde al residuo rezagado de la
+relación de cointegración:
+
+\[
+e_{i,t-1} = \ln(P_{i,t-1}^{min}) - \alpha_i - \beta_i \ln(P_{i,t-1}^{may}).
+\]
+
+Este término captura el desequilibrio existente en el período \(t-1\).
+Si \(e_{i,t-1} > 0\), el precio minorista se encuentra por encima del
+nivel consistente con el equilibrio de largo plazo, dado el precio
+mayorista. En este contexto, la dinámica de corto plazo se modela
+mediante la siguiente especificación ECM:
+
+\[
+\Delta \ln(P_{it}^{min}) =
+c_{i0}
++ \sum_{p=1}^{P} \beta_{ip} \, \Delta \ln(P_{i,t-p}^{min})
++ \sum_{q=1}^{Q} \gamma_{iq} \, \Delta \ln(P_{i,t-q}^{may})
++ \theta_i \, e_{i,t-1}
++ u_{it}.
+\]
+
+En esta ecuación, los coeficientes \(\beta_{ip}\) capturan la dinámica
+autorregresiva de corto plazo del precio minorista, mientras que los
+coeficientes \(\gamma_{iq}\) reflejan el impacto de corto plazo de
+variaciones en el precio mayorista. El parámetro \(\theta_i\) mide la
+velocidad de ajuste hacia el equilibrio de largo plazo. Se espera que
+\(\theta_i < 0\), de modo que desviaciones positivas del equilibrio sean
+corregidas mediante reducciones en el crecimiento del precio minorista.
+
+\subsubsection{Modelo de corrección de error asimétrico
+(A-ECM)}\label{modelo-de-correcciuxf3n-de-error-asimuxe9trico-a-ecm}
+
+Siguiendo estudios previos sobre transmisión asimétrica de precios (por
+ejemplo, Chesnes, 2010), se implementa un modelo de corrección de error
+que permite capturar posibles asimetrías tanto en la velocidad como en
+el patrón de ajuste ante aumentos y reducciones en los precios. La
+especificación del modelo de corrección de error asimétrico (A-ECM)
+adopta la siguiente forma:
+
+\[
+\begin{aligned}
+\Delta \ln(P_t^{min}) =\;&
+\sum_{i=0}^{L_1^+} \beta_{1i}^+ \, \Delta^+ \ln(P_{t-i}^{may})
++ \sum_{i=0}^{L_1^-} \beta_{1i}^- \, \Delta^- \ln(P_{t-i}^{may}) \\
+&+ \sum_{i=0}^{L_2^+} \beta_{2i}^+ \, \Delta^+ \ln(P_{t-i}^{min})
++ \sum_{i=0}^{L_2^-} \beta_{2i}^- \, \Delta^- \ln(P_{t-i}^{min}) \\
+&+ \beta_3^+ \, e_{t-1}^+
++ \beta_3^- \, e_{t-1}^-
++ u_t .
+\end{aligned}
+\]
+
+En esta expresión, \(\Delta^+\) y \(\Delta^-\) representan las
+variaciones positivas y negativas de las variables respectivas. El
+término de corrección de error \(e_{t-1}\) captura la relación de
+equilibrio de largo plazo entre el precio minorista y el precio
+mayorista y se descompone en sus componentes positivo y negativo,
+\(e_{t-1}^+\) y \(e_{t-1}^-\).
+
+Se espera que ambos coeficientes \(\beta_3^+\) y \(\beta_3^-\) sean
+negativos. En particular, si el precio minorista se encuentra por encima
+del equilibrio de largo plazo (\(e_{t-1} > 0\)), el ajuste debería
+materializarse a través de una reducción en el crecimiento del precio
+minorista; de manera análoga, si el precio minorista se sitúa por debajo
+del equilibrio (\(e_{t-1} < 0\)), el ajuste debería reflejarse en un
+aumento de dicho crecimiento.
+
+Siguiendo la metodología en dos etapas propuesta por Engle y Granger
+(1987), la relación de largo plazo se estima a partir de la siguiente
+ecuación:
+
+\[
+\ln(P_{t-1}^{min}) = \alpha_0 + \beta_1 \ln(P_{t-1}^{may}) + e_{t-1}.
+\]
+
+Los residuales estimados de esta ecuación se incorporan posteriormente
+en la especificación A-ECM como términos de corrección de error,
+permitiendo evaluar empíricamente la presencia de ajustes asimétricos en
+la transmisión de precios.
+
+\section{Resultados}\label{resultados}
+
+\subsection{Análisis de series de
+tiempo}\label{anuxe1lisis-de-series-de-tiempo}
+
+\subsubsection{Comportamiento de los precios minoristas y precios
+mayoristas}\label{comportamiento-de-los-precios-minoristas-y-precios-mayoristas}
+
+\begin{figure}[htbp]
+\centering
+\includegraphics{output/ts-output/log-levels-plots/261225_log_retail_vs_wholesale_7x3.png}
+\caption{Log retail (IPC) and wholesale (SIPSA) prices by food and city}
+\end{figure}
+
+\begin{figure}[htbp]
+\centering
+\includegraphics{output/ts-output/seasonal-plots/261225_seasonal_retail_vs_wholesale_7x3_x13.png}
+\caption{Log retail (IPC) and wholesale (SIPSA) prices by food and city}
+\end{figure}
+
+\subsubsection{Pruebas de raíz
+unitaria}\label{pruebas-de-rauxedz-unitaria}
+
+\begin{longtable}[]{@{}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 14\tabcolsep) * \real{0.0732}}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 14\tabcolsep) * \real{0.2073}}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 14\tabcolsep) * \real{0.2195}}
+  >{\centering\arraybackslash}p{(\columnwidth - 14\tabcolsep) * \real{0.1829}}
+  >{\centering\arraybackslash}p{(\columnwidth - 14\tabcolsep) * \real{0.0976}}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 14\tabcolsep) * \real{0.0854}}
+  >{\centering\arraybackslash}p{(\columnwidth - 14\tabcolsep) * \real{0.0976}}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 14\tabcolsep) * \real{0.0366}}@{}}
+\caption{Augmented Dickey Fuller tests on seasonally adjusted log retail
+prices (IPC). Notes: X 13 seasonal adjustment is applied to log price
+series; reported critical values correspond to the Dickey Fuller
+distribution. Significance: *** p\textless0.01, ** p\textless0.05, *
+p\textless0.10.}\tabularnewline
+\toprule\noalign{}
+\begin{minipage}[b]{\linewidth}\raggedright
+City
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+Item
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+Specification
+\end{minipage} & \begin{minipage}[b]{\linewidth}\centering
+ADF statistic
+\end{minipage} & \begin{minipage}[b]{\linewidth}\centering
+CV 1\%
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+CV 5\%
+\end{minipage} & \begin{minipage}[b]{\linewidth}\centering
+CV 10\%
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+N
+\end{minipage} \\
+\midrule\noalign{}
+\endfirsthead
+\toprule\noalign{}
+\begin{minipage}[b]{\linewidth}\raggedright
+City
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+Item
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+Specification
+\end{minipage} & \begin{minipage}[b]{\linewidth}\centering
+ADF statistic
+\end{minipage} & \begin{minipage}[b]{\linewidth}\centering
+CV 1\%
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+CV 5\%
+\end{minipage} & \begin{minipage}[b]{\linewidth}\centering
+CV 10\%
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+N
+\end{minipage} \\
+\midrule\noalign{}
+\endhead
+\bottomrule\noalign{}
+\endlastfoot
+05001 & ARROZ PARA SECO & Intercept & -1.823 & -3.510 & -2.890 & -2.580
+& 63 \\
+05001 & ARROZ PARA SECO & Intercept + trend & -1.141 & -4.040 & -3.450 &
+-3.150 & 63 \\
+05001 & CEBOLLA CABEZONA & Intercept & -3.502** & -3.510 & -2.890 &
+-2.580 & 63 \\
+05001 & CEBOLLA CABEZONA & Intercept + trend & -4.328*** & -4.040 &
+-3.450 & -3.150 & 63 \\
+05001 & PAPA & Intercept & -2.657* & -3.510 & -2.890 & -2.580 & 63 \\
+05001 & PAPA & Intercept + trend & -2.732 & -4.040 & -3.450 & -3.150 &
+63 \\
+05001 & PLÁTANO & Intercept & -1.229 & -3.510 & -2.890 & -2.580 & 63 \\
+05001 & PLÁTANO & Intercept + trend & -1.667 & -4.040 & -3.450 & -3.150
+& 63 \\
+05001 & TOMATE & Intercept & -3.859*** & -3.510 & -2.890 & -2.580 &
+63 \\
+05001 & TOMATE & Intercept + trend & -4.602*** & -4.040 & -3.450 &
+-3.150 & 63 \\
+05001 & YUCA & Intercept & -1.425 & -3.510 & -2.890 & -2.580 & 63 \\
+05001 & YUCA & Intercept + trend & -1.906 & -4.040 & -3.450 & -3.150 &
+63 \\
+05001 & ZANAHORIA & Intercept & -2.374 & -3.510 & -2.890 & -2.580 &
+63 \\
+05001 & ZANAHORIA & Intercept + trend & -3.842** & -4.040 & -3.450 &
+-3.150 & 63 \\
+11001 & ARROZ PARA SECO & Intercept & -1.755 & -3.510 & -2.890 & -2.580
+& 63 \\
+11001 & ARROZ PARA SECO & Intercept + trend & -0.998 & -4.040 & -3.450 &
+-3.150 & 63 \\
+11001 & CEBOLLA CABEZONA & Intercept & -3.270** & -3.510 & -2.890 &
+-2.580 & 63 \\
+11001 & CEBOLLA CABEZONA & Intercept + trend & -3.749** & -4.040 &
+-3.450 & -3.150 & 63 \\
+11001 & PAPA & Intercept & -3.224** & -3.510 & -2.890 & -2.580 & 63 \\
+11001 & PAPA & Intercept + trend & -3.171* & -4.040 & -3.450 & -3.150 &
+63 \\
+11001 & PLÁTANO & Intercept & -1.990 & -3.510 & -2.890 & -2.580 & 63 \\
+11001 & PLÁTANO & Intercept + trend & -2.266 & -4.040 & -3.450 & -3.150
+& 63 \\
+11001 & TOMATE & Intercept & -3.684*** & -3.510 & -2.890 & -2.580 &
+63 \\
+11001 & TOMATE & Intercept + trend & -4.022** & -4.040 & -3.450 & -3.150
+& 63 \\
+11001 & YUCA & Intercept & -0.822 & -3.510 & -2.890 & -2.580 & 63 \\
+11001 & YUCA & Intercept + trend & -0.786 & -4.040 & -3.450 & -3.150 &
+63 \\
+11001 & ZANAHORIA & Intercept & -2.289 & -3.510 & -2.890 & -2.580 &
+63 \\
+11001 & ZANAHORIA & Intercept + trend & -3.399* & -4.040 & -3.450 &
+-3.150 & 63 \\
+76001 & ARROZ PARA SECO & Intercept & -1.883 & -3.510 & -2.890 & -2.580
+& 63 \\
+76001 & ARROZ PARA SECO & Intercept + trend & -1.196 & -4.040 & -3.450 &
+-3.150 & 63 \\
+76001 & CEBOLLA CABEZONA & Intercept & -3.077** & -3.510 & -2.890 &
+-2.580 & 63 \\
+76001 & CEBOLLA CABEZONA & Intercept + trend & -3.550** & -4.040 &
+-3.450 & -3.150 & 63 \\
+76001 & PAPA & Intercept & -2.534 & -3.510 & -2.890 & -2.580 & 63 \\
+76001 & PAPA & Intercept + trend & -2.630 & -4.040 & -3.450 & -3.150 &
+63 \\
+76001 & PLÁTANO & Intercept & -1.547 & -3.510 & -2.890 & -2.580 & 63 \\
+76001 & PLÁTANO & Intercept + trend & -1.757 & -4.040 & -3.450 & -3.150
+& 63 \\
+76001 & TOMATE & Intercept & -3.541*** & -3.510 & -2.890 & -2.580 &
+63 \\
+76001 & TOMATE & Intercept + trend & -3.929** & -4.040 & -3.450 & -3.150
+& 63 \\
+76001 & YUCA & Intercept & -1.119 & -3.510 & -2.890 & -2.580 & 63 \\
+76001 & YUCA & Intercept + trend & -1.322 & -4.040 & -3.450 & -3.150 &
+63 \\
+76001 & ZANAHORIA & Intercept & -2.632* & -3.510 & -2.890 & -2.580 &
+63 \\
+76001 & ZANAHORIA & Intercept + trend & -4.054*** & -4.040 & -3.450 &
+-3.150 & 63 \\
+\end{longtable}
+
+\begin{longtable}[]{@{}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 14\tabcolsep) * \real{0.0612}}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 14\tabcolsep) * \real{0.3367}}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 14\tabcolsep) * \real{0.1837}}
+  >{\centering\arraybackslash}p{(\columnwidth - 14\tabcolsep) * \real{0.1531}}
+  >{\centering\arraybackslash}p{(\columnwidth - 14\tabcolsep) * \real{0.0816}}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 14\tabcolsep) * \real{0.0714}}
+  >{\centering\arraybackslash}p{(\columnwidth - 14\tabcolsep) * \real{0.0816}}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 14\tabcolsep) * \real{0.0306}}@{}}
+\caption{Augmented Dickey Fuller tests on seasonally adjusted log
+wholesale prices (SIPSA). Notes: X 13 seasonal adjustment is applied to
+log price series; reported critical values correspond to the Dickey
+Fuller distribution. Significance: *** p\textless0.01, **
+p\textless0.05, * p\textless0.10.}\tabularnewline
+\toprule\noalign{}
+\begin{minipage}[b]{\linewidth}\raggedright
+City
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+Item
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+Specification
+\end{minipage} & \begin{minipage}[b]{\linewidth}\centering
+ADF statistic
+\end{minipage} & \begin{minipage}[b]{\linewidth}\centering
+CV 1\%
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+CV 5\%
+\end{minipage} & \begin{minipage}[b]{\linewidth}\centering
+CV 10\%
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+N
+\end{minipage} \\
+\midrule\noalign{}
+\endfirsthead
+\toprule\noalign{}
+\begin{minipage}[b]{\linewidth}\raggedright
+City
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+Item
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+Specification
+\end{minipage} & \begin{minipage}[b]{\linewidth}\centering
+ADF statistic
+\end{minipage} & \begin{minipage}[b]{\linewidth}\centering
+CV 1\%
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+CV 5\%
+\end{minipage} & \begin{minipage}[b]{\linewidth}\centering
+CV 10\%
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+N
+\end{minipage} \\
+\midrule\noalign{}
+\endhead
+\bottomrule\noalign{}
+\endlastfoot
+05001 & Arroz de primera & Intercept & -1.461 & -3.510 & -2.890 & -2.580
+& 63 \\
+05001 & Arroz de primera & Intercept + trend & -0.984 & -4.040 & -3.450
+& -3.150 & 63 \\
+05001 & Cebolla cabezona blanca & Intercept & -2.888* & -3.510 & -2.890
+& -2.580 & 63 \\
+05001 & Cebolla cabezona blanca & Intercept + trend & -2.666 & -4.040 &
+-3.450 & -3.150 & 63 \\
+05001 & Papa capira & Intercept & -2.407 & -3.510 & -2.890 & -2.580 &
+63 \\
+05001 & Papa capira & Intercept + trend & -2.357 & -4.040 & -3.450 &
+-3.150 & 63 \\
+05001 & Plátano hartón verde & Intercept & -1.465 & -3.510 & -2.890 &
+-2.580 & 63 \\
+05001 & Plátano hartón verde & Intercept + trend & -1.437 & -4.040 &
+-3.450 & -3.150 & 63 \\
+05001 & Tomate larga vida & Intercept & -1.229 & -3.510 & -2.890 &
+-2.580 & 63 \\
+05001 & Tomate larga vida & Intercept + trend & -2.299 & -4.040 & -3.450
+& -3.150 & 63 \\
+05001 & Yuca ICA & Intercept & -1.425 & -3.510 & -2.890 & -2.580 & 63 \\
+05001 & Yuca ICA & Intercept + trend & -1.516 & -4.040 & -3.450 & -3.150
+& 63 \\
+05001 & Zanahoria larga vida & Intercept & -2.182 & -3.510 & -2.890 &
+-2.580 & 63 \\
+05001 & Zanahoria larga vida & Intercept + trend & -2.227 & -4.040 &
+-3.450 & -3.150 & 63 \\
+11001 & Arroz de primera & Intercept & -1.350 & -3.510 & -2.890 & -2.580
+& 63 \\
+11001 & Arroz de primera & Intercept + trend & -1.010 & -4.040 & -3.450
+& -3.150 & 63 \\
+11001 & Cebolla cabezona blanca & Intercept & -2.875* & -3.510 & -2.890
+& -2.580 & 63 \\
+11001 & Cebolla cabezona blanca & Intercept + trend & -2.723 & -4.040 &
+-3.450 & -3.150 & 63 \\
+11001 & Papa R-12 negra & Intercept & -2.300 & -3.510 & -2.890 & -2.580
+& 63 \\
+11001 & Papa R-12 negra & Intercept + trend & -2.209 & -4.040 & -3.450 &
+-3.150 & 63 \\
+11001 & Plátano hartón verde & Intercept & -1.881 & -3.510 & -2.890 &
+-2.580 & 63 \\
+11001 & Plátano hartón verde & Intercept + trend & -1.980 & -4.040 &
+-3.450 & -3.150 & 63 \\
+11001 & Tomate larga vida & Intercept & -1.673 & -3.510 & -2.890 &
+-2.580 & 63 \\
+11001 & Tomate larga vida & Intercept + trend & -2.301 & -4.040 & -3.450
+& -3.150 & 63 \\
+11001 & Yuca llanera & Intercept & -1.588 & -3.510 & -2.890 & -2.580 &
+63 \\
+11001 & Yuca llanera & Intercept + trend & -1.550 & -4.040 & -3.450 &
+-3.150 & 63 \\
+11001 & Zanahoria & Intercept & -2.036 & -3.510 & -2.890 & -2.580 &
+63 \\
+11001 & Zanahoria & Intercept + trend & -2.157 & -4.040 & -3.450 &
+-3.150 & 63 \\
+76001 & Arroz de primera & Intercept & -1.361 & -3.510 & -2.890 & -2.580
+& 63 \\
+76001 & Arroz de primera & Intercept + trend & -0.573 & -4.040 & -3.450
+& -3.150 & 63 \\
+76001 & Cebolla cabezona blanca bogotana & Intercept & -2.792* & -3.510
+& -2.890 & -2.580 & 63 \\
+76001 & Cebolla cabezona blanca bogotana & Intercept + trend & -2.660 &
+-4.040 & -3.450 & -3.150 & 63 \\
+76001 & Papa capira & Intercept & -2.583* & -3.510 & -2.890 & -2.580 &
+63 \\
+76001 & Papa capira & Intercept + trend & -2.487 & -4.040 & -3.450 &
+-3.150 & 63 \\
+76001 & Plátano hartón verde & Intercept & -1.472 & -3.510 & -2.890 &
+-2.580 & 63 \\
+76001 & Plátano hartón verde & Intercept + trend & -1.496 & -4.040 &
+-3.450 & -3.150 & 63 \\
+76001 & Tomate larga vida & Intercept & -1.310 & -3.510 & -2.890 &
+-2.580 & 63 \\
+76001 & Tomate larga vida & Intercept + trend & -2.336 & -4.040 & -3.450
+& -3.150 & 63 \\
+76001 & Yuca ICA & Intercept & -1.428 & -3.510 & -2.890 & -2.580 & 63 \\
+76001 & Yuca ICA & Intercept + trend & -1.659 & -4.040 & -3.450 & -3.150
+& 63 \\
+76001 & Zanahoria bogotana & Intercept & -2.208 & -3.510 & -2.890 &
+-2.580 & 63 \\
+76001 & Zanahoria bogotana & Intercept + trend & -2.419 & -4.040 &
+-3.450 & -3.150 & 63 \\
+\end{longtable}
+
+\subsection{Análisis de cointegración de
+Engle-Granger}\label{anuxe1lisis-de-cointegraciuxf3n-de-engle-granger}
+
+Las Tablas X e Y reportan los resultados de los test de cointegración de
+Engle-Granger entre los precios minoristas (IPC) y mayoristas (SIPSA),
+expresados en logaritmos. Puesto que el estadístico dependen de la
+especificación, la longitud del rezago en la regresión ``auxiliar2 se
+selecciona de acuerdo con criterios de información (AIC y BIC). La Tabla
+X presenta los resultados cuando la selección del rezago óptimo se
+realiza a partir de una regresión ADF con constante
+(especificación''drift''). En contraste, la Tabla Y reporta los
+resultados correspondientes a una regresión ADF que incluye tanto la
+constante como la tendencia lineal. Finalmente, la inferencia final
+sobre la cointegración es implementada usando la función ´coint.test´,
+que considera los valores críticos y p-valores de MacKinnon.
+
+\begingroup\fontsize{9}{11}\selectfont
+
+\begin{longtable}[t]{lllclc}
+\caption{\label{tab:coint-eg-q1-tables}Engle–Granger cointegration tests using seasonally adjusted log prices. Lag length selected by BIC from residual ADF regression with intercept.}\\
+\toprule
+City & Retail item (IPC) & Wholesale item (SIPSA) & Specification & EG statistic & p-value\\
+\midrule
+Bogotá & ARROZ PARA SECO & Arroz de primera & type 1 & -2.392 & 0.100\\
+Bogotá & ARROZ PARA SECO & Arroz de primera & type 2 & -0.212 & 0.100\\
+Bogotá & CEBOLLA CABEZONA & Cebolla cabezona blanca & type 1 & -2.400 & 0.100\\
+Bogotá & CEBOLLA CABEZONA & Cebolla cabezona blanca & type 2 & 0.760 & 0.100\\
+Bogotá & PAPA & Papa R-12 negra & type 1 & -1.977 & 0.100\\
+\addlinespace
+Bogotá & PAPA & Papa R-12 negra & type 2 & -0.070 & 0.100\\
+Bogotá & PLÁTANO & Plátano hartón verde & type 1 & -2.307 & 0.100\\
+Bogotá & PLÁTANO & Plátano hartón verde & type 2 & 0.626 & 0.100\\
+Bogotá & TOMATE & Tomate larga vida & type 1 & -4.015** & 0.010\\
+Bogotá & TOMATE & Tomate larga vida & type 2 & 0.042 & 0.100\\
+\addlinespace
+Bogotá & YUCA & Yuca llanera & type 1 & -1.512 & 0.100\\
+Bogotá & YUCA & Yuca llanera & type 2 & -1.411 & 0.100\\
+Bogotá & ZANAHORIA & Zanahoria & type 1 & -2.225 & 0.100\\
+Bogotá & ZANAHORIA & Zanahoria & type 2 & 0.984 & 0.100\\
+Cali & ARROZ PARA SECO & Arroz de primera & type 1 & -4.331** & 0.010\\
+\addlinespace
+Cali & ARROZ PARA SECO & Arroz de primera & type 2 & -0.141 & 0.100\\
+Cali & CEBOLLA CABEZONA & Cebolla cabezona blanca bogotana & type 1 & -2.817* & 0.065\\
+Cali & CEBOLLA CABEZONA & Cebolla cabezona blanca bogotana & type 2 & 0.725 & 0.100\\
+Cali & PAPA & Papa capira & type 1 & -2.404 & 0.100\\
+Cali & PAPA & Papa capira & type 2 & 0.355 & 0.100\\
+\addlinespace
+Cali & PLÁTANO & Plátano hartón verde & type 1 & -2.480 & 0.100\\
+Cali & PLÁTANO & Plátano hartón verde & type 2 & 0.861 & 0.100\\
+Cali & TOMATE & Tomate larga vida & type 1 & -4.810** & 0.010\\
+Cali & TOMATE & Tomate larga vida & type 2 & -0.125 & 0.100\\
+Cali & YUCA & Yuca ICA & type 1 & -1.624 & 0.100\\
+\addlinespace
+Cali & YUCA & Yuca ICA & type 2 & -0.479 & 0.100\\
+Cali & ZANAHORIA & Zanahoria bogotana & type 1 & -2.276 & 0.100\\
+Cali & ZANAHORIA & Zanahoria bogotana & type 2 & 1.047 & 0.100\\
+Medellín & ARROZ PARA SECO & Arroz de primera & type 1 & -2.850* & 0.059\\
+Medellín & ARROZ PARA SECO & Arroz de primera & type 2 & -0.133 & 0.100\\
+\addlinespace
+Medellín & CEBOLLA CABEZONA & Cebolla cabezona blanca & type 1 & -2.418 & 0.100\\
+Medellín & CEBOLLA CABEZONA & Cebolla cabezona blanca & type 2 & 0.817 & 0.100\\
+Medellín & PAPA & Papa capira & type 1 & -2.688* & 0.085\\
+Medellín & PAPA & Papa capira & type 2 & 0.440 & 0.100\\
+Medellín & PLÁTANO & Plátano hartón verde & type 1 & -1.666 & 0.100\\
+\addlinespace
+Medellín & PLÁTANO & Plátano hartón verde & type 2 & 1.178 & 0.100\\
+Medellín & TOMATE & Tomate larga vida & type 1 & -4.018** & 0.010\\
+Medellín & TOMATE & Tomate larga vida & type 2 & -0.063 & 0.100\\
+Medellín & YUCA & Yuca ICA & type 1 & -2.773* & 0.071\\
+Medellín & YUCA & Yuca ICA & type 2 & 0.151 & 0.100\\
+\addlinespace
+Medellín & ZANAHORIA & Zanahoria larga vida & type 1 & -2.006 & 0.100\\
+Medellín & ZANAHORIA & Zanahoria larga vida & type 2 & 1.123 & 0.100\\
+\bottomrule
+\end{longtable}
+\endgroup{}
+
+\begingroup\fontsize{9}{11}\selectfont
+
+\begin{longtable}[t]{lllclc}
+\caption{\label{tab:coint-eg-q1-tables}Engle–Granger cointegration tests using seasonally adjusted log prices. Lag length selected by BIC from residual ADF regression with intercept and trend.}\\
+\toprule
+City & Retail item (IPC) & Wholesale item (SIPSA) & Specification & EG statistic & p-value\\
+\midrule
+Bogotá & ARROZ PARA SECO & Arroz de primera & type 1 & -2.392 & 0.100\\
+Bogotá & ARROZ PARA SECO & Arroz de primera & type 2 & -0.212 & 0.100\\
+Bogotá & CEBOLLA CABEZONA & Cebolla cabezona blanca & type 1 & -2.400 & 0.100\\
+Bogotá & CEBOLLA CABEZONA & Cebolla cabezona blanca & type 2 & 0.760 & 0.100\\
+Bogotá & PAPA & Papa R-12 negra & type 1 & -1.977 & 0.100\\
+\addlinespace
+Bogotá & PAPA & Papa R-12 negra & type 2 & -0.070 & 0.100\\
+Bogotá & PLÁTANO & Plátano hartón verde & type 1 & -2.307 & 0.100\\
+Bogotá & PLÁTANO & Plátano hartón verde & type 2 & 0.626 & 0.100\\
+Bogotá & TOMATE & Tomate larga vida & type 1 & -4.015** & 0.010\\
+Bogotá & TOMATE & Tomate larga vida & type 2 & 0.042 & 0.100\\
+\addlinespace
+Bogotá & YUCA & Yuca llanera & type 1 & -1.512 & 0.100\\
+Bogotá & YUCA & Yuca llanera & type 2 & -1.411 & 0.100\\
+Bogotá & ZANAHORIA & Zanahoria & type 1 & -2.225 & 0.100\\
+Bogotá & ZANAHORIA & Zanahoria & type 2 & 0.984 & 0.100\\
+Cali & ARROZ PARA SECO & Arroz de primera & type 1 & -4.331** & 0.010\\
+\addlinespace
+Cali & ARROZ PARA SECO & Arroz de primera & type 2 & -0.141 & 0.100\\
+Cali & CEBOLLA CABEZONA & Cebolla cabezona blanca bogotana & type 1 & -2.817* & 0.065\\
+Cali & CEBOLLA CABEZONA & Cebolla cabezona blanca bogotana & type 2 & 0.725 & 0.100\\
+Cali & PAPA & Papa capira & type 1 & -2.404 & 0.100\\
+Cali & PAPA & Papa capira & type 2 & 0.355 & 0.100\\
+\addlinespace
+Cali & PLÁTANO & Plátano hartón verde & type 1 & -2.480 & 0.100\\
+Cali & PLÁTANO & Plátano hartón verde & type 2 & 0.861 & 0.100\\
+Cali & TOMATE & Tomate larga vida & type 1 & -4.810** & 0.010\\
+Cali & TOMATE & Tomate larga vida & type 2 & -0.125 & 0.100\\
+Cali & YUCA & Yuca ICA & type 1 & -1.624 & 0.100\\
+\addlinespace
+Cali & YUCA & Yuca ICA & type 2 & -0.479 & 0.100\\
+Cali & ZANAHORIA & Zanahoria bogotana & type 1 & -2.276 & 0.100\\
+Cali & ZANAHORIA & Zanahoria bogotana & type 2 & 1.047 & 0.100\\
+Medellín & ARROZ PARA SECO & Arroz de primera & type 1 & -2.850* & 0.059\\
+Medellín & ARROZ PARA SECO & Arroz de primera & type 2 & -0.133 & 0.100\\
+\addlinespace
+Medellín & CEBOLLA CABEZONA & Cebolla cabezona blanca & type 1 & -2.418 & 0.100\\
+Medellín & CEBOLLA CABEZONA & Cebolla cabezona blanca & type 2 & 0.817 & 0.100\\
+Medellín & PAPA & Papa capira & type 1 & -2.688* & 0.085\\
+Medellín & PAPA & Papa capira & type 2 & 0.440 & 0.100\\
+Medellín & PLÁTANO & Plátano hartón verde & type 1 & -1.666 & 0.100\\
+\addlinespace
+Medellín & PLÁTANO & Plátano hartón verde & type 2 & 1.178 & 0.100\\
+Medellín & TOMATE & Tomate larga vida & type 1 & -4.018** & 0.010\\
+Medellín & TOMATE & Tomate larga vida & type 2 & -0.063 & 0.100\\
+Medellín & YUCA & Yuca ICA & type 1 & -2.773* & 0.071\\
+Medellín & YUCA & Yuca ICA & type 2 & 0.151 & 0.100\\
+\addlinespace
+Medellín & ZANAHORIA & Zanahoria larga vida & type 1 & -2.006 & 0.100\\
+Medellín & ZANAHORIA & Zanahoria larga vida & type 2 & 1.123 & 0.100\\
+\bottomrule
+\end{longtable}
+\endgroup{}
+
+Adicionalmente, se consideran dos especificaciones estándar del test de
+Engle-Granger. La especificación ``type 1'' corresponde a un modelo sin
+tendencia; y la especificación ``type 2'', a un modelo con tendencia
+lineal. En conjunción con los resultados de las pruebas de raíz
+unitaria, los resultados de ambas tablas proporcionan evidencia en favor
+de la presencia de cointegración para los siguientes casos: en Cali, el
+arroz; en Medellín, el arroz, la papa y la yuca.
+
+\subsubsection{Modelo de Corrección de Error simétrico
+(ECM)}\label{modelo-de-correcciuxf3n-de-error-simuxe9trico-ecm}
+
+A partir de las pruebas de raíz unitaria y el test de cointegración, el
+análisis subsiguiente considera únicamente los siguientes cuatro
+alimentos: (1) arroz, (2) papa, (3) plátano y (4) yuca. La siguiente
+tabla presenta los resultados del modelo de corrección de error
+simétrico (ECM). La longitud del rezago fue seleccionada a partir de
+criterios de información (AIC y BIC).
+
+\begin{table}[!h]
+\centering
+\caption{\label{tab:tab:longrun}Long-run relationship between log retail prices (IPC) and log wholesale prices (SIPSA) by city and pair. The table reports the slope estimate (b), standard error, and p-value from the long-run regression.}
+\centering
+\resizebox{\ifdim\width>\linewidth\linewidth\else\width\fi}{!}{
+\fontsize{9}{11}\selectfont
+\begin{tabular}[t]{lllll}
+\toprule
+city & articulo\_ipc & b & se & p-value\\
+\midrule
+\cellcolor{gray!10}{Bogotá} & \cellcolor{gray!10}{ARROZ PARA SECO} & \cellcolor{gray!10}{0.8597756} & \cellcolor{gray!10}{0.0614694} & \cellcolor{gray!10}{0.00e+00}\\
+Cali & ARROZ PARA SECO & 0.8672186 & 0.0418960 & 0.00e+00\\
+\cellcolor{gray!10}{Medellín} & \cellcolor{gray!10}{ARROZ PARA SECO} & \cellcolor{gray!10}{1.0053093} & \cellcolor{gray!10}{0.0689181} & \cellcolor{gray!10}{0.00e+00}\\
+Bogotá & PAPA & 0.5335352 & 0.1115556 & 1.13e-05\\
+\cellcolor{gray!10}{Cali} & \cellcolor{gray!10}{PAPA} & \cellcolor{gray!10}{0.7583602} & \cellcolor{gray!10}{0.1221081} & \cellcolor{gray!10}{1.00e-07}\\
+\addlinespace
+Medellín & PAPA & 1.0221967 & 0.1231101 & 0.00e+00\\
+\cellcolor{gray!10}{Bogotá} & \cellcolor{gray!10}{PLÁTANO} & \cellcolor{gray!10}{0.7423630} & \cellcolor{gray!10}{0.0843069} & \cellcolor{gray!10}{0.00e+00}\\
+Cali & PLÁTANO & 0.7291643 & 0.0630687 & 0.00e+00\\
+\cellcolor{gray!10}{Medellín} & \cellcolor{gray!10}{PLÁTANO} & \cellcolor{gray!10}{0.7585014} & \cellcolor{gray!10}{0.0979122} & \cellcolor{gray!10}{0.00e+00}\\
+Bogotá & YUCA & 0.4280256 & 0.0490270 & 0.00e+00\\
+\addlinespace
+\cellcolor{gray!10}{Cali} & \cellcolor{gray!10}{YUCA} & \cellcolor{gray!10}{0.5810043} & \cellcolor{gray!10}{0.0503080} & \cellcolor{gray!10}{0.00e+00}\\
+Medellín & YUCA & 0.5375945 & 0.0446882 & 0.00e+00\\
+\bottomrule
+\end{tabular}}
+\end{table}
+
+\begin{table}[!h]
+\centering
+\caption{\label{tab:tab:ecm_cali}Error correction model (ECM) estimates for Cali. The ECM is estimated under the Enders restriction (same lag length for \(\Delta y\) and \(\Delta x\), no contemporaneous \(\Delta x_t\)).}
+\centering
+\resizebox{\ifdim\width>\linewidth\linewidth\else\width\fi}{!}{
+\fontsize{9}{11}\selectfont
+\begin{tabular}[t]{lllll}
+\toprule
+pair & term & b & se & p-value\\
+\midrule
+\cellcolor{gray!10}{ARROZ PARA SECO / Arroz de primera} & \cellcolor{gray!10}{NA} & \cellcolor{gray!10}{NA} & \cellcolor{gray!10}{NA} & \cellcolor{gray!10}{NA}\\
+NA & Intercept & 0.0320478 & 0.0091674 & 0.0010582\\
+\cellcolor{gray!10}{NA} & \cellcolor{gray!10}{e\_\{t-1\}} & \cellcolor{gray!10}{-0.2149072} & \cellcolor{gray!10}{0.0905619} & \cellcolor{gray!10}{0.0218769}\\
+NA & Δy\_\{t-1\} & 0.2929300 & 0.0967138 & 0.0040174\\
+\cellcolor{gray!10}{NA} & \cellcolor{gray!10}{Δx\_\{t-1\}} & \cellcolor{gray!10}{0.3316908} & \cellcolor{gray!10}{0.1119224} & \cellcolor{gray!10}{0.0048029}\\
+\addlinespace
+PAPA / Papa capira & NA & NA & NA & NA\\
+\cellcolor{gray!10}{NA} & \cellcolor{gray!10}{Intercept} & \cellcolor{gray!10}{0.0895944} & \cellcolor{gray!10}{0.0487491} & \cellcolor{gray!10}{0.0725450}\\
+NA & e\_\{t-1\} & -0.3879246 & 0.0877859 & 0.0000599\\
+\cellcolor{gray!10}{NA} & \cellcolor{gray!10}{Δy\_\{t-1\}} & \cellcolor{gray!10}{0.3403183} & \cellcolor{gray!10}{0.1212268} & \cellcolor{gray!10}{0.0073043}\\
+NA & Δx\_\{t-1\} & -0.2667158 & 0.2080773 & 0.2063322\\
+\addlinespace
+\cellcolor{gray!10}{PLÁTANO / Plátano hartón verde} & \cellcolor{gray!10}{NA} & \cellcolor{gray!10}{NA} & \cellcolor{gray!10}{NA} & \cellcolor{gray!10}{NA}\\
+NA & Intercept & 0.0117105 & 0.0233113 & 0.6179826\\
+\cellcolor{gray!10}{NA} & \cellcolor{gray!10}{e\_\{t-1\}} & \cellcolor{gray!10}{-0.1581900} & \cellcolor{gray!10}{0.0879040} & \cellcolor{gray!10}{0.0789469}\\
+NA & Δy\_\{t-1\} & -0.0584523 & 0.1277311 & 0.6495294\\
+\cellcolor{gray!10}{NA} & \cellcolor{gray!10}{Δy\_\{t-2\}} & \cellcolor{gray!10}{-0.1136876} & \cellcolor{gray!10}{0.1203972} & \cellcolor{gray!10}{0.3503070}\\
+\addlinespace
+NA & Δx\_\{t-1\} & 0.2810099 & 0.1623921 & 0.0907235\\
+\cellcolor{gray!10}{NA} & \cellcolor{gray!10}{Δx\_\{t-2\}} & \cellcolor{gray!10}{0.2772650} & \cellcolor{gray!10}{0.1585799} & \cellcolor{gray!10}{0.0875273}\\
+YUCA / Yuca ICA & NA & NA & NA & NA\\
+\cellcolor{gray!10}{NA} & \cellcolor{gray!10}{Intercept} & \cellcolor{gray!10}{0.0733991} & \cellcolor{gray!10}{0.0224783} & \cellcolor{gray!10}{0.0020685}\\
+NA & e\_\{t-1\} & -0.1847803 & 0.0567201 & 0.0021138\\
+\addlinespace
+\cellcolor{gray!10}{NA} & \cellcolor{gray!10}{Δy\_\{t-1\}} & \cellcolor{gray!10}{0.1698592} & \cellcolor{gray!10}{0.1505081} & \cellcolor{gray!10}{0.2649302}\\
+NA & Δx\_\{t-1\} & -0.0315605 & 0.0707228 & 0.6575051\\
+\bottomrule
+\end{tabular}}
+\end{table}
+
+\begin{table}[!h]
+\centering
+\caption{\label{tab:tab:ecm_bogota}Error correction model (ECM) estimates for Bogotá. The ECM is estimated under the Enders restriction (same lag length for \(\Delta y\) and \(\Delta x\), no contemporaneous \(\Delta x_t\)).}
+\centering
+\resizebox{\ifdim\width>\linewidth\linewidth\else\width\fi}{!}{
+\fontsize{9}{11}\selectfont
+\begin{tabular}[t]{lllll}
+\toprule
+pair & term & b & se & p-value\\
+\midrule
+\cellcolor{gray!10}{ARROZ PARA SECO / Arroz de primera} & \cellcolor{gray!10}{NA} & \cellcolor{gray!10}{NA} & \cellcolor{gray!10}{NA} & \cellcolor{gray!10}{NA}\\
+NA & Intercept & 0.0211261 & 0.0081628 & 0.0128737\\
+\cellcolor{gray!10}{NA} & \cellcolor{gray!10}{e\_\{t-1\}} & \cellcolor{gray!10}{-0.1094686} & \cellcolor{gray!10}{0.0604712} & \cellcolor{gray!10}{0.0767906}\\
+NA & Δy\_\{t-1\} & 0.3811162 & 0.0884717 & 0.0000858\\
+\cellcolor{gray!10}{NA} & \cellcolor{gray!10}{Δx\_\{t-1\}} & \cellcolor{gray!10}{0.3406157} & \cellcolor{gray!10}{0.0981641} & \cellcolor{gray!10}{0.0011424}\\
+\addlinespace
+PAPA / Papa R-12 negra & NA & NA & NA & NA\\
+\cellcolor{gray!10}{NA} & \cellcolor{gray!10}{Intercept} & \cellcolor{gray!10}{0.0641157} & \cellcolor{gray!10}{0.0345081} & \cellcolor{gray!10}{0.0695773}\\
+NA & e\_\{t-1\} & -0.1753690 & 0.0614762 & 0.0064760\\
+\cellcolor{gray!10}{NA} & \cellcolor{gray!10}{Δy\_\{t-1\}} & \cellcolor{gray!10}{0.5036602} & \cellcolor{gray!10}{0.1031149} & \cellcolor{gray!10}{0.0000129}\\
+NA & Δx\_\{t-1\} & 0.1550001 & 0.1345910 & 0.2554203\\
+\addlinespace
+\cellcolor{gray!10}{PLÁTANO / Plátano hartón verde} & \cellcolor{gray!10}{NA} & \cellcolor{gray!10}{NA} & \cellcolor{gray!10}{NA} & \cellcolor{gray!10}{NA}\\
+NA & Intercept & 0.0358186 & 0.0294343 & 0.2298490\\
+\cellcolor{gray!10}{NA} & \cellcolor{gray!10}{e\_\{t-1\}} & \cellcolor{gray!10}{-0.2977576} & \cellcolor{gray!10}{0.0935277} & \cellcolor{gray!10}{0.0026091}\\
+NA & Δy\_\{t-1\} & 0.2119419 & 0.1328323 & 0.1174355\\
+\cellcolor{gray!10}{NA} & \cellcolor{gray!10}{Δx\_\{t-1\}} & \cellcolor{gray!10}{0.1607904} & \cellcolor{gray!10}{0.2152965} & \cellcolor{gray!10}{0.4589652}\\
+\addlinespace
+YUCA / Yuca llanera & NA & NA & NA & NA\\
+\cellcolor{gray!10}{NA} & \cellcolor{gray!10}{Intercept} & \cellcolor{gray!10}{0.0291810} & \cellcolor{gray!10}{0.0235763} & \cellcolor{gray!10}{0.2220978}\\
+NA & e\_\{t-1\} & -0.1983702 & 0.0783679 & 0.0148474\\
+\cellcolor{gray!10}{NA} & \cellcolor{gray!10}{Δy\_\{t-1\}} & \cellcolor{gray!10}{0.1140003} & \cellcolor{gray!10}{0.1333491} & \cellcolor{gray!10}{0.3970369}\\
+NA & Δx\_\{t-1\} & 0.0073602 & 0.0901300 & 0.9352695\\
+\bottomrule
+\end{tabular}}
+\end{table}
+
+\begin{table}[!h]
+\centering
+\caption{\label{tab:tab:ecm_medellin}Error correction model (ECM) estimates for Medellín. The ECM is estimated under the Enders restriction (same lag length for \(\Delta y\) and \(\Delta x\), no contemporaneous \(\Delta x_t\)).}
+\centering
+\resizebox{\ifdim\width>\linewidth\linewidth\else\width\fi}{!}{
+\fontsize{9}{11}\selectfont
+\begin{tabular}[t]{lllll}
+\toprule
+pair & term & b & se & p-value\\
+\midrule
+\cellcolor{gray!10}{ARROZ PARA SECO / Arroz de primera} & \cellcolor{gray!10}{NA} & \cellcolor{gray!10}{NA} & \cellcolor{gray!10}{NA} & \cellcolor{gray!10}{NA}\\
+NA & Intercept & 0.0298102 & 0.0106044 & 0.0072308\\
+\cellcolor{gray!10}{NA} & \cellcolor{gray!10}{e\_\{t-1\}} & \cellcolor{gray!10}{-0.1594146} & \cellcolor{gray!10}{0.0694176} & \cellcolor{gray!10}{0.0262540}\\
+NA & Δy\_\{t-1\} & 0.3516071 & 0.1018648 & 0.0012051\\
+\cellcolor{gray!10}{NA} & \cellcolor{gray!10}{Δx\_\{t-1\}} & \cellcolor{gray!10}{0.3294578} & \cellcolor{gray!10}{0.1436373} & \cellcolor{gray!10}{0.0264265}\\
+\addlinespace
+PAPA / Papa capira & NA & NA & NA & NA\\
+\cellcolor{gray!10}{NA} & \cellcolor{gray!10}{Intercept} & \cellcolor{gray!10}{0.1524624} & \cellcolor{gray!10}{0.0388060} & \cellcolor{gray!10}{0.0002845}\\
+NA & e\_\{t-1\} & -0.4447105 & 0.0857008 & 0.0000046\\
+\cellcolor{gray!10}{NA} & \cellcolor{gray!10}{Δy\_\{t-1\}} & \cellcolor{gray!10}{0.3041604} & \cellcolor{gray!10}{0.1085970} & \cellcolor{gray!10}{0.0074302}\\
+NA & Δx\_\{t-1\} & -0.3303416 & 0.2204563 & 0.1408494\\
+\addlinespace
+\cellcolor{gray!10}{PLÁTANO / Plátano hartón verde} & \cellcolor{gray!10}{NA} & \cellcolor{gray!10}{NA} & \cellcolor{gray!10}{NA} & \cellcolor{gray!10}{NA}\\
+NA & Intercept & 0.0061420 & 0.0241712 & 0.8005463\\
+\cellcolor{gray!10}{NA} & \cellcolor{gray!10}{e\_\{t-1\}} & \cellcolor{gray!10}{-0.1026900} & \cellcolor{gray!10}{0.0511828} & \cellcolor{gray!10}{0.0507202}\\
+NA & Δy\_\{t-1\} & 0.1281623 & 0.1315426 & 0.3350022\\
+\cellcolor{gray!10}{NA} & \cellcolor{gray!10}{Δx\_\{t-1\}} & \cellcolor{gray!10}{0.2369336} & \cellcolor{gray!10}{0.1336452} & \cellcolor{gray!10}{0.0828742}\\
+\addlinespace
+YUCA / Yuca ICA & NA & NA & NA & NA\\
+\cellcolor{gray!10}{NA} & \cellcolor{gray!10}{Intercept} & \cellcolor{gray!10}{0.0290916} & \cellcolor{gray!10}{0.0190291} & \cellcolor{gray!10}{0.1331632}\\
+NA & e\_\{t-1\} & -0.1737341 & 0.0642461 & 0.0095656\\
+\cellcolor{gray!10}{NA} & \cellcolor{gray!10}{Δy\_\{t-1\}} & \cellcolor{gray!10}{0.2168052} & \cellcolor{gray!10}{0.1246585} & \cellcolor{gray!10}{0.0886895}\\
+NA & Δx\_\{t-1\} & 0.1433950 & 0.0725168 & 0.0540063\\
+\bottomrule
+\end{tabular}}
+\end{table}
+
+\subsection{Análisis de cointegración
+asimétrica}\label{anuxe1lisis-de-cointegraciuxf3n-asimuxe9trica}
+
+\subsubsection{Modelo de Corrección de Error Asimétrico
+(A-ECM)}\label{modelo-de-correcciuxf3n-de-error-asimuxe9trico-a-ecm-1}
+
+\subsubsection{Modelo TAR}\label{modelo-tar}
+
+\subsubsection{Modelo M-TAR}\label{modelo-m-tar}
+
+  \bibliography{refs-ob-rif-informal.bib}
+
+\end{document}
