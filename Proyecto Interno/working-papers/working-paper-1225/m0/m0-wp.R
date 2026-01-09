@@ -7,7 +7,7 @@
 ########################################################
 
 # Directorio 
-base_dir <- "C:/Users/danie/OneDrive/Escritorio/Least-cost-diets-and-affordability/Proyecto Interno"
+base_dir <- "C:/Users/Portatil/Desktop/Least-cost-diets-and-affordability/Proyecto Interno/"
 
 # -----------------------------
 # 1. Cargar librerías y definición de directorios
@@ -82,7 +82,7 @@ save_plot_pages <- function(plots, out_prefix, plot_dir,
 # -----------------------------
 
 # Precios y variación del ipc
-dane_99_18 <- read_excel(in_prices)
+dane_99_18 <- read_excel(in_prices) 
 var_ipc    <- read_excel(in_ipc) %>% clean_names()
 
 # Limpiar nombres de ciudades y crear el código de subclase
@@ -142,6 +142,8 @@ resultados_metricas <- tibble(
 # Lista para guardar las figuras
 plots_by_city <- setNames(vector("list", length(city_i)), city_i)
 
+datasets_list <- setNames(vector("list", length(city_i)), city_i)
+
 # -----------------------------
 # 5. Bucle principal (estimación hacia adelante)
 # -----------------------------
@@ -149,7 +151,6 @@ plots_by_city <- setNames(vector("list", length(city_i)), city_i)
 for (ci in seq_along(city_i)) {
   for (fj in seq_along(food_j)) {
 
-    
     city_name <- city_i[ci]
     food_name <- food_j[fj]
     
@@ -309,12 +310,21 @@ for (ci in seq_along(city_i)) {
       )
     
     plots_by_city[[city_name]] <- append(plots_by_city[[city_name]], list(p))
+    datasets_list[[city_name]] <- append(datasets_list[[city_name]], list(df_plot))
   }
 }
 
 # -----------------------------
 # 6. Guardar outputs
 # -----------------------------
+
+# Guardar la base de datos (predicción)
+forecast_dataset = do.call(rbind, datasets_list[[1]])
+
+write_csv(forecast_dataset, file.path(out_dir, "m0_forecast_dataset.csv"))
+write_csv(forecast_dataset, file.path("working-papers/working-paper-0125/input",
+                                      "m0_forecast_dataset.csv"))
+
 
 # Guardar las figuras en páginas (9 por página)
 for (city_name in names(plots_by_city)) {

@@ -13,7 +13,7 @@ knitr::opts_chunk$set(echo = FALSE, message = FALSE, warning = FALSE)
 ```
 
 ```{r, echo = FALSE}
-directorio_base <- "C:/Users/danie/OneDrive/Escritorio/Least-cost-diets-and-affordability/Proyecto Interno"
+directorio_base <- "C:/Users/Portatil/Desktop/Least-cost-diets-and-affordability/Proyecto Interno"
 ```
 
 ```{r}
@@ -341,8 +341,9 @@ En tercer lugar, se estima una versión del modelo ECM que permite especificar u
 Sea $P_t^R$ el precio minorista observado en la ciudad de análisis en el período $t$, y sea $P_t^W$ el precio mayorista correspondiente. El modelo sigue la forma:
 
 $$
+\begin{split}
 \Delta P^{min}_t
-=
+&=
 \sum_{i=0}^{L_1^+}\beta^{+}_{1i}\,\Delta^{+}P^{may}_{t-i}
 +
 \sum_{i=0}^{L_1^-}\beta^{-}_{1i}\,\Delta^{-}P^{may}_{t-i}
@@ -350,13 +351,16 @@ $$
 \sum_{i=1}^{L_2^+}\beta^{+}_{2i}\,\Delta^{+}P^{min}_{t-i}
 +
 \sum_{i=1}^{L_2^-}\beta^{-}_{2i}\,\Delta^{-}P^{min}_{t-i}
-+
+\\
+&\quad+
 \beta^{+}_{3}\Big(P^{min}_{t-1}-\gamma_0-\gamma_1 P^{may}_{t-1}\Big)
 +
 \beta^{-}_{3}\Big(P^{min}_{t-1}-\gamma_0-\gamma_1 P^{may}_{t-1}\Big)
 +
 \varepsilon_t
+\end{split}
 $$
+
 
 La expresión $z_{t-1}$ corresponde al término de corrección de error y captura la relación de largo plazo entre el precio minorista y el precio mayorista. Así, se espera que ambos $\beta_3$ sean negativos: si el precio minorista está por encima $z_{t-1} > 0$ (por debajo $z_{t-1} < 0$ del equilibrio, los precios minoristas deberían disminuir (aumentar).
 
@@ -374,7 +378,7 @@ $$
 knitr::include_graphics(c(
   paste0(
     directorio_base,
-    "/working-papers/working-paper-1225/m4/output/m4_ecm_grouped_page_01.png"
+    "/working-papers/working-paper-1225/m4/output/m4_ecm_dlog_grouped_page_01.png"
   )
 ))
 ```
@@ -385,9 +389,38 @@ knitr::include_graphics(c(
 
 La siguiente tabla muestra las métricas obtenidas a partir de cada metodología:
 
-### 5.2. Márgenes de comercialización implícitos
+```{r, echo=FALSE, out.width="100%"}
 
-Note que algunas de las metodologías implementadas permiten obtener un margen de comercialización implícita 
+knitr::include_graphics(c(
+  paste0(
+    directorio_base,
+    "/working-papers/working-paper-1225/model_comparison/output/plot_box_mape_by_model.png"
+  )
+))
+```
+
+
+```{r, echo=FALSE, out.width="100%"}
+
+knitr::include_graphics(c(
+  paste0(
+    directorio_base,
+    "/working-papers/working-paper-1225/model_comparison/output/ipc_plot_heatmap_mape_food_model.png"
+  )
+))
+```
+
+```{r, echo=FALSE, out.width="100%"}
+
+knitr::include_graphics(c(
+  paste0(
+    directorio_base,
+    "/working-papers/working-paper-1225/model_comparison/output/sipsa_plot_heatmap_mape_food_model.png"
+  )
+))
+```
+
+### 5.2. Márgenes de comercialización implícitos
 
 ### 5.3. Validación con márgenes implícitos
 

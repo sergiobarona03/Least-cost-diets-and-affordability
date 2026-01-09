@@ -110,6 +110,12 @@ test_data <- test_data %>%
     pred_q3 = precio_sipsa * (1 + margen_q3 / 100)
   )
 
+
+write_csv(data_val, file.path(out_dir,
+                              "m1_forecast_dataset.csv"))
+write_csv(data_val, file.path("working-papers/working-paper-0125/input",
+                                      "m1_forecast_dataset.csv"))
+
 # -----------------------
 # 5. Cálculo de las métricas de validación
 # -----------------------

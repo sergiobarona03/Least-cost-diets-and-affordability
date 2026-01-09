@@ -147,6 +147,14 @@ for (i in seq_along(food.vector)) {
 # 4. Guardar outputs
 # -----------------------
 
+# Guardar dataset
+m6_forecast_df = do.call(rbind, plot_store)
+
+write_csv(m6_forecast_df, file.path(out_dir,
+                                      "m6_forecast_dataset.csv"))
+write_csv(m6_forecast_df, file.path("working-papers/working-paper-0125/input",
+                                      "m6_forecast_dataset.csv"))
+
 # Guardar métricas y márgenes
 write_csv(output_metrics, file.path(out_dir, "summary_metrics_m6_dummies.csv"))
 write_csv(margen_table,  file.path(out_dir, "margen_comercializacion_m6_dummies.csv"))

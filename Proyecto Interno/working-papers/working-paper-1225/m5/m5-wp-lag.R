@@ -36,7 +36,8 @@ infile <- file.path(
   "mapeo ipc-sipsa", "output",
   paste0(date_tag, "_dataset_ipc_sipsa.xlsx")
 )
-dataset <- read_excel(infile)
+dataset <- read_excel(infile) %>%
+  mutate(fecha  = as.Date(paste(Year, Month, 1, sep = "-")))
 
 # Ruta output
 out_dir <- file.path(base_dir, "working-papers", "working-paper-1225", "m5", "output_ecm")
@@ -228,6 +229,19 @@ for (i in seq_along(food.vector)) {
 # -----------------------
 # 4. Guardar outputs
 # -----------------------
+
+# Guardar forecast dataset
+forecast_dataset = do.call(rbind, plot_store)
+forecast_dataset = merge(dataset[c("fecha","alimento_sipsa",
+                                   "precio_sipsa", "precio_ipc")],
+                         forecast_dataset, by = c("fecha", "alimento_sipsa"))
+
+write_csv(forecast_dataset, file.path(out_dir,
+                              "m5_forecast_dataset.csv"))
+write_csv(forecast_dataset, file.path("working-papers/working-paper-0125/input",
+                              "m5_forecast_dataset.csv"))
+
+
 
 # Guardar tablas en CSV
 write_csv(cointegration_table, file.path(out_dir, "m5_cointegration_coint_test.csv"))
