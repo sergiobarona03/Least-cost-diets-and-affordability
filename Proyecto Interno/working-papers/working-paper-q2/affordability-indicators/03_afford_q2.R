@@ -1,0 +1,305 @@
+#######################################################################
+## Cálculo de indicadores de asequibilidad (Afford) ciudad–mes–escenario
+## y construcción de INCIDENCIA con banda Q1–Q3 y línea Q2
+## (facet por ciudad)
+#######################################################################
+
+#----------------------------------------------------------------------
+# Paquetes
+#----------------------------------------------------------------------
+suppressPackageStartupMessages({
+  library(tidyverse)
+  library(lubridate)
+  library(readr)
+  library(writexl)
+  library(tidyr)
+})
+
+#----------------------------------------------------------------------
+# Directorios y función Afford
+#----------------------------------------------------------------------
+base_dir <- "C:/Users/Portatil/Desktop/Least-cost-diets-and-affordability/Proyecto Interno"
+setwd(base_dir)
+
+# Función Afford (ajusta ruta si cambia)
+source("working-papers\\working-paper-ipc\\affordability-indicators\\aux_functions\\Afford_Expansion.R")
+
+# Directorio output q2 (recomendado por tu pipeline nuevo)
+out_dir_q2 <- file.path(base_dir, "working-papers", "working-paper-q2", "output")
+dir.create(out_dir_q2, recursive = TRUE, showWarnings = FALSE)
+
+# Directorios de input:
+# - Income trimestral/mensual que ya construiste
+income_dir <- file.path(out_dir_q2, "incomecol")  # ajusta si tu IncomeCol está en otro sitio
+# - Costos HCost (CoCA/CoNA por escenario) desde tu script HCost
+afford_cost_dir <- file.path(out_dir_q2, "affordability_qtiles")
+
+# NUEVO directorio para métricas de asequibilidad (Afford + incidencia)
+afford_metrics_dir <- file.path(out_dir_q2, "affordability_metrics_qtiles")
+dir.create(afford_metrics_dir, recursive = TRUE, showWarnings = FALSE)
+
+#----------------------------------------------------------------------
+# Cargar resultados previos:
+#   - HCost Model_CoCA y Model_CoNA (q1/q2/q3)
+#   - Income
+#----------------------------------------------------------------------
+# HCost outputs (los nombres vienen del script que ya dejamos final)
+coca_df <- read_csv(file.path(afford_cost_dir, "HCost_Model_CoCA_city_month_q1_q2_q3.csv"),
+                    show_col_types = FALSE)
+cona_df <- read_csv(file.path(afford_cost_dir, "HCost_Model_CoNA_city_month_q1_q2_q3.csv"),
+                    show_col_types = FALSE)
+
+# Income (ajusta el nombre si tu archivo difiere)
+income_df <- read_csv(file.path(income_dir, "IncomeCol_city_month.csv"),
+                      show_col_types = FALSE)
+
+#----------------------------------------------------------------------
+# Asegurar que fechas y claves estén bien
+#----------------------------------------------------------------------
+suppressWarnings({
+  coca_df$fecha   <- as.Date(coca_df$fecha)
+  cona_df$fecha   <- as.Date(cona_df$fecha)
+  income_df$fecha <- as.Date(income_df$fecha)
+})
+
+coca_df <- coca_df %>% mutate(
+  ciudad = as.character(ciudad),
+  escenario = tolower(as.character(escenario))
+)
+cona_df <- cona_df %>% mutate(
+  ciudad = as.character(ciudad),
+  escenario = tolower(as.character(escenario))
+)
+
+income_df <- income_df %>% mutate(
+  ciudad_panel = as.character(ciudad_panel)
+)
+
+# Si Income usa "Bogotá" vs "BOGOTÁ D.C." ajusta aquí si lo necesitas
+# income_df <- income_df %>% mutate(ciudad_panel = if_else(ciudad_panel == "Bogotá", "BOGOTÁ D.C.", ciudad_panel))
+
+#----------------------------------------------------------------------
+# Vectores ciudad–mes (desde Income, que es el universo relevante)
+#----------------------------------------------------------------------
+city_vector <- sort(unique(income_df$ciudad_panel))
+date_vector <- sort(unique(income_df$fecha))   # iterar por índice: fecha_raw in 1:length(date_vector)
+
+#######################################################################
+## BLOQUE 0: Preparar CoCA/CoNA en formato "wide" por escenario
+##          (para pasarlos a Afford() por escenario de manera limpia)
+#######################################################################
+
+# Unificamos el nombre de ciudad para hacer join limpio
+# (CoCA/CoNA usan columna ciudad)
+# Income usa ciudad_panel
+# aquí solo definimos la "llave estándar" city_key = ciudad_panel
+income_keyed <- income_df %>% dplyr::rename(city_key = ciudad_panel)
+
+coca_keyed <- coca_df %>% dplyr::rename(city_key = ciudad)
+cona_keyed <- cona_df %>% dplyr::rename(city_key = ciudad)
+
+#----------------------------------------------------------------------
+# Helper: obtener CoCA/CoNA de un escenario específico
+#----------------------------------------------------------------------
+get_cost_by_scenario <- function(df, city_key, fecha, escenario) {
+  df %>%
+    filter(city_key == !!city_key, fecha == !!fecha, escenario == !!escenario)
+}
+
+#######################################################################
+## BLOQUE 1: Cálculo de Afford ciudad–mes–escenario
+#######################################################################
+
+scenario_vec <- c("q1", "q2", "q3")
+
+res_afford <- list()
+fail_afford <- list()
+k <- 1
+
+for (city.x in city_vector) {
+  
+  for (fecha_raw in 1:length(date_vector)) {
+    
+    fecha.x <- date_vector[fecha_raw]
+    if (is.na(fecha.x)) {
+      fecha.x <- try(as.Date(date_vector[fecha_raw]), silent = TRUE)
+    }
+    if (inherits(fecha.x, "try-error") || is.na(fecha.x)) {
+      fail_afford[[length(fail_afford) + 1]] <- tibble(
+        ciudad = city.x, fecha_raw = fecha_raw, escenario = NA_character_,
+        motivo = paste0("Fecha no legible: ", date_vector[fecha_raw])
+      )
+      next
+    }
+    
+    # Income para ciudad/fecha
+    inc_aux <- income_keyed %>%
+      filter(city_key == city.x, fecha == fecha.x)
+    
+    if (nrow(inc_aux) == 0) {
+      fail_afford[[length(fail_afford) + 1]] <- tibble(
+        ciudad = city.x, fecha = fecha.x, escenario = NA_character_,
+        motivo = "Sin IncomeCol para ciudad/fecha"
+      )
+      next
+    }
+    
+    # Iterar escenarios q1/q2/q3
+    for (esc in scenario_vec) {
+      
+      message("Procesando Afford: ciudad = ", city.x,
+              " | fecha = ", fecha.x,
+              " | escenario = ", esc, " ...")
+      
+      coca_aux <- get_cost_by_scenario(coca_keyed, city.x, fecha.x, esc)
+      cona_aux <- get_cost_by_scenario(cona_keyed, city.x, fecha.x, esc)
+      
+      if (nrow(coca_aux) == 0 || nrow(cona_aux) == 0) {
+        fail_afford[[length(fail_afford) + 1]] <- tibble(
+          ciudad = city.x, fecha = fecha.x, escenario = esc,
+          motivo = "Sin CoCA/CoNA para ciudad/fecha/escenario"
+        )
+        next
+      }
+      
+      out <- tryCatch({
+        Afford(
+          Hexpense   = inc_aux,
+          Model_CoCA = coca_aux,
+          Model_CoNA = cona_aux
+        )
+      }, error = function(e) {
+        fail_afford[[length(fail_afford) + 1]] <- tibble(
+          ciudad = city.x, fecha = fecha.x, escenario = esc,
+          motivo = e$message
+        )
+        NULL
+      })
+      
+      if (is.null(out)) next
+      
+      po <- out$Poverty_outcome %>%
+        mutate(
+          ciudad = city.x,
+          fecha  = fecha.x,
+          escenario = esc
+        )
+      
+      res_afford[[k]] <- po
+      k <- k + 1
+    }
+  }
+}
+
+afford_df <- if (length(res_afford) == 0) tibble() else bind_rows(res_afford)
+fail_df   <- if (length(fail_afford) == 0) tibble() else bind_rows(fail_afford)
+
+# Guardar tabla por decil
+saveRDS(afford_df, file = file.path(afford_metrics_dir, "Afford_city_month_q1_q2_q3_by_decile.rds"))
+write_csv(afford_df, file.path(afford_metrics_dir, "Afford_city_month_q1_q2_q3_by_decile.csv"))
+
+saveRDS(fail_df, file = file.path(afford_metrics_dir, "Afford_failures_q1_q2_q3.rds"))
+write_csv(fail_df, file.path(afford_metrics_dir, "Afford_failures_q1_q2_q3.csv"))
+
+#######################################################################
+## BLOQUE 2: INCIDENCIA por ciudad–mes–modelo–escenario
+#######################################################################
+
+# afford_df tiene: deciles, rate, gap, severity, model, ciudad, fecha, escenario
+
+aff_inc <- afford_df %>%
+  mutate(
+    escenario = tolower(as.character(escenario)),
+    model = as.character(model)
+  ) %>%
+  group_by(ciudad, fecha, model, escenario) %>%
+  dplyr::summarise(
+    n_deciles = n_distinct(deciles),
+    sum_rate  = sum(rate, na.rm = TRUE),
+    incidence = (1 / n_deciles) * sum_rate,
+    .groups   = "drop"
+  )
+
+saveRDS(aff_inc, file = file.path(afford_metrics_dir, "Afford_incidence_city_month_q1_q2_q3.rds"))
+write_csv(aff_inc, file.path(afford_metrics_dir, "Afford_incidence_city_month_q1_q2_q3.csv"))
+
+#######################################################################
+## BLOQUE 3: Gráficas de INCIDENCIA
+## - Una gráfica para CoCA y otra para CoNA
+## - Línea: Q2
+## - Banda: Q1–Q3
+## - Facet: ciudad
+#######################################################################
+
+# Preparar función para pasar long->wide por escenarios
+make_band_df <- function(df_model) {
+  df_model %>%
+    mutate(
+      fecha = as.Date(fecha),
+      escenario = tolower(as.character(escenario))
+    ) %>%
+    group_by(ciudad, fecha, escenario) %>%
+    dplyr::summarise(incidence = mean(incidence, na.rm = TRUE), .groups = "drop") %>%
+    pivot_wider(
+      names_from  = escenario,
+      values_from = incidence,
+      values_fill = NA_real_
+    ) %>%
+    filter(!is.na(q2)) %>%
+    arrange(ciudad, fecha)
+}
+
+#--------------------------
+# CoCA
+#--------------------------
+aff_inc_coca <- aff_inc %>% filter(model == "CoCA")
+band_coca <- make_band_df(aff_inc_coca)
+
+g_coca_inc <- ggplot(band_coca, aes(x = fecha)) +
+  geom_ribbon(aes(ymin = q1, ymax = q3), alpha = 0.25) +
+  geom_line(aes(y = q2), linewidth = 0.9) +
+  facet_wrap(~ ciudad, scales = "free_y") +
+  labs(
+    title = "Incidencia de pobreza de asequibilidad (CoCA)",
+    subtitle = "Línea: Q2 | Banda: Q1–Q3",
+    x = "Fecha",
+    y = "Incidencia (%)"
+  ) +
+  theme_classic()
+
+ggsave(
+  filename = file.path(afford_metrics_dir, "Afford_Incidence_CoCA_Q1_Q2_Q3_band_by_city.png"),
+  plot     = g_coca_inc,
+  width    = 12,
+  height   = 5
+)
+
+#--------------------------
+# CoNA
+#--------------------------
+aff_inc_cona <- aff_inc %>% filter(model == "CoNA")
+band_cona <- make_band_df(aff_inc_cona)
+
+g_cona_inc <- ggplot(band_cona, aes(x = fecha)) +
+  geom_ribbon(aes(ymin = q1, ymax = q3), alpha = 0.25) +
+  geom_line(aes(y = q2), linewidth = 0.9) +
+  facet_wrap(~ ciudad, scales = "free_y") +
+  labs(
+    title = "Incidencia de pobreza de asequibilidad (CoNA)",
+    subtitle = "Línea: Q2 | Banda: Q1–Q3",
+    x = "Fecha",
+    y = "Incidencia (%)"
+  ) +
+  theme_classic()
+
+ggsave(
+  filename = file.path(afford_metrics_dir, "Afford_Incidence_CoNA_Q1_Q2_Q3_band_by_city.png"),
+  plot     = g_cona_inc,
+  width    = 12,
+  height   = 5
+)
+
+message("DONE. Outputs en: ", afford_metrics_dir)
+message("Rows in Afford (by decile): ", nrow(afford_df))
+message("Rows in incidence: ", nrow(aff_inc))
+message("Failures in Afford: ", nrow(fail_df))
