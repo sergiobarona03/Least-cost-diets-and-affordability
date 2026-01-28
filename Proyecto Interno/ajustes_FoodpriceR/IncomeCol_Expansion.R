@@ -4,10 +4,6 @@
 
 IncomeCol_Expansion  <- function(Month, Year, City, Share.n=NULL) {
   
-  Month = 9
-  Year = 2022
-  City = "Cali"
-  
   
   # Función para validar parámetros
   validar_parametros <- function(parametro, tipo, rango = NULL, longitud = NULL) {
