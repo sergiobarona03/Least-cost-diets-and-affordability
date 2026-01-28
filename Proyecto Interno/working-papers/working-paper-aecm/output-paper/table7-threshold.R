@@ -1,13 +1,18 @@
 ############################################################
-## TAR (tau = 0) sobre residuales EG: mu_hat
-## - Modelo TAR de "linear attractor"
-## - Indicador en el nivel: I_t = 1{ mu_{t-1} >= 0 }
+## TAR (tau = 0) on EG residuals: mu_hat
+## - "Linear attractor" TAR model
+## - Level indicator: I_t = 1{ mu_{t-1} >= 0 }
 ## - Tests: Phi_mu (rho1=rho2=0), Equality (rho1=rho2)
-## - IC: AIC/BIC Enders; Ljung-Box Q(4)
+## - IC: Enders AIC/BIC
+## - Ljung-Box: (Q(1)..Q(h_max)); report Q(h_max)
 ############################################################
 
+library(tidyverse)
+library(knitr)
+library(kableExtra)
+
 #-----------------------------------------------------------
-# AIC/BIC como Enders–Granger:
+# AIC/BIC as in Enders–Granger:
 #   AIC = T log(SSR) + 2n
 #   BIC = T log(SSR) + n log(T)
 #-----------------------------------------------------------
@@ -18,7 +23,35 @@ ic_enders <- function(ssr, Tn, n_par) {
 }
 
 #-----------------------------------------------------------
-# Construye dataset TAR (nivel) con tau=0:
+# Ljung–Box diagnostics (EViews-style)
+# - Compute Q(h) for h = 1..h_max on regression residuals
+# - Return:
+#     * Q_last / p_last: Q(h_max) and its p-value (main reporting)
+#     * p_min: min p-value over h=1..h_max (conservative summary)
+#-----------------------------------------------------------
+ljung_box_grid <- function(e, h_max = 8) {
+  out <- tibble(
+    h = 1:h_max,
+    Q = NA_real_,
+    p = NA_real_
+  )
+  
+  for (hh in 1:h_max) {
+    bt <- Box.test(e, lag = hh, type = "Ljung-Box")
+    out$Q[out$h == hh] <- as.numeric(bt$statistic)
+    out$p[out$h == hh] <- bt$p.value
+  }
+  
+  list(
+    table  = out,
+    Q_last = out$Q[out$h == h_max],
+    p_last = out$p[out$h == h_max],
+    p_min  = suppressWarnings(min(out$p, na.rm = TRUE))
+  )
+}
+
+#-----------------------------------------------------------
+# Build TAR dataset (level) with tau = 0:
 #   Δmu_t = rho1 * I_t * mu_{t-1} + rho2 * (1-I_t) * mu_{t-1}
 #           + Σ_{j=1}^p γ_j Δmu_{t-j} + e_t
 #   I_t = 1{ mu_{t-1} >= 0 }
@@ -30,7 +63,7 @@ build_tar_df_tau0 <- function(mu_hat, p = 0) {
   dmu   <- c(NA, diff(mu_hat))        # Δmu_t
   mu_l1 <- c(NA, mu_hat[-Tn])         # mu_{t-1}
   
-  I <- ifelse(mu_l1 >= 0, 1, 0)       # tau = 0
+  I  <- ifelse(mu_l1 >= 0, 1, 0)      # tau = 0
   z1 <- I       * mu_l1               # I_t * mu_{t-1}
   z2 <- (1 - I) * mu_l1               # (1-I_t) * mu_{t-1}
   
@@ -48,14 +81,14 @@ build_tar_df_tau0 <- function(mu_hat, p = 0) {
 }
 
 #-----------------------------------------------------------
-# Estima TAR (tau=0) y calcula:
-# - rho1, rho2 (y t-stats)
+# Estimate TAR (tau=0) and compute:
+# - rho1, rho2 (and t-stats)
 # - Phi_mu: H0 rho1=rho2=0
-# - F_equal: H0 rho1=rho2
-# - AIC/BIC Enders
-# - Ljung-Box Q(4) en residuales
+# - Equality: H0 rho1=rho2
+# - Enders AIC/BIC
+# - Ljung–Box Q(h_max) p-value (EViews-style)
 #-----------------------------------------------------------
-estimate_tar_tau0 <- function(mu_hat, p = 0, lb_lag = 4) {
+estimate_tar_tau0 <- function(mu_hat, p = 0, lb_lag = 8) {
   
   dfm <- build_tar_df_tau0(mu_hat, p = p)
   
@@ -102,39 +135,41 @@ estimate_tar_tau0 <- function(mu_hat, p = 0, lb_lag = 4) {
   rho2  <- coefs["z2", "Estimate"]
   trho2 <- coefs["z2", "t value"]
   
-  # IC Enders
+  # Enders IC
   ic <- ic_enders(SSR_U, Tn_m, kU)
   
-  # Ljung–Box Q(lag) en residuales
-  Q <- Box.test(resid(mod), lag = lb_lag, type = "Ljung-Box", fitdf = kU)
+  # Ljung–Box grid (EViews-style) on residuals; report Q(lb_lag)
+  lb <- ljung_box_grid(resid(mod), h_max = lb_lag)
   
   list(
-    model   = mod,
-    p       = p,
-    tau     = 0,
-    rho1    = rho1,
-    t_rho1  = trho1,
-    rho2    = rho2,
-    t_rho2  = trho2,
-    Phi_mu  = Phi_mu,
-    F_equal = F_equal,
-    p_equal = pF_equal,
-    AIC     = ic$AIC,
-    BIC     = ic$BIC,
-    Q4      = as.numeric(Q$statistic),
-    p_Q4    = Q$p.value
+    model    = mod,
+    p        = p,
+    tau      = 0,
+    rho1     = rho1,
+    t_rho1   = trho1,
+    rho2     = rho2,
+    t_rho2   = trho2,
+    Phi_mu   = Phi_mu,
+    F_equal  = F_equal,
+    p_equal  = pF_equal,
+    AIC      = ic$AIC,
+    BIC      = ic$BIC,
+    Q4       = lb$Q_last,   # keeps your column name, but equals Q(lb_lag)
+    p_Q4     = lb$p_last,   # p-value for Q(lb_lag)
+    p_Qmin   = lb$p_min,    # optional: min p-value over 1..lb_lag
+    lb_table = lb$table     # optional: full Q(h) table
   )
 }
 
 #-----------------------------------------------------------
-# Selección de p por IC (AIC o BIC), con filtro opcional
-# de Ljung-Box (ruido blanco).
+# Select p by IC (AIC or BIC), with optional Ljung-Box filter
+# - Here p_Q4 means p-value of Q(lb_lag), where lb_lag is set by you
 #-----------------------------------------------------------
 select_p_tar_tau0 <- function(mu_hat,
                               p_max = 6,
                               ic = c("BIC","AIC"),
                               alpha_Q = 0.05,
-                              lb_lag = 4) {
+                              lb_lag = 8) {
   
   ic <- match.arg(ic)
   
@@ -164,10 +199,10 @@ select_p_tar_tau0 <- function(mu_hat,
   if (nrow(ok) > 0) {
     p_star <- ok$p[which.min(ok[[ic]])]
     note <- paste0("Selected p* by ", ic,
-                   " among models with Ljung-Box p_Q4 >= ", alpha_Q, ".")
+                   " among models with Ljung-Box p_Q(", lb_lag, ") >= ", alpha_Q, ".")
   } else {
     p_star <- tab$p[which.min(tab[[ic]])]
-    note <- paste0("WARNING: no model passed Ljung-Box (p_Q4 >= ", alpha_Q,
+    note <- paste0("WARNING: no model passed Ljung-Box (p_Q(", lb_lag, ") >= ", alpha_Q,
                    "); selected p* by ", ic, " anyway.")
   }
   
@@ -175,15 +210,14 @@ select_p_tar_tau0 <- function(mu_hat,
     p_star = p_star,
     best   = fits[[p_star + 1]],
     table  = tab,
-    note   = note
+    note   = note,
+    lb_lag = lb_lag
   )
 }
 
-
-
 ############################################################
 mu_hat <- res$mu_hat
-out <- select_p_tar_tau0(mu_hat, p_max=6, ic="BIC")
+out <- select_p_tar_tau0(mu_hat, p_max = 6, ic = "BIC", alpha_Q = 0.05, lb_lag = 8)
 ## out$note
 ## out$p_star
 ## out$table

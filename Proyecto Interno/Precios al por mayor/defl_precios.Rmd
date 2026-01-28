@@ -1,0 +1,209 @@
+---
+title: "Deflactación de precios y visualización temporal: SIPSA y DANE"
+date: "`r Sys.Date()`"
+output:
+  pdf_document: default
+---
+
+```{r set knitr options, echo = FALSE}
+knitr::opts_chunk$set(echo = FALSE, message = FALSE, warning = FALSE)
+```
+
+```{r setup, include=FALSE}
+# ============================================================
+# DEFLACTACIÓN Y VISUALIZACIÓN DE PRECIOS
+# SIPSA (precios mayoristas) y DANE (precios minoristas)
+# Base de deflactación: diciembre de 2018 = 100
+#
+# Este documento presenta:
+# 1. Los insumos utilizados para la deflactación
+# 2. La fórmula de deflactación
+# 3. La inspección de las bases deflactadas
+# 4. La visualización mediante matrices de precios (heatmaps)
+# 5. La construcción e interpretación de cuartiles
+# 6. Consideraciones metodológicas sobre el deflactor usado en SIPSA
+# ============================================================
+
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE)
+
+library(dplyr)
+library(tidyverse)
+library(lubridate)
+library(readxl)
+library(janitor)
+library(scales)
+library(stringi)
+library(forcats)
+library(tsibble)
+```
+
+# Insumos utilizados para la deflactación
+
+Para la deflactación de precios se emplean índices de precios al consumidor (IPC) con base diciembre de 2018 = 100. En particular, se utilizan dos fuentes:
+
+IPC utilizado para los precios mayoristas SIPSA: 
+```{r, echo=FALSE, warning=FALSE}
+
+ipc_sipsa <- read_excel("C:/Users/danie/OneDrive/Escritorio/Least-cost-diets-and-affordability/Proyecto Interno/Precios al por mayor/Series/IPC_SIPSA.xls")
+
+head(ipc_sipsa, 10)
+
+```
+Base de SIPSA: 
+```{r, echo=FALSE, warning=FALSE}
+
+base_dir   <- "C:/Users/danie/OneDrive/Escritorio/Least-cost-diets-and-affordability/Proyecto Interno/Precios al por mayor"
+path_bases <- file.path(base_dir, "Bases historicas")
+
+files_rds <- list.files(path_bases, pattern = "\\.rds$", full.names = TRUE)
+dataset   <- files_rds %>% lapply(readRDS) %>% bind_rows()
+
+sipsa_raw <- dataset %>%
+  mutate(
+    Fecha        = as.Date(Fecha),
+    Precio_kg    = as.numeric(Precio_kg),
+    Ciudad_raw   = trimws(sub(",.*", "", Mercado)),
+    Ciudad       = Ciudad_raw,
+    Grupo_sipsa  = stringi::stri_trans_general(Grupo, "Latin-ASCII") %>% toupper() %>% trimws(),
+    Alimento_raw = as.character(Alimento),
+    Alimento_key = Alimento_raw
+  ) %>%
+  filter(!is.na(Fecha), !is.na(Precio_kg))
+
+head(sipsa_raw, 10)
+```
+
+IPC utilizado para los precios minoristas DANE: 
+```{r, echo=FALSE, warning=FALSE}
+
+ipc_dane <- read_excel("C:/Users/danie/OneDrive/Escritorio/Least-cost-diets-and-affordability/Proyecto Interno/Precios DANE/OUTPUT_DANE/IPC_DANE.xls")
+
+head(ipc_dane, 10)
+
+```
+
+Base de DANE: 
+```{r, echo=FALSE, warning=FALSE}
+
+dane <- read_excel("C:\\Users\\danie\\OneDrive\\Escritorio\\Least-cost-diets-and-affordability\\Proyecto Interno\\Precios DANE\\OUTPUT_DANE\\precios_unadj_DANE_1999_2018.xlsx")
+
+head(dane, 10)
+
+```
+
+# Fórmula de deflactación
+
+La deflactación de precios nominales se realiza mediante la siguiente expresión:
+
+\[
+P^{\text{real}}_{t}
+=
+P^{\text{nominal}}_{t}
+\times
+\frac{IPC_{\text{base}}}{IPC_{t}}
+\]
+
+Dado que el IPC se encuentra normalizado a base diciembre de 2018 = 100, la expresión se simplifica a:
+
+\[
+P^{\text{real}}_{t}
+=
+P^{\text{nominal}}_{t}
+\times
+\frac{100}{IPC_{t}}
+\]
+
+donde:
+
+$P^{nominal}_{t}$ corresponde al precio observado en el período $t$
+
+$IPC_{t}$ es el índice de precios correspondiente al mismo período
+
+$P^{real}_{t}$ representa el precio real expresado en pesos constantes de diciembre de 2018
+
+# Alcance geográfico: ciudades incluidas
+
+En este ejercicio se trabaja únicamente con tres ciudades, tanto para SIPSA y DANE:
+
+- Bogotá
+- Medellín
+- Cali
+
+A continuación se muestran las dos bases finales deflactadas que alimentan los heatmaps.
+
+## SIPSA deflactado (base dic-2018)
+
+```{r, echo=FALSE, warning=FALSE}
+sipsa_def_path <- "C:/Users/danie/OneDrive/Escritorio/Least-cost-diets-and-affordability/Proyecto Interno/Precios al por mayor/Series/sipsa_deflactado_base2018_12.xlsx"
+sipsa_def <- readxl::read_excel(sipsa_def_path) %>% janitor::clean_names()
+
+head(sipsa_def, 10)
+```
+
+## DANE deflactado (base dic-2018)
+
+```{r, echo=FALSE, warning=FALSE}
+dane_def_path <- "C:/Users/danie/OneDrive/Escritorio/Least-cost-diets-and-affordability/Proyecto Interno/Precios DANE/OUTPUT_DANE/precios_DANE_deflactados_base2018_12_con_grupo.xlsx"
+dane_def <- readxl::read_excel(dane_def_path) %>% janitor::clean_names()
+
+head(dane_def, 10)
+```
+
+
+# Heatmaps por ciudad (SIPSA vs DANE)
+
+En esta sección se presentan matrices de precios (heatmaps) por ciudad.
+
+Se muestran dos versiones:
+
+- Escala continua.
+
+- Cuartiles.
+
+
+## SIPSA: heatmaps por ciudad (escala continua)
+
+```{r sip_Cali_cont, echo=FALSE, fig.cap="SIPSA – Cali: heatmap precios reales (escala continua)", out.width="0.85\\linewidth", fig.height=6, fig.width=8}
+knitr::include_graphics(
+  "C:/Users/danie/OneDrive/Escritorio/Least-cost-diets-and-affordability/Proyecto Interno/Precios al por mayor/Series/Graficas/heatmap/heatmap_Cali_defl_cont.png"
+)
+```
+
+## DANE: heatmaps por ciudad (escala continua)
+
+```{r dane_Cal_cont, echo=FALSE, fig.cap="DANE – Cali: heatmap IPC alimentos (escala continua)", out.width="0.85\\linewidth", fig.height=6, fig.width=8}
+knitr::include_graphics(
+  "C:/Users/danie/OneDrive/Escritorio/Least-cost-diets-and-affordability/Proyecto Interno/Precios DANE/OUTPUT_DANE/heatmaps/heatmap_DANE_Cali_cont_2013_2018.png"
+)
+```
+
+## Heatmaps por cuartiles
+
+Los cuartiles dividen la distribución del precio real en cuatro tramos (25% cada uno):
+
+- Q1: valores más bajos (primer 25%)
+- Q2: valores medio-bajos (25%–50%)
+- Q3: valores medio-altos (50%–75%)
+- Q4: valores más altos (último 25%)
+
+En los heatmaps por cuartiles, el color ya no representa el valor exacto del precio, sino en qué tramo cae el precio real en cada mes. Esto ayuda a comparar patrones de “meses relativamente altos/bajos” sin depender de la escala monetaria.
+
+### SIPSA: heatmaps por ciudad (cuartiles)
+
+```{r sip_Cali_quart, echo=FALSE, fig.cap="SIPSA – Cali: heatmap por cuartiles de precio real", out.width="0.85\\linewidth", fig.height=6, fig.width=8}
+knitr::include_graphics(
+  "C:/Users/danie/OneDrive/Escritorio/Least-cost-diets-and-affordability/Proyecto Interno/Precios al por mayor/Series/Graficas/heatmap/heatmap_Cali_defl_quart.png"
+)
+```
+
+### DANE: heatmaps por ciudad (cuartiles)
+
+```{r dane_Cal_quart, echo=FALSE, fig.cap="DANE – Cali: heatmap por cuartiles IPC alimentos", out.width="0.85\\linewidth", fig.height=6, fig.width=8}
+knitr::include_graphics(
+  "C:/Users/danie/OneDrive/Escritorio/Least-cost-diets-and-affordability/Proyecto Interno/Precios DANE/OUTPUT_DANE/heatmaps/heatmap_DANE_Cali_quart_2013_2018.png"
+)
+```
+
+# Nota metodológica: deflactor para SIPSA (mayorista)
+
+¿Cuál sería el índice más adecuado para deflactar SIPSA, dado que son precios mayoristas?

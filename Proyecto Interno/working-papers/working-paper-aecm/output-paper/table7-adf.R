@@ -3,7 +3,6 @@
 ## Replicates Enders–Siklos script structure, but:
 ## - Runs by (city, food-pair)
 ## - Chooses lag length by IC (BIC default) rather than fixing it
-## - Produces publication tables via kable/kableExtra
 ############################################################
 
 library(tidyverse)
