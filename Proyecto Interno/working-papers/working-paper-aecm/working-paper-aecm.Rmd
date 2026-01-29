@@ -572,12 +572,24 @@ En aplicaciones empíricas suele fijarse \(\tau=0\), aunque también puede estim
 El modelo M-TAR permite capturar ajustes asimétricos asociados al \emph{momentum} del desequilibrio: por ejemplo, reacciones distintas cuando la brecha mayorista--minorista se está ampliando (\(\Delta\mu_{i,c,t-1}\ge 0\)) frente a cuando se está cerrando (\(\Delta\mu_{i,c,t-1}<0\)). La cointegración con ajuste M-TAR se verifica cuando \(\rho_1<0\) y \(\rho_2<0\).
 
 
-```{r table7_only_four_foods, echo=FALSE, results="asis", warning=FALSE, message=FALSE}
+```{r table7_only_4foods, echo=FALSE, warning=FALSE, message=FALSE, results="asis"}
 library(stringr)
 library(knitr)
 library(kableExtra)
 
-# ---- EDIT HERE if needed ----
+# 1) Load tables_12 
+tables_path <- file.path("working-papers/working-paper-aecm/output-paper/tables/tables_12.rds")
+
+if (!file.exists(tables_path)) {
+  stop(paste0(
+    "File not found: ", tables_path, "\n",
+    "You need to save tables_12 first (see the save snippet I sent)."
+  ))
+}
+
+tables_12 <- readRDS(tables_path)
+
+# 2) Keep only these 4 foods
 alimentos_keep <- c(
   "ARROZ PARA SECO",
   "CEBOLLA CABEZONA",
@@ -585,20 +597,23 @@ alimentos_keep <- c(
   "PLÁTANO"
 )
 
-# ---- This prints headings + tables directly in the Rmd ----
-for (nm in names(tables_12)) {
+# 3) Print Table for each matching group 
+nms <- names(tables_12)
+if (is.null(nms)) stop("'tables_12' has no names().")
 
-  if (any(str_detect(nm, fixed(alimentos_keep)))) {
+for (nm in nms) {
+
+  if (any(str_detect(nm, alimentos_keep))) {
 
     cat("\n\n### Table 7 – ", nm, "\n\n", sep = "")
 
-    # Print the kable
+    if (!("table7" %in% names(tables_12[[nm]]))) {
+      cat("_Warning: table7 not found for this group._\n\n")
+      next
+    }
+
     print(
-      kable(
-        tables_12[[nm]]$table7,
-        booktabs = TRUE,
-        digits = 3
-      ) %>%
+      kable(tables_12[[nm]]$table7, booktabs = TRUE, digits = 3) %>%
         kable_styling(full_width = FALSE, position = "center")
     )
   }

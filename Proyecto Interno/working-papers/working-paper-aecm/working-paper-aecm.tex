@@ -1,11 +1,13 @@
 % Options for packages loaded elsewhere
 \PassOptionsToPackage{unicode}{hyperref}
 \PassOptionsToPackage{hyphens}{url}
-%
 \documentclass[
   12pt,
 ]{article}
+\usepackage{xcolor}
+\usepackage[margin=1in]{geometry}
 \usepackage{amsmath,amssymb}
+\setcounter{secnumdepth}{5}
 \usepackage{iftex}
 \ifPDFTeX
   \usepackage[T1]{fontenc}
@@ -36,8 +38,6 @@
 }{% if KOMA class
   \KOMAoptions{parskip=half}}
 \makeatother
-\usepackage{xcolor}
-\usepackage[margin=1in]{geometry}
 \usepackage{longtable,booktabs,array}
 \usepackage{calc} % for calculating minipage widths
 % Correct order of tables after \paragraph or \subparagraph
@@ -50,21 +50,24 @@
 \makesavenoteenv{longtable}
 \usepackage{graphicx}
 \makeatletter
-\def\maxwidth{\ifdim\Gin@nat@width>\linewidth\linewidth\else\Gin@nat@width\fi}
-\def\maxheight{\ifdim\Gin@nat@height>\textheight\textheight\else\Gin@nat@height\fi}
-\makeatother
-% Scale images if necessary, so that they will not overflow the page
-% margins by default, and it is still possible to overwrite the defaults
-% using explicit options in \includegraphics[width, height, ...]{}
-\setkeys{Gin}{width=\maxwidth,height=\maxheight,keepaspectratio}
+\newsavebox\pandoc@box
+\newcommand*\pandocbounded[1]{% scales image to fit in text height/width
+  \sbox\pandoc@box{#1}%
+  \Gscale@div\@tempa{\textheight}{\dimexpr\ht\pandoc@box+\dp\pandoc@box\relax}%
+  \Gscale@div\@tempb{\linewidth}{\wd\pandoc@box}%
+  \ifdim\@tempb\p@<\@tempa\p@\let\@tempa\@tempb\fi% select the smaller of both
+  \ifdim\@tempa\p@<\p@\scalebox{\@tempa}{\usebox\pandoc@box}%
+  \else\usebox{\pandoc@box}%
+  \fi%
+}
 % Set default figure placement to htbp
-\makeatletter
 \def\fps@figure{htbp}
 \makeatother
 \setlength{\emergencystretch}{3em} % prevent overfull lines
 \providecommand{\tightlist}{%
   \setlength{\itemsep}{0pt}\setlength{\parskip}{0pt}}
-\setcounter{secnumdepth}{5}
+\usepackage[]{natbib}
+\bibliographystyle{plainnat}
 \usepackage{booktabs}
 \usepackage{longtable}
 \usepackage{array}
@@ -97,11 +100,6 @@
 \usepackage[normalem]{ulem}
 \usepackage{makecell}
 \usepackage{xcolor}
-\ifLuaTeX
-  \usepackage{selnolig}  % disable illegal ligatures
-\fi
-\usepackage[]{natbib}
-\bibliographystyle{plainnat}
 \usepackage{bookmark}
 \IfFileExists{xurl.sty}{\usepackage{xurl}}{} % add URL line breaks if available
 \urlstyle{same}
@@ -150,14 +148,14 @@ escalas. En particular, la clasificación distingue entre cinco niveles:
 grupo, subgrupo, clase, gasto básico y artículo.
 
 \begin{longtable}[]{@{}
-  >{\raggedright\arraybackslash}p{(\columnwidth - 14\tabcolsep) * \real{0.0617}}
-  >{\raggedright\arraybackslash}p{(\columnwidth - 14\tabcolsep) * \real{0.0864}}
-  >{\raggedright\arraybackslash}p{(\columnwidth - 14\tabcolsep) * \real{0.1728}}
-  >{\raggedright\arraybackslash}p{(\columnwidth - 14\tabcolsep) * \real{0.1975}}
-  >{\raggedright\arraybackslash}p{(\columnwidth - 14\tabcolsep) * \real{0.1975}}
-  >{\raggedright\arraybackslash}p{(\columnwidth - 14\tabcolsep) * \real{0.0988}}
-  >{\raggedright\arraybackslash}p{(\columnwidth - 14\tabcolsep) * \real{0.0988}}
-  >{\raggedright\arraybackslash}p{(\columnwidth - 14\tabcolsep) * \real{0.0864}}@{}}
+  >{\raggedright\arraybackslash}p{(\linewidth - 14\tabcolsep) * \real{0.0617}}
+  >{\raggedright\arraybackslash}p{(\linewidth - 14\tabcolsep) * \real{0.0864}}
+  >{\raggedright\arraybackslash}p{(\linewidth - 14\tabcolsep) * \real{0.1728}}
+  >{\raggedright\arraybackslash}p{(\linewidth - 14\tabcolsep) * \real{0.1975}}
+  >{\raggedright\arraybackslash}p{(\linewidth - 14\tabcolsep) * \real{0.1975}}
+  >{\raggedright\arraybackslash}p{(\linewidth - 14\tabcolsep) * \real{0.0988}}
+  >{\raggedright\arraybackslash}p{(\linewidth - 14\tabcolsep) * \real{0.0988}}
+  >{\raggedright\arraybackslash}p{(\linewidth - 14\tabcolsep) * \real{0.0864}}@{}}
 \caption{First rows of the IPC retail price dataset
 (1999--2018)}\tabularnewline
 \toprule\noalign{}
@@ -250,13 +248,13 @@ frecuencia mensual.
 A continuación, se presenta la estructura de los datos:
 
 \begin{longtable}[]{@{}
-  >{\raggedright\arraybackslash}p{(\columnwidth - 12\tabcolsep) * \real{0.1068}}
-  >{\raggedright\arraybackslash}p{(\columnwidth - 12\tabcolsep) * \real{0.0680}}
-  >{\raggedright\arraybackslash}p{(\columnwidth - 12\tabcolsep) * \real{0.2718}}
-  >{\raggedright\arraybackslash}p{(\columnwidth - 12\tabcolsep) * \real{0.3495}}
-  >{\raggedleft\arraybackslash}p{(\columnwidth - 12\tabcolsep) * \real{0.0971}}
-  >{\raggedleft\arraybackslash}p{(\columnwidth - 12\tabcolsep) * \real{0.0583}}
-  >{\raggedleft\arraybackslash}p{(\columnwidth - 12\tabcolsep) * \real{0.0485}}@{}}
+  >{\raggedright\arraybackslash}p{(\linewidth - 12\tabcolsep) * \real{0.1068}}
+  >{\raggedright\arraybackslash}p{(\linewidth - 12\tabcolsep) * \real{0.0680}}
+  >{\raggedright\arraybackslash}p{(\linewidth - 12\tabcolsep) * \real{0.2718}}
+  >{\raggedright\arraybackslash}p{(\linewidth - 12\tabcolsep) * \real{0.3495}}
+  >{\raggedleft\arraybackslash}p{(\linewidth - 12\tabcolsep) * \real{0.0971}}
+  >{\raggedleft\arraybackslash}p{(\linewidth - 12\tabcolsep) * \real{0.0583}}
+  >{\raggedleft\arraybackslash}p{(\linewidth - 12\tabcolsep) * \real{0.0485}}@{}}
 \caption{First rows of the SIPSA wholesale price dataset
 (2013--2018)}\tabularnewline
 \toprule\noalign{}
@@ -360,11 +358,11 @@ La siguiente tabla presenta el mapeo final utilizado en el análisis
 posterior:
 
 \begin{longtable}[]{@{}
-  >{\raggedright\arraybackslash}p{(\columnwidth - 8\tabcolsep) * \real{0.2099}}
-  >{\raggedright\arraybackslash}p{(\columnwidth - 8\tabcolsep) * \real{0.4074}}
-  >{\raggedright\arraybackslash}p{(\columnwidth - 8\tabcolsep) * \real{0.0988}}
-  >{\raggedleft\arraybackslash}p{(\columnwidth - 8\tabcolsep) * \real{0.1481}}
-  >{\raggedleft\arraybackslash}p{(\columnwidth - 8\tabcolsep) * \real{0.1358}}@{}}
+  >{\raggedright\arraybackslash}p{(\linewidth - 8\tabcolsep) * \real{0.2099}}
+  >{\raggedright\arraybackslash}p{(\linewidth - 8\tabcolsep) * \real{0.4074}}
+  >{\raggedright\arraybackslash}p{(\linewidth - 8\tabcolsep) * \real{0.0988}}
+  >{\raggedleft\arraybackslash}p{(\linewidth - 8\tabcolsep) * \real{0.1481}}
+  >{\raggedleft\arraybackslash}p{(\linewidth - 8\tabcolsep) * \real{0.1358}}@{}}
 \caption{Mapeo IPC-SIPSA: Alimentos incluidos en el análisis (Cali,
 Bogotá, Medellín)}\tabularnewline
 \toprule\noalign{}
@@ -555,14 +553,14 @@ mayoristas}\label{comportamiento-de-los-precios-minoristas-y-precios-mayoristas}
 unitaria}\label{pruebas-de-rauxedz-unitaria}
 
 \begin{longtable}[]{@{}
-  >{\raggedright\arraybackslash}p{(\columnwidth - 14\tabcolsep) * \real{0.0732}}
-  >{\raggedright\arraybackslash}p{(\columnwidth - 14\tabcolsep) * \real{0.2073}}
-  >{\raggedright\arraybackslash}p{(\columnwidth - 14\tabcolsep) * \real{0.2195}}
-  >{\centering\arraybackslash}p{(\columnwidth - 14\tabcolsep) * \real{0.1829}}
-  >{\centering\arraybackslash}p{(\columnwidth - 14\tabcolsep) * \real{0.0976}}
-  >{\raggedright\arraybackslash}p{(\columnwidth - 14\tabcolsep) * \real{0.0854}}
-  >{\centering\arraybackslash}p{(\columnwidth - 14\tabcolsep) * \real{0.0976}}
-  >{\raggedright\arraybackslash}p{(\columnwidth - 14\tabcolsep) * \real{0.0366}}@{}}
+  >{\raggedright\arraybackslash}p{(\linewidth - 14\tabcolsep) * \real{0.0732}}
+  >{\raggedright\arraybackslash}p{(\linewidth - 14\tabcolsep) * \real{0.2073}}
+  >{\raggedright\arraybackslash}p{(\linewidth - 14\tabcolsep) * \real{0.2195}}
+  >{\centering\arraybackslash}p{(\linewidth - 14\tabcolsep) * \real{0.1829}}
+  >{\centering\arraybackslash}p{(\linewidth - 14\tabcolsep) * \real{0.0976}}
+  >{\raggedright\arraybackslash}p{(\linewidth - 14\tabcolsep) * \real{0.0854}}
+  >{\centering\arraybackslash}p{(\linewidth - 14\tabcolsep) * \real{0.0976}}
+  >{\raggedright\arraybackslash}p{(\linewidth - 14\tabcolsep) * \real{0.0366}}@{}}
 \caption{Augmented Dickey Fuller tests on seasonally adjusted log retail
 prices (IPC). Notes: X 13 seasonal adjustment is applied to log price
 series; reported critical values correspond to the Dickey Fuller
@@ -688,14 +686,14 @@ N
 \end{longtable}
 
 \begin{longtable}[]{@{}
-  >{\raggedright\arraybackslash}p{(\columnwidth - 14\tabcolsep) * \real{0.0612}}
-  >{\raggedright\arraybackslash}p{(\columnwidth - 14\tabcolsep) * \real{0.3367}}
-  >{\raggedright\arraybackslash}p{(\columnwidth - 14\tabcolsep) * \real{0.1837}}
-  >{\centering\arraybackslash}p{(\columnwidth - 14\tabcolsep) * \real{0.1531}}
-  >{\centering\arraybackslash}p{(\columnwidth - 14\tabcolsep) * \real{0.0816}}
-  >{\raggedright\arraybackslash}p{(\columnwidth - 14\tabcolsep) * \real{0.0714}}
-  >{\centering\arraybackslash}p{(\columnwidth - 14\tabcolsep) * \real{0.0816}}
-  >{\raggedright\arraybackslash}p{(\columnwidth - 14\tabcolsep) * \real{0.0306}}@{}}
+  >{\raggedright\arraybackslash}p{(\linewidth - 14\tabcolsep) * \real{0.0612}}
+  >{\raggedright\arraybackslash}p{(\linewidth - 14\tabcolsep) * \real{0.3367}}
+  >{\raggedright\arraybackslash}p{(\linewidth - 14\tabcolsep) * \real{0.1837}}
+  >{\centering\arraybackslash}p{(\linewidth - 14\tabcolsep) * \real{0.1531}}
+  >{\centering\arraybackslash}p{(\linewidth - 14\tabcolsep) * \real{0.0816}}
+  >{\raggedright\arraybackslash}p{(\linewidth - 14\tabcolsep) * \real{0.0714}}
+  >{\centering\arraybackslash}p{(\linewidth - 14\tabcolsep) * \real{0.0816}}
+  >{\raggedright\arraybackslash}p{(\linewidth - 14\tabcolsep) * \real{0.0306}}@{}}
 \caption{Augmented Dickey Fuller tests on seasonally adjusted log
 wholesale prices (SIPSA). Notes: X 13 seasonal adjustment is applied to
 log price series; reported critical values correspond to the Dickey
@@ -833,15 +831,15 @@ Engle-Granger}\label{anuxe1lisis-de-cointegraciuxf3n-de-engle-granger}
 Las Tablas X e Y reportan los resultados de los test de cointegración de
 Engle-Granger entre los precios minoristas (IPC) y mayoristas (SIPSA),
 expresados en logaritmos. Puesto que el estadístico dependen de la
-especificación, la longitud del rezago en la regresión ``auxiliar2 se
+especificación, la longitud del rezago en la regresión ``auxiliar'' se
 selecciona de acuerdo con criterios de información (AIC y BIC). La Tabla
 X presenta los resultados cuando la selección del rezago óptimo se
-realiza a partir de una regresión ADF con constante
-(especificación''drift''). En contraste, la Tabla Y reporta los
-resultados correspondientes a una regresión ADF que incluye tanto la
-constante como la tendencia lineal. Finalmente, la inferencia final
-sobre la cointegración es implementada usando la función ´coint.test´,
-que considera los valores críticos y p-valores de MacKinnon.
+realiza a partir de una regresión ADF con constante (especificación
+``drift''). En contraste, la Tabla Y reporta los resultados
+correspondientes a una regresión ADF que incluye tanto la constante como
+la tendencia lineal. Finalmente, la inferencia final sobre la
+cointegración es implementada usando la función ´coint.test´, que
+considera los valores críticos y p-valores de MacKinnon.
 
 \begingroup\fontsize{9}{11}\selectfont
 
@@ -1128,13 +1126,312 @@ NA & Δx\_\{t-1\} & 0.1433950 & 0.0725168 & 0.0540063\\
 \subsection{Análisis de cointegración
 asimétrica}\label{anuxe1lisis-de-cointegraciuxf3n-asimuxe9trica}
 
-\subsubsection{Modelo de Corrección de Error Asimétrico
-(A-ECM)}\label{modelo-de-correcciuxf3n-de-error-asimuxe9trico-a-ecm-1}
-
 \subsubsection{Modelo TAR}\label{modelo-tar}
+
+Sea \(P^{W}_{i,c,t}\) el \textbf{precio mayorista} (SIPSA) del alimento
+\(i\) en la ciudad \(c\) y mes \(t\), y \(P^{R}_{i,c,t}\) el
+\textbf{precio minorista} (IPC/DANE) correspondiente. Trabajamos en
+logaritmos:
+
+\begin{equation}
+p^{W}_{i,c,t}=\ln(P^{W}_{i,c,t}), 
+\qquad 
+p^{R}_{i,c,t}=\ln(P^{R}_{i,c,t}).
+\end{equation}
+
+En la primera etapa del procedimiento de Engle--Granger se estima la
+relación de equilibrio de largo plazo entre precios mayoristas y
+minoristas:
+
+\begin{equation}
+p^{W}_{i,c,t} = \alpha_0 + \alpha_1 p^{R}_{i,c,t} + \mu_{i,c,t},
+\end{equation}
+
+donde \(\mu_{i,c,t}\) es el residuo que captura el
+\textbf{desequilibrio} respecto al equilibrio de largo plazo. Si existe
+cointegración, \(\mu_{i,c,t}\) es estacionario.
+
+El modelo TAR (Threshold Autoregressive) permite un ajuste asimétrico
+según el signo del desequilibrio:
+
+\begin{equation}
+\Delta \mu_{i,c,t} 
+= I_{i,c,t}\rho_1 \mu_{i,c,t-1} 
++ (1-I_{i,c,t})\rho_2 \mu_{i,c,t-1} 
++ \varepsilon_{i,c,t},
+\end{equation}
+
+con función indicadora tipo Heaviside:
+
+\begin{equation}
+I_{i,c,t}=
+\begin{cases}
+1 & \text{si } \mu_{i,c,t-1}\ge \tau,\\
+0 & \text{si } \mu_{i,c,t-1}< \tau,
+\end{cases}
+\end{equation}
+
+donde \(\tau\) es el umbral. Siguiendo la práctica común en Enders y
+Siklos, suele fijarse \(\tau = 0\).
+
+El sistema converge al equilibrio si \(\rho_1 < 0\), \(\rho_2 < 0\) y
+\((1+\rho_1)(1+\rho_2) < 1\). El ajuste es \textbf{simétrico} únicamente
+cuando \(\rho_1=\rho_2\), caso en el cual el modelo se reduce al ajuste
+lineal estándar de Engle--Granger.
 
 \subsubsection{Modelo M-TAR}\label{modelo-m-tar}
 
-  \bibliography{refs-ob-rif-informal.bib}
+Una extensión del TAR es el modelo M-TAR (Momentum Threshold
+Autoregressive), donde el régimen depende de la \textbf{dirección del
+cambio} del desequilibrio en el periodo previo:
+
+\begin{equation}
+\Delta \mu_{i,c,t} 
+= M_{i,c,t}\rho_1 \mu_{i,c,t-1} 
++ (1-M_{i,c,t})\rho_2 \mu_{i,c,t-1} 
++ \varepsilon_{i,c,t},
+\end{equation}
+
+donde la indicadora se define como:
+
+\begin{equation}
+M_{i,c,t}=
+\begin{cases}
+1 & \text{si } \Delta \mu_{i,c,t-1}\ge \tau,\\
+0 & \text{si } \Delta \mu_{i,c,t-1}< \tau.
+\end{cases}
+\end{equation}
+
+En aplicaciones empíricas suele fijarse \(\tau=0\), aunque también puede
+estimarse de manera consistente siguiendo el procedimiento de Chan
+(1993).
+
+El modelo M-TAR permite capturar ajustes asimétricos asociados al
+\emph{momentum} del desequilibrio: por ejemplo, reacciones distintas
+cuando la brecha mayorista--minorista se está ampliando
+(\(\Delta\mu_{i,c,t-1}\ge 0\)) frente a cuando se está cerrando
+(\(\Delta\mu_{i,c,t-1}<0\)). La cointegración con ajuste M-TAR se
+verifica cuando \(\rho_1<0\) y \(\rho_2<0\).
+
+\subsubsection{Table 7 -- cod\_mun=05001\_\_articulo\_ipc=ARROZ PARA
+SECO}\label{table-7-cod_mun05001__articulo_ipcarroz-para-seco}
+
+\begin{longtable}[t]{lllll}
+\toprule
+Row & Engle–Granger & Threshold & Momentum & Momentum-consistent\\
+\midrule
+rho1 & 0.1740 (1.708) & -0.2353 (-2.304) & -0.2375 (-2.726) & -0.3414 (-3.600)\\
+rho2 & NA & -0.1433 (-1.516) & -0.0557 (-0.440) & 0.0042 (0.042)\\
+gamma1 & 0.0815 (0.476) & NA & NA & NA\\
+gamma2 & -0.1322 (-1.019) & NA & NA & NA\\
+AIC & -163.453 & -179.027 & -177.199 & -181.901\\
+\addlinespace
+Phi & NA & 3.803 & 3.812 & 6.481\\
+rho1 = rho2 & NA & 0.436 (0.511) & 1.401 (0.241) & 6.240 (0.015)\\
+\bottomrule
+\end{longtable}
+
+\subsubsection{Table 7 -- cod\_mun=05001\_\_articulo\_ipc=CEBOLLA
+CABEZONA}\label{table-7-cod_mun05001__articulo_ipccebolla-cabezona}
+
+\begin{longtable}[t]{lllll}
+\toprule
+Row & Engle–Granger & Threshold & Momentum & Momentum-consistent\\
+\midrule
+rho1 & -0.1497 (-1.069) & -0.3487 (-2.446) & -0.3865 (-2.889) & -0.4845 (-4.413)\\
+rho2 & NA & -0.2903 (-2.610) & -0.2570 (-2.220) & -0.0707 (-0.550)\\
+gamma1 & 0.3106 (1.935) & 0.2538 (1.952) & 0.2637 (2.038) & 0.2687 (2.210)\\
+gamma2 & -0.0594 (-0.345) & NA & NA & NA\\
+AIC & 43.048 & 20.059 & 19.580 & 13.819\\
+\addlinespace
+Phi & NA & 6.007 & 6.282 & 9.777\\
+rho1 = rho2 & NA & 0.112 (0.739) & 0.569 (0.454) & 6.371 (0.014)\\
+\bottomrule
+\end{longtable}
+
+\subsubsection{Table 7 --
+cod\_mun=05001\_\_articulo\_ipc=PAPA}\label{table-7-cod_mun05001__articulo_ipcpapa}
+
+\begin{longtable}[t]{lllll}
+\toprule
+Row & Engle–Granger & Threshold & Momentum & Momentum-consistent\\
+\midrule
+rho1 & 0.0384 (0.404) & -0.2410 (-2.298) & -0.3075 (-3.094) & -0.3478 (-3.697)\\
+rho2 & NA & -0.2595 (-2.545) & -0.1848 (-1.736) & -0.1158 (-1.054)\\
+gamma1 & 0.3331 (2.084) & 0.3547 (2.882) & 0.3624 (2.971) & 0.3618 (3.019)\\
+gamma2 & -0.1357 (-1.540) & NA & NA & NA\\
+AIC & -49.569 & -58.218 & -58.978 & -60.970\\
+\addlinespace
+Phi & NA & 5.630 & 6.064 & 7.228\\
+rho1 = rho2 & NA & 0.017 (0.898) & 0.744 (0.392) & 2.694 (0.106)\\
+\bottomrule
+\end{longtable}
+
+\subsubsection{Table 7 --
+cod\_mun=05001\_\_articulo\_ipc=PLÁTANO}\label{table-7-cod_mun05001__articulo_ipcpluxe1tano}
+
+\begin{longtable}[t]{lllll}
+\toprule
+Row & Engle–Granger & Threshold & Momentum & Momentum-consistent\\
+\midrule
+rho1 & -0.0233 (-0.396) & -0.0887 (-0.988) & -0.0775 (-1.071) & 0.0740 (0.501)\\
+rho2 & NA & -0.1034 (-1.431) & -0.1298 (-1.424) & -0.1266 (-2.092)\\
+gamma1 & 0.2084 (1.465) & NA & NA & NA\\
+gamma2 & 0.1069 (0.850) & NA & NA & NA\\
+AIC & -90.201 & -86.100 & -84.865 & -86.271\\
+\addlinespace
+Phi & NA & 1.512 & 1.589 & 2.313\\
+rho1 = rho2 & NA & 0.016 (0.899) & 0.202 (0.655) & 1.582 (0.213)\\
+\bottomrule
+\end{longtable}
+
+\subsubsection{Table 7 -- cod\_mun=11001\_\_articulo\_ipc=ARROZ PARA
+SECO}\label{table-7-cod_mun11001__articulo_ipcarroz-para-seco}
+
+\begin{longtable}[t]{lllll}
+\toprule
+Row & Engle–Granger & Threshold & Momentum & Momentum-consistent\\
+\midrule
+rho1 & 0.1678 (1.544) & -0.2432 (-2.472) & -0.1697 (-1.956) & -0.6706 (-4.916)\\
+rho2 & NA & -0.1069 (-0.963) & -0.2062 (-1.334) & -0.0177 (-0.218)\\
+gamma1 & 0.0271 (0.157) & NA & NA & 0.2607 (2.067)\\
+gamma2 & -0.1048 (-0.654) & NA & NA & NA\\
+AIC & -153.633 & -166.057 & -162.661 & -176.514\\
+\addlinespace
+Phi & NA & 3.520 & 2.802 & 12.097\\
+rho1 = rho2 & NA & 0.845 (0.362) & 0.042 (0.837) & 17.108 (0.000)\\
+\bottomrule
+\end{longtable}
+
+\subsubsection{Table 7 -- cod\_mun=11001\_\_articulo\_ipc=CEBOLLA
+CABEZONA}\label{table-7-cod_mun11001__articulo_ipccebolla-cabezona}
+
+\begin{longtable}[t]{lllll}
+\toprule
+Row & Engle–Granger & Threshold & Momentum & Momentum-consistent\\
+\midrule
+rho1 & -0.1279 (-0.971) & -0.3238 (-2.149) & -0.3013 (-2.271) & -0.5191 (-5.013)\\
+rho2 & NA & -0.2687 (-2.631) & -0.1838 (-1.726) & 0.0045 (0.039)\\
+gamma1 & 0.3182 (2.047) & 0.2442 (1.870) & NA & 0.2407 (2.069)\\
+gamma2 & -0.1061 (-0.578) & NA & NA & NA\\
+AIC & 64.421 & 46.720 & 47.803 & 35.123\\
+\addlinespace
+Phi & NA & 5.422 & 4.067 & 12.629\\
+rho1 = rho2 & NA & 0.098 (0.756) & 0.477 (0.493) & 12.263 (0.001)\\
+\bottomrule
+\end{longtable}
+
+\subsubsection{Table 7 --
+cod\_mun=11001\_\_articulo\_ipc=PAPA}\label{table-7-cod_mun11001__articulo_ipcpapa}
+
+\begin{longtable}[t]{lllll}
+\toprule
+Row & Engle–Granger & Threshold & Momentum & Momentum-consistent\\
+\midrule
+rho1 & -0.0118 (-0.145) & -0.1455 (-1.526) & -0.0659 (-0.738) & -0.2480 (-3.211)\\
+rho2 & NA & -0.1752 (-2.152) & -0.2457 (-2.963) & -0.0283 (-0.293)\\
+gamma1 & 0.3032 (2.069) & 0.2768 (2.197) & 0.2652 (2.148) & 0.2791 (2.287)\\
+gamma2 & -0.1211 (-0.874) & NA & NA & NA\\
+AIC & -16.898 & -24.533 & -26.781 & -27.807\\
+\addlinespace
+Phi & NA & 3.389 & 4.605 & 5.175\\
+rho1 = rho2 & NA & 0.058 (0.811) & 2.237 (0.140) & 3.259 (0.076)\\
+\bottomrule
+\end{longtable}
+
+\subsubsection{Table 7 --
+cod\_mun=11001\_\_articulo\_ipc=PLÁTANO}\label{table-7-cod_mun11001__articulo_ipcpluxe1tano}
+
+\begin{longtable}[t]{lllll}
+\toprule
+Row & Engle–Granger & Threshold & Momentum & Momentum-consistent\\
+\midrule
+rho1 & 0.0199 (0.238) & -0.2842 (-2.731) & -0.2853 (-2.942) & -0.3162 (-3.050)\\
+rho2 & NA & -0.1508 (-1.519) & -0.1277 (-1.198) & -0.1229 (-1.250)\\
+gamma1 & 0.3656 (2.308) & 0.2655 (2.052) & 0.2656 (2.065) & 0.2773 (2.154)\\
+gamma2 & -0.0828 (-0.715) & NA & NA & NA\\
+AIC & -73.876 & -70.574 & -70.932 & -71.608\\
+\addlinespace
+Phi & NA & 4.719 & 4.917 & 5.295\\
+rho1 = rho2 & NA & 0.897 (0.347) & 1.244 (0.269) & 1.904 (0.173)\\
+\bottomrule
+\end{longtable}
+
+\subsubsection{Table 7 -- cod\_mun=76001\_\_articulo\_ipc=ARROZ PARA
+SECO}\label{table-7-cod_mun76001__articulo_ipcarroz-para-seco}
+
+\begin{longtable}[t]{lllll}
+\toprule
+Row & Engle–Granger & Threshold & Momentum & Momentum-consistent\\
+\midrule
+rho1 & 0.2387 (1.709) & -0.3803 (-3.262) & -0.3880 (-3.854) & -0.7713 (-7.160)\\
+rho2 & NA & -0.2263 (-1.975) & -0.0325 (-0.195) & 0.0637 (0.684)\\
+gamma1 & -0.0341 (-0.182) & NA & NA & NA\\
+gamma2 & -0.0495 (-0.296) & NA & NA & NA\\
+AIC & -144.791 & -173.584 & -173.236 & -197.910\\
+\addlinespace
+Phi & NA & 7.273 & 7.447 & 25.867\\
+rho1 = rho2 & NA & 0.888 (0.350) & 3.316 (0.074) & 34.384 (0.000)\\
+\bottomrule
+\end{longtable}
+
+\subsubsection{Table 7 -- cod\_mun=76001\_\_articulo\_ipc=CEBOLLA
+CABEZONA}\label{table-7-cod_mun76001__articulo_ipccebolla-cabezona}
+
+\begin{longtable}[t]{lllll}
+\toprule
+Row & Engle–Granger & Threshold & Momentum & Momentum-consistent\\
+\midrule
+rho1 & -0.1159 (-0.832) & -0.3234 (-2.297) & -0.6396 (-4.808) & -0.5840 (-4.841)\\
+rho2 & NA & -0.3200 (-2.861) & -0.1392 (-1.358) & -0.1045 (-0.948)\\
+gamma1 & 0.3050 (1.842) & 0.2639 (2.051) & 0.3304 (2.763) & 0.3078 (2.592)\\
+gamma2 & -0.0566 (-0.312) & NA & NA & NA\\
+AIC & 77.748 & 53.742 & 44.507 & 44.774\\
+\addlinespace
+Phi & NA & 6.329 & 12.104 & 11.925\\
+rho1 = rho2 & NA & 0.000 (0.985) & 9.481 (0.003) & 9.186 (0.004)\\
+\bottomrule
+\end{longtable}
+
+\subsubsection{Table 7 --
+cod\_mun=76001\_\_articulo\_ipc=PAPA}\label{table-7-cod_mun76001__articulo_ipcpapa}
+
+\begin{longtable}[t]{lllll}
+\toprule
+Row & Engle–Granger & Threshold & Momentum & Momentum-consistent\\
+\midrule
+rho1 & 0.0086 (0.105) & -0.2833 (-2.840) & -0.3486 (-3.694) & -0.3494 (-3.725)\\
+rho2 & NA & -0.2447 (-2.515) & -0.1636 (-1.609) & -0.1620 (-1.600)\\
+gamma1 & 0.3603 (2.418) & 0.2974 (2.429) & 0.2840 (2.357) & 0.2852 (2.370)\\
+gamma2 & -0.1418 (-1.523) & 0.2228 (1.753) & 0.2534 (1.997) & 0.2464 (1.958)\\
+AIC & -34.134 & -36.004 & -37.929 & -38.021\\
+\addlinespace
+Phi & NA & 6.611 & 7.739 & 7.794\\
+rho1 = rho2 & NA & 0.084 (0.773) & 1.912 (0.172) & 2.001 (0.163)\\
+\bottomrule
+\end{longtable}
+
+\subsubsection{Table 7 --
+cod\_mun=76001\_\_articulo\_ipc=PLÁTANO}\label{table-7-cod_mun76001__articulo_ipcpluxe1tano}
+
+\begin{longtable}[t]{lllll}
+\toprule
+Row & Engle–Granger & Threshold & Momentum & Momentum-consistent\\
+\midrule
+rho1 & 0.0301 (0.468) & -0.1273 (-1.173) & -0.0678 (-0.691) & 0.1139 (0.665)\\
+rho2 & NA & -0.2301 (-2.276) & -0.2621 (-2.169) & -0.1971 (-2.407)\\
+gamma1 & 0.2640 (1.774) & NA & -0.0281 (-0.218) & -0.0704 (-0.561)\\
+gamma2 & 0.1175 (1.184) & NA & -0.1904 (-1.481) & -0.2247 (-1.717)\\
+AIC & -105.011 & -70.986 & -74.839 & -76.148\\
+\addlinespace
+Phi & NA & 3.279 & 2.574 & 3.249\\
+rho1 = rho2 & NA & 0.481 (0.491) & 1.573 (0.215) & 2.844 (0.097)\\
+\bottomrule
+\end{longtable}
+
+\subsubsection{Modelo de Corrección de Error Asimétrico
+(A-ECM)}\label{modelo-de-correcciuxf3n-de-error-asimuxe9trico-a-ecm-1}
+
+\bibliography{refs-ob-rif-informal.bib}
 
 \end{document}

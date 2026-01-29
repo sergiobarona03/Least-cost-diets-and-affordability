@@ -681,3 +681,14 @@ tables_12[[1]]$table7
    print(kable(tables_12[[nm]]$table7, booktabs = TRUE) %>%
            kable_styling(full_width = FALSE))
    }
+
+##==========================================================
+## 9) Save results so Rmd can load without recomputing
+##==========================================================
+
+saveRDS(
+  tables_12,
+  file = "working-papers/working-paper-aecm/output-paper/tables/tables_12.rds"
+)
+
+cat("tables_12 saved successfully.\n")
