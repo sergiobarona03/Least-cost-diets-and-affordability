@@ -1,4 +1,4 @@
-This is XeTeX, Version 3.141592653-2.6-0.999997 (TeX Live 2025) (preloaded format=xelatex 2026.1.29)  29 JAN 2026 11:20
+This is XeTeX, Version 3.141592653-2.6-0.999997 (TeX Live 2025) (preloaded format=xelatex 2026.1.29)  29 JAN 2026 14:22
 entering extended mode
  restricted \write18 enabled.
  %&-line parsing enabled.
@@ -1622,62 +1622,62 @@ LaTeX Warning: `!h' float specifier changed to `!ht'.
 LaTeX Warning: `!h' float specifier changed to `!ht'.
 
 [15] [16] [17]
-Overfull \hbox (7.305pt too wide) in alignment at lines 1219--1232
+Overfull \hbox (7.305pt too wide) in alignment at lines 1227--1240
  [] [] [] [] [] 
  []
 
-ignored error: Infinite glue shrinkage found in box being split [18]
-Overfull \hbox (7.305pt too wide) in alignment at lines 1237--1250
- [] [] [] [] [] 
- []
-
-
-Overfull \hbox (7.305pt too wide) in alignment at lines 1255--1268
+[18]
+Overfull \hbox (7.305pt too wide) in alignment at lines 1245--1258
  [] [] [] [] [] 
  []
 
 
-Overfull \hbox (7.305pt too wide) in alignment at lines 1273--1286
+Overfull \hbox (7.305pt too wide) in alignment at lines 1263--1276
+ [] [] [] [] [] 
+ []
+
+
+Overfull \hbox (7.305pt too wide) in alignment at lines 1281--1294
  [] [] [] [] [] 
  []
 
 ignored error: Infinite glue shrinkage found in box being split [19]
-Overfull \hbox (7.305pt too wide) in alignment at lines 1291--1304
+Overfull \hbox (7.305pt too wide) in alignment at lines 1299--1312
  [] [] [] [] [] 
  []
 
 
-Overfull \hbox (7.305pt too wide) in alignment at lines 1309--1322
+Overfull \hbox (7.305pt too wide) in alignment at lines 1317--1330
  [] [] [] [] [] 
  []
 
 
-Overfull \hbox (7.305pt too wide) in alignment at lines 1327--1340
+Overfull \hbox (7.305pt too wide) in alignment at lines 1335--1348
+ [] [] [] [] [] 
+ []
+
+ignored error: Infinite glue shrinkage found in box being split [20]
+Overfull \hbox (7.305pt too wide) in alignment at lines 1353--1366
  [] [] [] [] [] 
  []
 
 
-Overfull \hbox (7.305pt too wide) in alignment at lines 1345--1358
- [] [] [] [] [] 
- []
-
-[20]
-Overfull \hbox (7.305pt too wide) in alignment at lines 1363--1376
+Overfull \hbox (7.305pt too wide) in alignment at lines 1371--1384
  [] [] [] [] [] 
  []
 
 
-Overfull \hbox (7.305pt too wide) in alignment at lines 1381--1394
+Overfull \hbox (7.305pt too wide) in alignment at lines 1389--1402
  [] [] [] [] [] 
  []
 
 
-Overfull \hbox (7.305pt too wide) in alignment at lines 1399--1412
+Overfull \hbox (7.305pt too wide) in alignment at lines 1407--1420
  [] [] [] [] [] 
  []
 
-ignored error: Infinite glue shrinkage found in box being split [21]
-Overfull \hbox (3.609pt too wide) in alignment at lines 1417--1430
+[21]
+Overfull \hbox (3.609pt too wide) in alignment at lines 1425--1438
  [] [] [] [] [] 
  []
 
@@ -1692,10 +1692,10 @@ LaTeX Warning: There were multiply-defined labels.
 
  ) 
 Here is how much of TeX's memory you used:
- 18951 strings out of 470190
- 345124 string characters out of 5477129
- 984549 words of memory out of 5000000
- 47254 multiletter control sequences out of 15000+600000
+ 18949 strings out of 470190
+ 345123 string characters out of 5477129
+ 984612 words of memory out of 5000000
+ 47252 multiletter control sequences out of 15000+600000
  636232 words of font info for 110 fonts, out of 8000000 for 9000
  14 hyphenation exceptions out of 8191
  90i,12n,114p,433b,509s stack positions out of 10000i,1000n,20000p,200000b,200000s

@@ -430,7 +430,6 @@ kable(
 Adicionalmente, se consideran dos especificaciones estándar del test de Engle-Granger. La especificación "type 1" corresponde a un modelo sin tendencia; y la especificación "type 2", a un modelo con tendencia lineal. En conjunción con los resultados de las pruebas de raíz unitaria, los resultados de ambas tablas proporcionan evidencia en favor de la presencia de cointegración para los siguientes casos: en Cali, el arroz; en Medellín, el arroz, la papa y la yuca.
 
 
-
 ### Modelo de Corrección de Error simétrico (ECM)
 
 A partir de las pruebas de raíz unitaria y el test de cointegración, el análisis subsiguiente considera únicamente los siguientes cuatro alimentos: (1) arroz, (2) papa, (3) plátano y (4) yuca. La siguiente tabla presenta los resultados del modelo de corrección de error simétrico (ECM). La longitud del rezago fue seleccionada a partir de criterios de información (AIC y BIC).
@@ -504,72 +503,74 @@ kable_q1(
 ## Análisis de cointegración asimétrica
 
 
-### Modelo TAR 
+### Modelo TAR (Threshold Autoregressive)
 
-Sea \(P^{W}_{i,c,t}\) el **precio mayorista** (SIPSA) del alimento \(i\) en la ciudad \(c\) y mes \(t\), y \(P^{R}_{i,c,t}\) el **precio minorista** (IPC/DANE) correspondiente. Trabajamos en logaritmos:
+Sea \(P^{may}_t\) el **precio mayorista** (SIPSA) y \(P^{min}_t\) el **precio minorista** (IPC–DANE) en el período \(t\). Trabajamos en logaritmos:
 
-\begin{equation}
-p^{W}_{i,c,t}=\ln(P^{W}_{i,c,t}), 
+\[
+p^{may}_t = \ln\!\left(P^{may}_t\right), 
 \qquad 
-p^{R}_{i,c,t}=\ln(P^{R}_{i,c,t}).
-\end{equation}
+p^{min}_t = \ln\!\left(P^{min}_t\right).
+\]
 
 En la primera etapa del procedimiento de Engle--Granger se estima la relación de equilibrio de largo plazo entre precios mayoristas y minoristas:
 
-\begin{equation}
-p^{W}_{i,c,t} = \alpha_0 + \alpha_1 p^{R}_{i,c,t} + \mu_{i,c,t},
-\end{equation}
+\[
+p^{may}_t = \alpha_0 + \alpha_1 p^{min}_t + \mu_t,
+\]
 
-donde \(\mu_{i,c,t}\) es el residuo que captura el **desequilibrio** respecto al equilibrio de largo plazo. Si existe cointegración, \(\mu_{i,c,t}\) es estacionario.
+donde \(\mu_t\) es el residuo que captura el **desequilibrio** respecto al equilibrio de largo plazo. Si existe cointegración, \(\mu_t\) es un proceso estacionario.
 
-El modelo TAR (Threshold Autoregressive) permite un ajuste asimétrico según el signo del desequilibrio:
+El modelo TAR (Threshold Autoregressive) permite que la velocidad de ajuste hacia el equilibrio dependa del **signo del desequilibrio**. La dinámica del residuo se especifica como:
 
-\begin{equation}
-\Delta \mu_{i,c,t} 
-= I_{i,c,t}\rho_1 \mu_{i,c,t-1} 
-+ (1-I_{i,c,t})\rho_2 \mu_{i,c,t-1} 
-+ \varepsilon_{i,c,t},
-\end{equation}
+\[
+\Delta \mu_t 
+= I_t \rho_1 \mu_{t-1}
++ (1 - I_t)\rho_2 \mu_{t-1}
++ \varepsilon_t,
+\]
 
-con función indicadora tipo Heaviside:
+donde \(\varepsilon_t\) es un término de error con media cero y varianza constante, y la función indicadora tipo Heaviside se define como:
 
-\begin{equation}
-I_{i,c,t}=
+\[
+I_t =
 \begin{cases}
-1 & \text{si } \mu_{i,c,t-1}\ge \tau,\\
-0 & \text{si } \mu_{i,c,t-1}< \tau,
+1 & \text{si } \mu_{t-1} \ge \tau, \\
+0 & \text{si } \mu_{t-1} < \tau.
 \end{cases}
-\end{equation}
+\]
 
-donde \(\tau\) es el umbral. Siguiendo la práctica común en Enders y Siklos, suele fijarse \(\tau = 0\).
+Siguiendo a Enders y Siklos, en la mayoría de aplicaciones empíricas se fija \(\tau = 0\), de modo que el umbral coincide con el equilibrio de largo plazo.
 
-El sistema converge al equilibrio si \(\rho_1 < 0\), \(\rho_2 < 0\) y \((1+\rho_1)(1+\rho_2) < 1\). El ajuste es **simétrico** únicamente cuando \(\rho_1=\rho_2\), caso en el cual el modelo se reduce al ajuste lineal estándar de Engle--Granger.
+El sistema converge al equilibrio si \(\rho_1 < 0\), \(\rho_2 < 0\) y \((1+\rho_1)(1+\rho_2) < 1\). El ajuste es **simétrico** únicamente cuando \(\rho_1 = \rho_2\), caso en el cual el modelo TAR se reduce al modelo lineal estándar de corrección de errores del enfoque Engle--Granger.
 
 
-### Modelo M-TAR
+### Modelo M-TAR (Momentum Threshold Autoregressive)
 
-Una extensión del TAR es el modelo M-TAR (Momentum Threshold Autoregressive), donde el régimen depende de la **dirección del cambio** del desequilibrio en el periodo previo:
+Una extensión del modelo TAR es el modelo M-TAR, en el cual el régimen de ajuste depende de la **dirección del cambio** del desequilibrio en el período anterior, y no de su nivel.
 
-\begin{equation}
-\Delta \mu_{i,c,t} 
-= M_{i,c,t}\rho_1 \mu_{i,c,t-1} 
-+ (1-M_{i,c,t})\rho_2 \mu_{i,c,t-1} 
-+ \varepsilon_{i,c,t},
-\end{equation}
+El modelo M-TAR se especifica como:
 
-donde la indicadora se define como:
+\[
+\Delta \mu_t 
+= M_t \rho_1 \mu_{t-1}
++ (1 - M_t)\rho_2 \mu_{t-1}
++ \varepsilon_t,
+\]
 
-\begin{equation}
-M_{i,c,t}=
+donde la función indicadora \(M_t\) se define como:
+
+\[
+M_t =
 \begin{cases}
-1 & \text{si } \Delta \mu_{i,c,t-1}\ge \tau,\\
-0 & \text{si } \Delta \mu_{i,c,t-1}< \tau.
+1 & \text{si } \Delta \mu_{t-1} \ge \tau, \\
+0 & \text{si } \Delta \mu_{t-1} < \tau.
 \end{cases}
-\end{equation}
+\]
 
-En aplicaciones empíricas suele fijarse \(\tau=0\), aunque también puede estimarse de manera consistente siguiendo el procedimiento de Chan (1993).
+En aplicaciones empíricas suele fijarse \(\tau = 0\), aunque el umbral también puede estimarse de manera consistente siguiendo el procedimiento propuesto por Chan (1993).
 
-El modelo M-TAR permite capturar ajustes asimétricos asociados al \emph{momentum} del desequilibrio: por ejemplo, reacciones distintas cuando la brecha mayorista--minorista se está ampliando (\(\Delta\mu_{i,c,t-1}\ge 0\)) frente a cuando se está cerrando (\(\Delta\mu_{i,c,t-1}<0\)). La cointegración con ajuste M-TAR se verifica cuando \(\rho_1<0\) y \(\rho_2<0\).
+El modelo M-TAR permite capturar ajustes asimétricos asociados al **momentum del desequilibrio**, es decir, respuestas distintas cuando la brecha entre precios mayoristas y minoristas se está ampliando (\(\Delta \mu_{t-1} \ge 0\)) frente a cuando se está cerrando (\(\Delta \mu_{t-1} < 0\)). La cointegración con ajuste M-TAR se verifica cuando \(\rho_1 < 0\) y \(\rho_2 < 0\), indicando convergencia al equilibrio de largo plazo con dinámica no lineal.
 
 
 ```{r table7_only_4foods, echo=FALSE, warning=FALSE, message=FALSE, results="asis"}
