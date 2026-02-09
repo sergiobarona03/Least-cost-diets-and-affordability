@@ -1440,6 +1440,455 @@ rho1 = rho2 & NA & 0.481 (0.491) & 1.573 (0.215) & 2.844 (0.097)\\
 \subsubsection{Modelo de Corrección de Error Asimétrico
 (A-ECM)}\label{modelo-de-correcciuxf3n-de-error-asimuxe9trico-a-ecm-1}
 
+Sea \(P^{may}_t\) el \textbf{precio mayorista} (SIPSA) y \(P^{min}_t\)
+el \textbf{precio minorista} (IPC--DANE) en el período \(t\). Trabajamos
+en logaritmos:
+
+\begin{equation}
+p^{may}_t=\ln(P^{may}_t), 
+\qquad 
+p^{min}_t=\ln(P^{min}_t).
+\end{equation}
+
+En la primera etapa (Engle--Granger) se estima la relación de equilibrio
+de largo plazo:
+
+\begin{equation}
+p^{may}_t = \alpha_0 + \alpha_1 p^{min}_t + \mu_t,
+\end{equation}
+
+donde \(\mu_t\) es el residuo (desequilibrio) respecto al equilibrio.
+
+Para construir el A-ECM asimétrico, se usa el umbral M-TAR \(\tau_x\)
+(estimado previamente) con base en el \emph{momentum} del desequilibrio:
+
+\begin{equation}
+M_t=
+\begin{cases}
+1 & \text{si } \Delta \mu_{t-1}\ge \tau_x,\\
+0 & \text{si } \Delta \mu_{t-1}< \tau_x.
+\end{cases}
+\end{equation}
+
+y se definen los términos de corrección de error asimétricos:
+
+\begin{equation}
+\mu^{-}_{t-1}=M_t\mu_{t-1},
+\qquad
+\mu^{+}_{t-1}=(1-M_t)\mu_{t-1}.
+\end{equation}
+
+El sistema A-ECM (con intercepto) para \(\Delta p^{may}_t\) y
+\(\Delta p^{min}_t\) se especifica como:
+
+\begin{equation}
+\Delta p^{may}_t = c_1 
++ \sum_{j=1}^{k} a_{11,j}\Delta p^{may}_{t-j}
++ \sum_{j=1}^{k} a_{12,j}\Delta p^{min}_{t-j}
++ \lambda^-_1 \mu^{-}_{t-1}
++ \lambda^+_1 \mu^{+}_{t-1}
++ u_{1t},
+\end{equation}
+
+\begin{equation}
+\Delta p^{min}_t = c_2 
++ \sum_{j=1}^{k} a_{21,j}\Delta p^{may}_{t-j}
++ \sum_{j=1}^{k} a_{22,j}\Delta p^{min}_{t-j}
++ \lambda^-_2 \mu^{-}_{t-1}
++ \lambda^+_2 \mu^{+}_{t-1}
++ u_{2t}.
+\end{equation}
+
+Los coeficientes \(\lambda^-_1,\lambda^+_1,\lambda^-_2,\lambda^+_2\)
+capturan velocidades de ajuste diferentes según el régimen (cuando el
+desequilibrio venía aumentando o disminuyendo). Adicionalmente, se
+reportan pruebas \(F\) sobre la dinámica de corto plazo: restricciones
+tipo \(A_{ij}(L)=0\) (rezagos conjuntos) en cada ecuación.
+
+\subsection{A-ECM -- ARROZ PARA SECO}\label{a-ecm-arroz-para-seco}
+
+\subsubsection{cod\_mun: 05001 \textbar{} articulo\_ipc: ARROZ PARA
+SECO}\label{cod_mun-05001-articulo_ipc-arroz-para-seco}
+
+\textbf{Umbral M-TAR (\(\tau_x\)) = 0.00467}
+
+\textbf{(A) Coeficientes de corrección de error asimétrica} (estimación
+(t))
+
+\begin{longtable}[t]{lll}
+\toprule
+equation & mu\_minus\_l1 & mu\_plus\_l1\\
+\midrule
+ΔpW\_t & -1.5985 (-12.469) & -1.1487 (-8.328)\\
+ΔpR\_t & -0.2228 (-2.057) & -0.1868 (-1.603)\\
+\bottomrule
+\end{longtable}
+
+\textbf{(B) Pruebas F sobre dinámica de corto plazo} (F (p))
+
+\begin{longtable}[t]{lll}
+\toprule
+test & meaning & F (p)\\
+\midrule
+F\_11 & ΔpW lags in ΔpW eq. & 111.97 (0.000)\\
+F\_12 & ΔpR lags in ΔpW eq. & 134.25 (0.000)\\
+F\_21 & ΔpW lags in ΔpR eq. & 77.17 (0.000)\\
+F\_22 & ΔpR lags in ΔpR eq. & 108.94 (0.000)\\
+\bottomrule
+\end{longtable}
+
+\subsection{A-ECM -- CEBOLLA CABEZONA}\label{a-ecm-cebolla-cabezona}
+
+\subsubsection{cod\_mun: 05001 \textbar{} articulo\_ipc: CEBOLLA
+CABEZONA}\label{cod_mun-05001-articulo_ipc-cebolla-cabezona}
+
+\textbf{Umbral M-TAR (\(\tau_x\)) = -0.02112}
+
+\textbf{(A) Coeficientes de corrección de error asimétrica} (estimación
+(t))
+
+\begin{longtable}[t]{lll}
+\toprule
+equation & mu\_minus\_l1 & mu\_plus\_l1\\
+\midrule
+ΔpW\_t & -1.5628 (-12.572) & -1.1535 (-7.939)\\
+ΔpR\_t & -0.2094 (-1.996) & -0.2017 (-1.645)\\
+\bottomrule
+\end{longtable}
+
+\textbf{(B) Pruebas F sobre dinámica de corto plazo} (F (p))
+
+\begin{longtable}[t]{lll}
+\toprule
+test & meaning & F (p)\\
+\midrule
+F\_11 & ΔpW lags in ΔpW eq. & 105.86 (0.000)\\
+F\_12 & ΔpR lags in ΔpW eq. & 126.99 (0.000)\\
+F\_21 & ΔpW lags in ΔpR eq. & 74.65 (0.000)\\
+F\_22 & ΔpR lags in ΔpR eq. & 104.93 (0.000)\\
+\bottomrule
+\end{longtable}
+
+\subsection{A-ECM -- PAPA}\label{a-ecm-papa}
+
+\subsubsection{cod\_mun: 05001 \textbar{} articulo\_ipc:
+PAPA}\label{cod_mun-05001-articulo_ipc-papa}
+
+\textbf{Umbral M-TAR (\(\tau_x\)) = -0.00736}
+
+\textbf{(A) Coeficientes de corrección de error asimétrica} (estimación
+(t))
+
+\begin{longtable}[t]{lll}
+\toprule
+equation & mu\_minus\_l1 & mu\_plus\_l1\\
+\midrule
+ΔpW\_t & -1.5862 (-12.745) & -1.1292 (-7.885)\\
+ΔpR\_t & -0.2289 (-2.177) & -0.1758 (-1.453)\\
+\bottomrule
+\end{longtable}
+
+\textbf{(B) Pruebas F sobre dinámica de corto plazo} (F (p))
+
+\begin{longtable}[t]{lll}
+\toprule
+test & meaning & F (p)\\
+\midrule
+F\_11 & ΔpW lags in ΔpW eq. & 105.68 (0.000)\\
+F\_12 & ΔpR lags in ΔpW eq. & 127.69 (0.000)\\
+F\_21 & ΔpW lags in ΔpR eq. & 73.59 (0.000)\\
+F\_22 & ΔpR lags in ΔpR eq. & 104.24 (0.000)\\
+\bottomrule
+\end{longtable}
+
+\subsection{A-ECM -- PLÁTANO}\label{a-ecm-pluxe1tano}
+
+\subsubsection{cod\_mun: 05001 \textbar{} articulo\_ipc:
+PLÁTANO}\label{cod_mun-05001-articulo_ipc-pluxe1tano}
+
+\textbf{Umbral M-TAR (\(\tau_x\)) = 0.04335}
+
+\textbf{(A) Coeficientes de corrección de error asimétrica} (estimación
+(t))
+
+\begin{longtable}[t]{lll}
+\toprule
+equation & mu\_minus\_l1 & mu\_plus\_l1\\
+\midrule
+ΔpW\_t & -1.5977 (-12.175) & -1.1917 (-9.252)\\
+ΔpR\_t & -0.2532 (-2.286) & -0.1610 (-1.480)\\
+\bottomrule
+\end{longtable}
+
+\textbf{(B) Pruebas F sobre dinámica de corto plazo} (F (p))
+
+\begin{longtable}[t]{lll}
+\toprule
+test & meaning & F (p)\\
+\midrule
+F\_11 & ΔpW lags in ΔpW eq. & 122.38 (0.000)\\
+F\_12 & ΔpR lags in ΔpW eq. & 147.50 (0.000)\\
+F\_21 & ΔpW lags in ΔpR eq. & 79.34 (0.000)\\
+F\_22 & ΔpR lags in ΔpR eq. & 112.74 (0.000)\\
+\bottomrule
+\end{longtable}
+
+\subsection{A-ECM -- ARROZ PARA SECO}\label{a-ecm-arroz-para-seco-1}
+
+\subsubsection{cod\_mun: 11001 \textbar{} articulo\_ipc: ARROZ PARA
+SECO}\label{cod_mun-11001-articulo_ipc-arroz-para-seco}
+
+\textbf{Umbral M-TAR (\(\tau_x\)) = 0.02054}
+
+\textbf{(A) Coeficientes de corrección de error asimétrica} (estimación
+(t))
+
+\begin{longtable}[t]{lll}
+\toprule
+equation & mu\_minus\_l1 & mu\_plus\_l1\\
+\midrule
+ΔpW\_t & -1.6185 (-12.427) & -1.1568 (-8.776)\\
+ΔpR\_t & -0.2557 (-2.324) & -0.1554 (-1.395)\\
+\bottomrule
+\end{longtable}
+
+\textbf{(B) Pruebas F sobre dinámica de corto plazo} (F (p))
+
+\begin{longtable}[t]{lll}
+\toprule
+test & meaning & F (p)\\
+\midrule
+F\_11 & ΔpW lags in ΔpW eq. & 117.54 (0.000)\\
+F\_12 & ΔpR lags in ΔpW eq. & 140.80 (0.000)\\
+F\_21 & ΔpW lags in ΔpR eq. & 77.59 (0.000)\\
+F\_22 & ΔpR lags in ΔpR eq. & 109.78 (0.000)\\
+\bottomrule
+\end{longtable}
+
+\subsection{A-ECM -- CEBOLLA CABEZONA}\label{a-ecm-cebolla-cabezona-1}
+
+\subsubsection{cod\_mun: 11001 \textbar{} articulo\_ipc: CEBOLLA
+CABEZONA}\label{cod_mun-11001-articulo_ipc-cebolla-cabezona}
+
+\textbf{Umbral M-TAR (\(\tau_x\)) = -0.06871}
+
+\textbf{(A) Coeficientes de corrección de error asimétrica} (estimación
+(t))
+
+\begin{longtable}[t]{lll}
+\toprule
+equation & mu\_minus\_l1 & mu\_plus\_l1\\
+\midrule
+ΔpW\_t & -1.5193 (-12.827) & -1.1675 (-7.567)\\
+ΔpR\_t & -0.1832 (-1.834) & -0.2460 (-1.890)\\
+\bottomrule
+\end{longtable}
+
+\textbf{(B) Pruebas F sobre dinámica de corto plazo} (F (p))
+
+\begin{longtable}[t]{lll}
+\toprule
+test & meaning & F (p)\\
+\midrule
+F\_11 & ΔpW lags in ΔpW eq. & 99.48 (0.000)\\
+F\_12 & ΔpR lags in ΔpW eq. & 122.41 (0.000)\\
+F\_21 & ΔpW lags in ΔpR eq. & 73.67 (0.000)\\
+F\_22 & ΔpR lags in ΔpR eq. & 104.67 (0.000)\\
+\bottomrule
+\end{longtable}
+
+\subsection{A-ECM -- PAPA}\label{a-ecm-papa-1}
+
+\subsubsection{cod\_mun: 11001 \textbar{} articulo\_ipc:
+PAPA}\label{cod_mun-11001-articulo_ipc-papa}
+
+\textbf{Umbral M-TAR (\(\tau_x\)) = -0.02319}
+
+\textbf{(A) Coeficientes de corrección de error asimétrica} (estimación
+(t))
+
+\begin{longtable}[t]{lll}
+\toprule
+equation & mu\_minus\_l1 & mu\_plus\_l1\\
+\midrule
+ΔpW\_t & -1.5550 (-12.503) & -1.1637 (-7.994)\\
+ΔpR\_t & -0.2024 (-1.928) & -0.2114 (-1.721)\\
+\bottomrule
+\end{longtable}
+
+\textbf{(B) Pruebas F sobre dinámica de corto plazo} (F (p))
+
+\begin{longtable}[t]{lll}
+\toprule
+test & meaning & F (p)\\
+\midrule
+F\_11 & ΔpW lags in ΔpW eq. & 106.44 (0.000)\\
+F\_12 & ΔpR lags in ΔpW eq. & 127.69 (0.000)\\
+F\_21 & ΔpW lags in ΔpR eq. & 75.31 (0.000)\\
+F\_22 & ΔpR lags in ΔpR eq. & 105.79 (0.000)\\
+\bottomrule
+\end{longtable}
+
+\subsection{A-ECM -- PLÁTANO}\label{a-ecm-pluxe1tano-1}
+
+\subsubsection{cod\_mun: 11001 \textbar{} articulo\_ipc:
+PLÁTANO}\label{cod_mun-11001-articulo_ipc-pluxe1tano}
+
+\textbf{Umbral M-TAR (\(\tau_x\)) = 0.01137}
+
+\textbf{(A) Coeficientes de corrección de error asimétrica} (estimación
+(t))
+
+\begin{longtable}[t]{lll}
+\toprule
+equation & mu\_minus\_l1 & mu\_plus\_l1\\
+\midrule
+ΔpW\_t & -1.6080 (-12.448) & -1.1559 (-8.630)\\
+ΔpR\_t & -0.2375 (-2.176) & -0.1724 (-1.523)\\
+\bottomrule
+\end{longtable}
+
+\textbf{(B) Pruebas F sobre dinámica de corto plazo} (F (p))
+
+\begin{longtable}[t]{lll}
+\toprule
+test & meaning & F (p)\\
+\midrule
+F\_11 & ΔpW lags in ΔpW eq. & 115.70 (0.000)\\
+F\_12 & ΔpR lags in ΔpW eq. & 139.40 (0.000)\\
+F\_21 & ΔpW lags in ΔpR eq. & 77.87 (0.000)\\
+F\_22 & ΔpR lags in ΔpR eq. & 110.55 (0.000)\\
+\bottomrule
+\end{longtable}
+
+\subsection{A-ECM -- ARROZ PARA SECO}\label{a-ecm-arroz-para-seco-2}
+
+\subsubsection{cod\_mun: 76001 \textbar{} articulo\_ipc: ARROZ PARA
+SECO}\label{cod_mun-76001-articulo_ipc-arroz-para-seco}
+
+\textbf{Umbral M-TAR (\(\tau_x\)) = 0.01304}
+
+\textbf{(A) Coeficientes de corrección de error asimétrica} (estimación
+(t))
+
+\begin{longtable}[t]{lll}
+\toprule
+equation & mu\_minus\_l1 & mu\_plus\_l1\\
+\midrule
+ΔpW\_t & -1.6120 (-12.455) & -1.1546 (-8.656)\\
+ΔpR\_t & -0.2413 (-2.207) & -0.1687 (-1.497)\\
+\bottomrule
+\end{longtable}
+
+\textbf{(B) Pruebas F sobre dinámica de corto plazo} (F (p))
+
+\begin{longtable}[t]{lll}
+\toprule
+test & meaning & F (p)\\
+\midrule
+F\_11 & ΔpW lags in ΔpW eq. & 115.99 (0.000)\\
+F\_12 & ΔpR lags in ΔpW eq. & 139.09 (0.000)\\
+F\_21 & ΔpW lags in ΔpR eq. & 77.81 (0.000)\\
+F\_22 & ΔpR lags in ΔpR eq. & 110.11 (0.000)\\
+\bottomrule
+\end{longtable}
+
+\subsection{A-ECM -- CEBOLLA CABEZONA}\label{a-ecm-cebolla-cabezona-2}
+
+\subsubsection{cod\_mun: 76001 \textbar{} articulo\_ipc: CEBOLLA
+CABEZONA}\label{cod_mun-76001-articulo_ipc-cebolla-cabezona}
+
+\textbf{Umbral M-TAR (\(\tau_x\)) = -0.03082}
+
+\textbf{(A) Coeficientes de corrección de error asimétrica} (estimación
+(t))
+
+\begin{longtable}[t]{lll}
+\toprule
+equation & mu\_minus\_l1 & mu\_plus\_l1\\
+\midrule
+ΔpW\_t & -1.5596 (-12.642) & -1.1494 (-7.833)\\
+ΔpR\_t & -0.2050 (-1.968) & -0.2079 (-1.678)\\
+\bottomrule
+\end{longtable}
+
+\textbf{(B) Pruebas F sobre dinámica de corto plazo} (F (p))
+
+\begin{longtable}[t]{lll}
+\toprule
+test & meaning & F (p)\\
+\midrule
+F\_11 & ΔpW lags in ΔpW eq. & 104.30 (0.000)\\
+F\_12 & ΔpR lags in ΔpW eq. & 125.37 (0.000)\\
+F\_21 & ΔpW lags in ΔpR eq. & 74.40 (0.000)\\
+F\_22 & ΔpR lags in ΔpR eq. & 104.62 (0.000)\\
+\bottomrule
+\end{longtable}
+
+\subsection{A-ECM -- PAPA}\label{a-ecm-papa-2}
+
+\subsubsection{cod\_mun: 76001 \textbar{} articulo\_ipc:
+PAPA}\label{cod_mun-76001-articulo_ipc-papa}
+
+\textbf{Umbral M-TAR (\(\tau_x\)) = 0.00760}
+
+\textbf{(A) Coeficientes de corrección de error asimétrica} (estimación
+(t))
+
+\begin{longtable}[t]{lll}
+\toprule
+equation & mu\_minus\_l1 & mu\_plus\_l1\\
+\midrule
+ΔpW\_t & -1.6038 (-12.492) & -1.1497 (-8.447)\\
+ΔpR\_t & -0.2354 (-2.170) & -0.1732 (-1.506)\\
+\bottomrule
+\end{longtable}
+
+\textbf{(B) Pruebas F sobre dinámica de corto plazo} (F (p))
+
+\begin{longtable}[t]{lll}
+\toprule
+test & meaning & F (p)\\
+\midrule
+F\_11 & ΔpW lags in ΔpW eq. & 113.54 (0.000)\\
+F\_12 & ΔpR lags in ΔpW eq. & 137.39 (0.000)\\
+F\_21 & ΔpW lags in ΔpR eq. & 76.98 (0.000)\\
+F\_22 & ΔpR lags in ΔpR eq. & 109.51 (0.000)\\
+\bottomrule
+\end{longtable}
+
+\subsection{A-ECM -- PLÁTANO}\label{a-ecm-pluxe1tano-2}
+
+\subsubsection{cod\_mun: 76001 \textbar{} articulo\_ipc:
+PLÁTANO}\label{cod_mun-76001-articulo_ipc-pluxe1tano}
+
+\textbf{Umbral M-TAR (\(\tau_x\)) = 0.04986}
+
+\textbf{(A) Coeficientes de corrección de error asimétrica} (estimación
+(t))
+
+\begin{longtable}[t]{lll}
+\toprule
+equation & mu\_minus\_l1 & mu\_plus\_l1\\
+\midrule
+ΔpW\_t & -1.5918 (-12.111) & -1.2005 (-9.373)\\
+ΔpR\_t & -0.2454 (-2.211) & -0.1692 (-1.564)\\
+\bottomrule
+\end{longtable}
+
+\textbf{(B) Pruebas F sobre dinámica de corto plazo} (F (p))
+
+\begin{longtable}[t]{lll}
+\toprule
+test & meaning & F (p)\\
+\midrule
+F\_11 & ΔpW lags in ΔpW eq. & 123.49 (0.000)\\
+F\_12 & ΔpR lags in ΔpW eq. & 148.80 (0.000)\\
+F\_21 & ΔpW lags in ΔpR eq. & 80.20 (0.000)\\
+F\_22 & ΔpR lags in ΔpR eq. & 113.97 (0.000)\\
+\bottomrule
+\end{longtable}
+
 \bibliography{refs-ob-rif-informal.bib}
 
 \end{document}

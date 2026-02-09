@@ -573,7 +573,7 @@ En aplicaciones empíricas suele fijarse \(\tau = 0\), aunque el umbral también
 El modelo M-TAR permite capturar ajustes asimétricos asociados al **momentum del desequilibrio**, es decir, respuestas distintas cuando la brecha entre precios mayoristas y minoristas se está ampliando (\(\Delta \mu_{t-1} \ge 0\)) frente a cuando se está cerrando (\(\Delta \mu_{t-1} < 0\)). La cointegración con ajuste M-TAR se verifica cuando \(\rho_1 < 0\) y \(\rho_2 < 0\), indicando convergencia al equilibrio de largo plazo con dinámica no lineal.
 
 
-```{r table7_only_4foods, echo=FALSE, warning=FALSE, message=FALSE, results="asis"}
+```{r table7, echo=FALSE, warning=FALSE, message=FALSE, results="asis"}
 library(stringr)
 library(knitr)
 library(kableExtra)
@@ -624,7 +624,193 @@ for (nm in nms) {
 
 ### Modelo de Corrección de Error Asimétrico (A-ECM)
 
+Sea \(P^{may}_t\) el **precio mayorista** (SIPSA) y \(P^{min}_t\) el **precio minorista** (IPC–DANE) en el período \(t\). Trabajamos en logaritmos:
 
+\begin{equation}
+p^{may}_t=\ln(P^{may}_t), 
+\qquad 
+p^{min}_t=\ln(P^{min}_t).
+\end{equation}
+
+En la primera etapa (Engle--Granger) se estima la relación de equilibrio de largo plazo:
+
+\begin{equation}
+p^{may}_t = \alpha_0 + \alpha_1 p^{min}_t + \mu_t,
+\end{equation}
+
+donde \(\mu_t\) es el residuo (desequilibrio) respecto al equilibrio.
+
+Para construir el A-ECM asimétrico, se usa el umbral M-TAR \(\tau_x\) (estimado previamente) con base en el *momentum* del desequilibrio:
+
+\begin{equation}
+M_t=
+\begin{cases}
+1 & \text{si } \Delta \mu_{t-1}\ge \tau_x,\\
+0 & \text{si } \Delta \mu_{t-1}< \tau_x.
+\end{cases}
+\end{equation}
+
+y se definen los términos de corrección de error asimétricos:
+
+\begin{equation}
+\mu^{-}_{t-1}=M_t\mu_{t-1},
+\qquad
+\mu^{+}_{t-1}=(1-M_t)\mu_{t-1}.
+\end{equation}
+
+El sistema A-ECM (con intercepto) para \(\Delta p^{may}_t\) y \(\Delta p^{min}_t\) se especifica como:
+
+\begin{equation}
+\Delta p^{may}_t = c_1 
++ \sum_{j=1}^{k} a_{11,j}\Delta p^{may}_{t-j}
++ \sum_{j=1}^{k} a_{12,j}\Delta p^{min}_{t-j}
++ \lambda^-_1 \mu^{-}_{t-1}
++ \lambda^+_1 \mu^{+}_{t-1}
++ u_{1t},
+\end{equation}
+
+\begin{equation}
+\Delta p^{min}_t = c_2 
++ \sum_{j=1}^{k} a_{21,j}\Delta p^{may}_{t-j}
++ \sum_{j=1}^{k} a_{22,j}\Delta p^{min}_{t-j}
++ \lambda^-_2 \mu^{-}_{t-1}
++ \lambda^+_2 \mu^{+}_{t-1}
++ u_{2t}.
+\end{equation}
+
+Los coeficientes \(\lambda^-_1,\lambda^+_1,\lambda^-_2,\lambda^+_2\) capturan velocidades de ajuste diferentes según el régimen (cuando el desequilibrio venía aumentando o disminuyendo). Adicionalmente, se reportan pruebas \(F\) sobre la dinámica de corto plazo: restricciones tipo \(A_{ij}(L)=0\) (rezagos conjuntos) en cada ecuación.
+
+```{r aecm_table, echo=FALSE, warning=FALSE, message=FALSE, results="asis"}
+library(stringr)
+library(knitr)
+library(kableExtra)
+
+# Cargar tabla
+aecm_path <- file.path("working-papers/working-paper-aecm/output-paper/tables/aecm_results_12.rds")
+if (!file.exists(aecm_path)) {
+  stop(paste0("No encuentro: ", aecm_path,
+              "\nAsegúrate de haber guardado el .rds con tus resultados A-ECM."))
+}
+aecm_list <- readRDS(aecm_path)
+
+# ===== 2) Alimentos que quieres (los del IPC: articulo_ipc) =====
+foods_keep <- c("ARROZ PARA SECO", "CEBOLLA CABEZONA", "PAPA", "PLÁTANO")
+
+# ===== 3) Utilidades de formato =====
+pretty_key <- function(x) {
+  x %>%
+    str_replace_all("__", " | ") %>%
+    str_replace_all("cod_mun=", "cod_mun: ") %>%
+    str_replace_all("articulo_ipc=", "articulo_ipc: ")
+}
+
+fmt_et <- function(b, t) {
+  if (is.null(b) || is.null(t) || is.na(b) || is.na(t)) return(NA_character_)
+  sprintf("%.4f (%.3f)", b, t)
+}
+
+# Construye 2 tablas: (A) EC terms, (B) F tests
+make_aecm_tables <- function(fit) {
+
+  # --- (A) ECM terms ---
+  ecm <- fit$ecm_terms
+  if (is.null(ecm)) stop("No existe fit$ecm_terms en este objeto.")
+
+  need1 <- c("equation","regressor","estimate","t_value")
+  miss1 <- setdiff(need1, colnames(ecm))
+  if (length(miss1) > 0) stop(paste("Faltan columnas en ecm_terms:", paste(miss1, collapse=", ")))
+
+  ecm$value <- mapply(fmt_et, ecm$estimate, ecm$t_value)
+
+  eqs  <- unique(ecm$equation)
+  regs <- unique(ecm$regressor)
+
+  ecm_wide <- data.frame(equation = eqs, stringsAsFactors = FALSE)
+  for (r in regs) ecm_wide[[r]] <- NA_character_
+
+  for (i in seq_len(nrow(ecm))) {
+    rr <- ecm$regressor[i]
+    ee <- ecm$equation[i]
+    ecm_wide[ecm_wide$equation == ee, rr] <- ecm$value[i]
+  }
+
+  # --- (B) F tests ---
+  Ft <- fit$F_tests
+  if (is.null(Ft)) stop("No existe fit$F_tests en este objeto.")
+
+  need2 <- c("test","meaning","F","p")
+  miss2 <- setdiff(need2, colnames(Ft))
+  if (length(miss2) > 0) stop(paste("Faltan columnas en F_tests:", paste(miss2, collapse=", ")))
+
+  Ft$`F (p)` <- sprintf("%.2f (%.3f)", Ft$F, Ft$p)
+  Ft_out <- Ft[, c("test","meaning","F (p)")]
+
+  list(ec = ecm_wide, F = Ft_out)
+}
+
+# Imprimir tabla (4 alimentos)
+nms <- names(aecm_list)
+if (is.null(nms)) {
+  nms <- paste0("group_", seq_along(aecm_list))
+  names(aecm_list) <- nms
+}
+
+printed_any <- FALSE
+
+for (nm in nms) {
+
+  # filtro por alimento usando:
+  # (i) obj$articulo_ipc si existe, o
+  # (ii) el nombre "nm" si trae "articulo_ipc=..."
+  obj <- aecm_list[[nm]]
+
+  food_here <- NA_character_
+  if (!is.null(obj$articulo_ipc)) food_here <- as.character(obj$articulo_ipc)
+  if (is.na(food_here)) {
+
+    m <- str_match(nm, "articulo_ipc=([^_|]+)")
+    if (!is.na(m[1,2])) food_here <- m[1,2]
+  }
+
+  if (is.na(food_here) || !(food_here %in% foods_keep)) next
+
+  printed_any <- TRUE
+
+  # título
+  ttl <- nm
+  if (!is.null(obj$name_key)) ttl <- pretty_key(obj$name_key)
+  ttl <- pretty_key(ttl)
+
+  cat("\n\n## A-ECM – ", food_here, "\n\n", sep = "")
+  cat("\n\n### ", ttl, "\n\n", sep = "")
+
+  fit <- obj$fit
+  if (is.null(fit)) {
+    cat("_Warning: este grupo no trae $fit._\n\n")
+    next
+  }
+
+  # tau_x 
+  if (!is.null(fit$tau_x)) {
+    cat("**Umbral M-TAR (\\(\\tau_x\\)) = ", sprintf("%.5f", fit$tau_x), "**\n\n", sep = "")
+  }
+
+  tabs <- make_aecm_tables(fit)
+
+  cat("**(A) Coeficientes de corrección de error asimétrica** (estimación (t))\n\n")
+  print(
+    kable(tabs$ec, booktabs = TRUE, align = "l") %>%
+      kable_styling(full_width = FALSE, position = "center")
+  )
+
+  cat("\n\n**(B) Pruebas F sobre dinámica de corto plazo** (F (p))\n\n")
+  print(
+    kable(tabs$F, booktabs = TRUE, align = "l") %>%
+      kable_styling(full_width = FALSE, position = "center")
+  )
+}
+
+```
 
 
 

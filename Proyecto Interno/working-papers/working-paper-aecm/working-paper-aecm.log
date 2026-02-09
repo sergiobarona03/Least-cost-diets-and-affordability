@@ -1,4 +1,4 @@
-This is XeTeX, Version 3.141592653-2.6-0.999997 (TeX Live 2025) (preloaded format=xelatex 2026.1.29)  29 JAN 2026 14:22
+This is XeTeX, Version 3.141592653-2.6-0.999997 (TeX Live 2025) (preloaded format=xelatex 2026.1.29)  9 FEB 2026 12:33
 entering extended mode
  restricted \write18 enabled.
  %&-line parsing enabled.
@@ -1681,8 +1681,9 @@ Overfull \hbox (3.609pt too wide) in alignment at lines 1425--1438
  [] [] [] [] [] 
  []
 
+[22] [23] [24] [25] [26] [27] [28]
 No file working-paper-aecm.bbl.
-[22] (./working-paper-aecm.aux)
+[29] (./working-paper-aecm.aux)
  ***********
 LaTeX2e <2025-11-01>
 L3 programming layer <2026-01-19>
@@ -1692,12 +1693,12 @@ LaTeX Warning: There were multiply-defined labels.
 
  ) 
 Here is how much of TeX's memory you used:
- 18949 strings out of 470190
- 345123 string characters out of 5477129
- 984612 words of memory out of 5000000
- 47252 multiletter control sequences out of 15000+600000
+ 19023 strings out of 470190
+ 346235 string characters out of 5477129
+ 987384 words of memory out of 5000000
+ 47326 multiletter control sequences out of 15000+600000
  636232 words of font info for 110 fonts, out of 8000000 for 9000
  14 hyphenation exceptions out of 8191
  90i,12n,114p,433b,509s stack positions out of 10000i,1000n,20000p,200000b,200000s
 
-Output written on working-paper-aecm.pdf (22 pages).
+Output written on working-paper-aecm.pdf (29 pages).
