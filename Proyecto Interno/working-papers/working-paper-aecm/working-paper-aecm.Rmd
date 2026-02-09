@@ -693,7 +693,7 @@ if (!file.exists(aecm_path)) {
 }
 aecm_list <- readRDS(aecm_path)
 
-# ===== 2) Alimentos que quieres (los del IPC: articulo_ipc) =====
+# Alimentos IPC
 foods_keep <- c("ARROZ PARA SECO", "CEBOLLA CABEZONA", "PAPA", "PLÁTANO")
 
 # ===== 3) Utilidades de formato =====
@@ -790,7 +790,7 @@ for (nm in nms) {
     next
   }
 
-  # tau_x 
+  # tau estimado
   if (!is.null(fit$tau_x)) {
     cat("**Umbral M-TAR (\\(\\tau_x\\)) = ", sprintf("%.5f", fit$tau_x), "**\n\n", sep = "")
   }
