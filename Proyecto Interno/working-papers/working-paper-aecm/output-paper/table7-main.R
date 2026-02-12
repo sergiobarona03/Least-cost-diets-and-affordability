@@ -1,34 +1,30 @@
 ############################################################
 ## Asymmetric cointegration pipeline (Enders–Siklos style)
-## - Runs by group: city x food  (12 models = 3 cities x 4 foods)
-## - For each group builds a "Table 7"-style summary:
+## DEPENDENT VARIABLE = log_ipc (retail/minorista)
+## - Runs by group: city x food
+## - Builds a Table 7 summary:
 ##   (1) Engle–Granger (linear ECM)
 ##   (2) TAR level (tau=0)
 ##   (3) M-TAR momentum (tau=0)
 ##   (4) M-TAR momentum-consistent (tau=tau_hat by grid search)
 ##
-## Notes:
-## - Uses Enders information criteria: AIC = T log(SSR) + 2n, BIC = T log(SSR) + n log(T)
-## - Uses Ljung-Box "EViews-style": compute Q(1..h_max) without fitdf to avoid NaNs
-## - Produces one table per group (city-food). You get 12 tables.
+## Output: tables_12_ipc_dep.rds
 ############################################################
 
-library(tidyverse)
-library(readxl)
-library(knitr)
-library(kableExtra)
-library(openxlsx)
+suppressPackageStartupMessages({
+  library(tidyverse)
+  library(readxl)
+  library(knitr)
+  library(kableExtra)
+})
 
 ##==========================================================
-## 0) Load + prepare your dataset (adjust paths if needed)
+## 0) Load dataset 
 ##==========================================================
 
 setwd("C:\\Users\\danie\\OneDrive\\Escritorio\\Least-cost-diets-and-affordability\\Proyecto Interno\\")
 
 foods <- read_excel("working-papers/working-paper-aecm/input/261225_selected_foods_dataset.xlsx")
-
-# Expected columns:
-# cod_mun, alimento_sipsa, Year, Month, precio_sipsa, articulo_ipc, precio_ipc
 
 foods <- foods %>%
   mutate(
@@ -44,21 +40,12 @@ foods <- foods %>%
 ## 1) Utilities
 ##==========================================================
 
-# Enders-style IC
 ic_enders <- function(ssr, Tn, n_par) {
   aic <- Tn * log(ssr) + 2 * n_par
   bic <- Tn * log(ssr) + n_par * log(Tn)
   list(AIC = aic, BIC = bic)
 }
 
-# Stars for t-stats (optional display)
-t_stars <- function(t) {
-  ifelse(abs(t) >= 2.58, "***",
-         ifelse(abs(t) >= 1.96, "**",
-                ifelse(abs(t) >= 1.65, "*", "")))
-}
-
-# Ljung-Box "EViews-style" to avoid NaNs from fitdf issues
 ljung_box_eviews <- function(e, h_max = 8) {
   out <- tibble(h = 1:h_max, Q = NA_real_, p = NA_real_)
   for (hh in 1:h_max) {
@@ -73,41 +60,43 @@ ljung_box_eviews <- function(e, h_max = 8) {
   )
 }
 
+fmt_coef <- function(b, t) {
+  if (is.na(b) || is.na(t)) return(NA_character_)
+  sprintf("%.4f (%.3f)", b, t)
+}
+
 ##==========================================================
 ## 2) (A) Engle–Granger: cointegration regression + linear ECM
+##     log_ipc_t = a0 + a1 log_sipsa_t + mu_hat_t
 ##==========================================================
 
-# Build EG residuals mu_hat from cointegration regression:
-# log_sipsa_t = a0 + a1 log_ipc_t + mu_hat_t
-get_eg_residuals <- function(df_g) {
-  reg <- lm(log_sipsa ~ 1 + log_ipc, data = df_g)
+get_eg_residuals_ipc_dep <- function(df_g) {
+  reg <- lm(log_ipc ~ 1 + log_sipsa, data = df_g)
   mu_hat <- resid(reg)
   list(reg = reg, mu_hat = mu_hat)
 }
 
-# Linear ECM for Engle–Granger column:
-# Δlog_sipsa_t = c + rho * mu_{t-1} + gamma1 Δlog_sipsa_{t-1} + gamma2 Δlog_ipc_{t-1} + u_t
-# (This is a common ECM spec; adjust if your paper/pipeline uses another.)
-estimate_ecm_eg <- function(df_g, mu_hat, p_lags = 1, h_max = 8) {
+# Linear ECM for EG column:
+# Δlog_ipc_t = c + rho * mu_{t-1} + gamma1 Δlog_ipc_{t-1} + gamma2 Δlog_sipsa_{t-1} + u_t
+estimate_ecm_eg_ipc_dep <- function(df_g, mu_hat, h_max = 8) {
   
-  y <- df_g$log_sipsa
-  x <- df_g$log_ipc
+  y <- df_g$log_ipc
+  x <- df_g$log_sipsa
   
   dy <- c(NA, diff(y))
   dx <- c(NA, diff(x))
   mu_l1 <- c(NA, mu_hat[-length(mu_hat)])
   
-  dyl1 <- c(NA, dy[-length(dy)])
-  dxl1 <- c(NA, dx[-length(dx)])
+  dy_l1 <- c(NA, dy[-length(dy)])
+  dx_l1 <- c(NA, dx[-length(dx)])
   
   df_ecm <- tibble(
     dy = dy,
     mu_l1 = mu_l1,
-    dy_l1 = dyl1,
-    dx_l1 = dxl1
+    dy_l1 = dy_l1,
+    dx_l1 = dx_l1
   ) %>% drop_na()
   
-  # Basic 1-lag ECM (as in many EG implementations)
   mod <- lm(dy ~ 1 + mu_l1 + dy_l1 + dx_l1, data = df_ecm)
   s <- summary(mod)
   
@@ -118,13 +107,11 @@ estimate_ecm_eg <- function(df_g, mu_hat, p_lags = 1, h_max = 8) {
   ic <- ic_enders(SSR, Tn_m, kU)
   lb <- ljung_box_eviews(resid(mod), h_max = h_max)
   
-  # Return EG-like pieces for "Table 7" column
   list(
     model = mod,
-    rho1 = coef(s)["mu_l1", "Estimate"],         # in EG column this is the single adjustment rho
+    rho1 = coef(s)["mu_l1", "Estimate"],
     t_rho1 = coef(s)["mu_l1", "t value"],
-    rho2 = NA_real_,
-    t_rho2 = NA_real_,
+    rho2 = NA_real_, t_rho2 = NA_real_,
     gamma1 = coef(s)["dy_l1", "Estimate"],
     t_gamma1 = coef(s)["dy_l1", "t value"],
     gamma2 = coef(s)["dx_l1", "Estimate"],
@@ -367,14 +354,13 @@ select_p_mtar_mom_tau0 <- function(mu_hat,
 ## 5) (D) M-TAR momentum-consistent: tau estimated by grid
 ##==========================================================
 
-# Base MTAR variables for tau grid
 build_mtar_base <- function(mu_hat, p = 0) {
   mu_hat <- as.numeric(mu_hat)
   Tn <- length(mu_hat)
   
   dmu    <- c(NA, diff(mu_hat))
   mu_l1  <- c(NA, mu_hat[-Tn])
-  dmu_l1 <- c(NA, diff(mu_l1))  # threshold regressor
+  dmu_l1 <- c(NA, diff(mu_l1))
   
   dfb <- tibble(dmu = dmu, mu_l1 = mu_l1, dmu_l1 = dmu_l1)
   
@@ -389,7 +375,6 @@ build_mtar_base <- function(mu_hat, p = 0) {
   dfb
 }
 
-# Build MTAR df for a given tau (trim regimes)
 build_mtar_df <- function(base_df, p = 0, tau = 0, trim = 0.15) {
   I <- ifelse(base_df$dmu_l1 >= tau, 1, 0)
   
@@ -417,7 +402,7 @@ estimate_mtar_given_tau <- function(base_df, p = 0, tau = 0, trim = 0.15, h_max 
   
   dfm <- build_mtar_df(base_df, p = p, tau = tau, trim = trim)
   if (is.null(dfm)) {
-    return(list(tau=tau, AIC=Inf, BIC=Inf, p_Qh=NA, SSR=Inf))
+    return(list(tau = tau, AIC = Inf, BIC = Inf, p_Qh = NA_real_, SSR = Inf))
   }
   
   rhs <- c("z1", "z2")
@@ -471,7 +456,6 @@ estimate_mtar_given_tau <- function(base_df, p = 0, tau = 0, trim = 0.15, h_max 
   )
 }
 
-# Tau grid (trimmed unique values)
 build_tau_grid <- function(base_df, trim = 0.15) {
   z <- sort(base_df$dmu_l1)
   T_eff <- length(z)
@@ -480,7 +464,6 @@ build_tau_grid <- function(base_df, trim = 0.15) {
   unique(z[(m + 1):(T_eff - m)])
 }
 
-# Search tau_hat by AIC among those passing Ljung-Box p>=alpha
 search_tau_AIC_LB <- function(mu_hat, p = 0, trim = 0.15, alpha_Q = 0.05, h_max = 8) {
   base_df <- build_mtar_base(mu_hat, p = p)
   grid <- build_tau_grid(base_df, trim = trim)
@@ -506,14 +489,13 @@ search_tau_AIC_LB <- function(mu_hat, p = 0, trim = 0.15, alpha_Q = 0.05, h_max 
   fits[[j_min]]
 }
 
-# Given tau_hat, select p* by IC among those passing LB
 select_p_mtar_given_tau <- function(mu_hat, tau_hat,
                                     p_max = 6, ic = c("BIC","AIC"),
                                     trim = 0.15, alpha_Q = 0.05, h_max = 8) {
   ic <- match.arg(ic)
   
   fits <- vector("list", p_max + 1)
-  tab <- tibble(p = 0:p_max, AIC=NA_real_, BIC=NA_real_, p_Qh=NA_real_)
+  tab <- tibble(p = 0:p_max, AIC = NA_real_, BIC = NA_real_, p_Qh = NA_real_)
   
   for (p in 0:p_max) {
     base_df <- build_mtar_base(mu_hat, p = p)
@@ -533,19 +515,13 @@ select_p_mtar_given_tau <- function(mu_hat, tau_hat,
 }
 
 ##==========================================================
-## 6) Build a "Table 7"-style table for one city-food group
+## 6) Build a "Table 7"-style table for one group
 ##==========================================================
 
-fmt_coef <- function(b, t) {
-  if (is.na(b) || is.na(t)) return(NA_character_)
-  sprintf("%.4f (%.3f)", b, t)
-}
-
 make_table7_like <- function(eg_fit, tar_level_fit, mtar_mom_fit, mtar_cons_fit) {
-  # This replicates the rows you showed (rho1, rho2, gamma1, gamma2, AIC, Phi, rho1=rho2)
   tibble(
     Row = c("rho1", "rho2", "gamma1", "gamma2", "AIC", "Phi", "rho1 = rho2"),
-    `Engle–Granger` = c(
+    `Engle–Granger (IPC dep)` = c(
       fmt_coef(eg_fit$rho1, eg_fit$t_rho1),
       "NA",
       fmt_coef(eg_fit$gamma1, eg_fit$t_gamma1),
@@ -585,39 +561,38 @@ make_table7_like <- function(eg_fit, tar_level_fit, mtar_mom_fit, mtar_cons_fit)
 }
 
 ##==========================================================
-## 7) Main runner for ONE group
+## 7) Main runner for ONE group (IPC dependent)
 ##==========================================================
 
-run_asym_coint_one_group <- function(df_g,
-                                     p_max = 6,
-                                     ic_sel = "BIC",
-                                     alpha_Q = 0.05,
-                                     h_max = 8,
-                                     trim = 0.15,
-                                     p_tau = 0,
-                                     ecm_lags = 1) {
+run_asym_coint_one_group_ipc_dep <- function(df_g,
+                                             p_max = 6,
+                                             ic_sel = "BIC",
+                                             alpha_Q = 0.05,
+                                             h_max = 8,
+                                             trim = 0.15,
+                                             p_tau = 0) {
   
-  # 1) EG residuals
-  eg <- get_eg_residuals(df_g)
+  # 1) EG residuals: IPC dep
+  eg <- get_eg_residuals_ipc_dep(df_g)
   mu_hat <- eg$mu_hat
   
-  # 2) EG ECM (linear)
-  eg_ecm <- estimate_ecm_eg(df_g, mu_hat, p_lags = ecm_lags, h_max = h_max)
+  # 2) EG ECM: IPC dep
+  eg_ecm <- estimate_ecm_eg_ipc_dep(df_g, mu_hat, h_max = h_max)
   
   # 3) TAR level: choose p*
-  tar_sel <- select_p_tar_level_tau0(mu_hat, p_max = p_max, ic = ic_sel, alpha_Q = alpha_Q, h_max = h_max)
+  tar_sel  <- select_p_tar_level_tau0(mu_hat, p_max = p_max, ic = ic_sel, alpha_Q = alpha_Q, h_max = h_max)
   tar_best <- tar_sel$best
   
   # 4) MTAR momentum tau=0: choose p*
-  mom_sel <- select_p_mtar_mom_tau0(mu_hat, p_max = p_max, ic = ic_sel, alpha_Q = alpha_Q, h_max = h_max)
+  mom_sel  <- select_p_mtar_mom_tau0(mu_hat, p_max = p_max, ic = ic_sel, alpha_Q = alpha_Q, h_max = h_max)
   mom_best <- mom_sel$best
   
   # 5) MTAR consistent: estimate tau_hat by grid (using p_tau), then choose p*
   tau_fit <- search_tau_AIC_LB(mu_hat, p = p_tau, trim = trim, alpha_Q = alpha_Q, h_max = h_max)
   tau_hat <- tau_fit$tau
   
-  cons_sel <- select_p_mtar_given_tau(mu_hat, tau_hat, p_max = p_max, ic = ic_sel,
-                                      trim = trim, alpha_Q = alpha_Q, h_max = h_max)
+  cons_sel  <- select_p_mtar_given_tau(mu_hat, tau_hat, p_max = p_max, ic = ic_sel,
+                                       trim = trim, alpha_Q = alpha_Q, h_max = h_max)
   cons_best <- cons_sel$best
   
   # 6) Table 7-like
@@ -634,61 +609,52 @@ run_asym_coint_one_group <- function(df_g,
 }
 
 ##==========================================================
-## 8) Run ALL groups (3 cities x 4 foods = 12) and export
+## 8) Run ALL groups and save to RDS
 ##==========================================================
 
-# Choose which "food identifier" to use:
-# - If each of the 4 foods is uniquely identified by articulo_ipc, use that.
-# - If you need both, keep both in the grouping keys.
 group_keys <- c("cod_mun", "articulo_ipc")
 
-tables_12 <- foods %>%
+groups_tbl <- foods %>%
+  group_by(across(all_of(group_keys))) %>%
+  group_keys()
+
+group_names <- groups_tbl %>%
+  pmap_chr(function(...) {
+    vals <- c(...)
+    paste(group_keys, vals, sep = "=", collapse = "__")
+  })
+
+tables_12_ipc_dep <- foods %>%
   group_by(across(all_of(group_keys))) %>%
   group_split() %>%
-  set_names(foods %>%
-              group_by(across(all_of(group_keys))) %>%
-              group_keys() %>%
-              pmap_chr(~ paste(group_keys, c(...), sep="=", collapse="__"))) %>%
+  set_names(group_names) %>%
   map(~{
-    df_g <- .x %>% arrange(date) %>% drop_na(log_sipsa, log_ipc)
+    df_g <- .x %>% arrange(date) %>% drop_na(log_ipc, log_sipsa)
     
-    # Guardrails: need enough obs
     if (nrow(df_g) < 50) return(NULL)
     
-    run_asym_coint_one_group(
+    run_asym_coint_one_group_ipc_dep(
       df_g,
       p_max = 6,
       ic_sel = "BIC",
       alpha_Q = 0.05,
       h_max = 8,
       trim = 0.15,
-      p_tau = 0,
-      ecm_lags = 1
+      p_tau = 0
     )
   })
 
-# Keep only successful runs
-tables_12 <- tables_12[!map_lgl(tables_12, is.null)]
+tables_12_ipc_dep <- tables_12_ipc_dep[!map_lgl(tables_12_ipc_dep, is.null)]
 
-# Example: print one table in the console
-names(tables_12)[1]
-tables_12[[1]]$table7
+# quick check
+if (length(tables_12_ipc_dep) > 0) {
+  cat("First group name:\n", names(tables_12_ipc_dep)[1], "\n\n")
+  print(tables_12_ipc_dep[[1]]$table7)
+}
 
+# Save
+out_path <- "working-papers/working-paper-aecm/output-paper/tables/tables_12_ipc_dep.rds"
+saveRDS(tables_12_ipc_dep, file = out_path)
 
-# Produce HTML tables (kable) for each group
- for (nm in names(tables_12)) {
-   cat("\n\n### Table 7 - ", nm, "\n\n")
-   print(kable(tables_12[[nm]]$table7, booktabs = TRUE) %>%
-           kable_styling(full_width = FALSE))
-   }
+cat("tables_12_ipc_dep saved successfully to:\n", out_path, "\n")
 
-##==========================================================
-## 9) Save results so Rmd can load without recomputing
-##==========================================================
-
-saveRDS(
-  tables_12,
-  file = "working-papers/working-paper-aecm/output-paper/tables/tables_12.rds"
-)
-
-cat("tables_12 saved successfully.\n")

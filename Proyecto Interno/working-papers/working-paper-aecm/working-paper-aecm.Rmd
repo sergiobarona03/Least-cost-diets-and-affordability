@@ -578,19 +578,21 @@ library(stringr)
 library(knitr)
 library(kableExtra)
 
-# 1) Load tables_12 
-tables_path <- file.path("working-papers/working-paper-aecm/output-paper/tables/tables_12.rds")
+# 1) Load IPC-dependent results
+tables_path <- file.path(
+  "working-papers/working-paper-aecm/output-paper/tables/tables_12_ipc_dep.rds"
+)
 
 if (!file.exists(tables_path)) {
   stop(paste0(
     "File not found: ", tables_path, "\n",
-    "You need to save tables_12 first (see the save snippet I sent)."
+    "First run the IPC-dependent pipeline."
   ))
 }
 
 tables_12 <- readRDS(tables_path)
 
-# 2) Keep only these 4 foods
+# 2) IPC foods to keep
 alimentos_keep <- c(
   "ARROZ PARA SECO",
   "CEBOLLA CABEZONA",
@@ -598,24 +600,40 @@ alimentos_keep <- c(
   "PLÁTANO"
 )
 
-# 3) Print Table for each matching group 
+# 3) City dictionary
+city_lookup <- c(
+  "05001" = "MEDELLÍN",
+  "11001" = "BOGOTÁ",
+  "76001" = "CALI"
+)
+
 nms <- names(tables_12)
 if (is.null(nms)) stop("'tables_12' has no names().")
 
+# 4) Loop
 for (nm in nms) {
 
-  if (any(str_detect(nm, alimentos_keep))) {
+  # Extract cod_mun
+  cod_mun_match <- str_match(nm, "cod_mun=([0-9]+)")
+  cod_mun <- cod_mun_match[,2]
 
-    cat("\n\n### Table 7 – ", nm, "\n\n", sep = "")
+  # Extract articulo_ipc
+  articulo_match <- str_match(nm, "articulo_ipc=(.*)$")
+  articulo_ipc <- articulo_match[,2]
 
-    if (!("table7" %in% names(tables_12[[nm]]))) {
-      cat("_Warning: table7 not found for this group._\n\n")
-      next
-    }
+  # Keep only desired foods
+  if (!is.na(articulo_ipc) && articulo_ipc %in% alimentos_keep) {
+
+    ciudad <- city_lookup[cod_mun]
+
+    cat("\n\n### Table 7 – ", ciudad, " – ", articulo_ipc, sep = "")
 
     print(
-      kable(tables_12[[nm]]$table7, booktabs = TRUE, digits = 3) %>%
-        kable_styling(full_width = FALSE, position = "center")
+      kable(tables_12[[nm]]$table7,
+            booktabs = TRUE,
+            digits = 3) %>%
+        kable_styling(full_width = FALSE,
+                      position = "center")
     )
   }
 }
@@ -682,21 +700,33 @@ Los coeficientes \(\lambda^-_1,\lambda^+_1,\lambda^-_2,\lambda^+_2\) capturan ve
 
 ```{r aecm_table, echo=FALSE, warning=FALSE, message=FALSE, results="asis"}
 library(stringr)
+library(dplyr)
+library(purrr)
 library(knitr)
 library(kableExtra)
 
-# Cargar tabla
-aecm_path <- file.path("working-papers/working-paper-aecm/output-paper/tables/aecm_results_12.rds")
-if (!file.exists(aecm_path)) {
-  stop(paste0("No encuentro: ", aecm_path,
-              "\nAsegúrate de haber guardado el .rds con tus resultados A-ECM."))
-}
+# Cargar resultados
+aecm_path <- file.path("working-papers/working-paper-aecm/output-paper/tables/aecm_retail_results_12.rds")
+if (!file.exists(aecm_path)) stop("No encuentro: ", aecm_path)
 aecm_list <- readRDS(aecm_path)
+if (is.null(names(aecm_list))) names(aecm_list) <- paste0("group_", seq_along(aecm_list))
 
-# Alimentos IPC
+# Selección de alimentos (IPC)
 foods_keep <- c("ARROZ PARA SECO", "CEBOLLA CABEZONA", "PAPA", "PLÁTANO")
 
-# ===== 3) Utilidades de formato =====
+# Diccionario ciudades
+city_lookup <- c(
+  "05001" = "MEDELLÍN",
+  "11001" = "BOGOTÁ",
+  "76001" = "CALI"
+)
+
+# Helpers
+extract_cod_mun <- function(x) {
+  m <- str_match(x, "cod_mun=([0-9]+)")
+  ifelse(is.na(m[,2]), NA_character_, m[,2])
+}
+
 pretty_key <- function(x) {
   x %>%
     str_replace_all("__", " | ") %>%
@@ -705,109 +735,149 @@ pretty_key <- function(x) {
 }
 
 fmt_et <- function(b, t) {
-  if (is.null(b) || is.null(t) || is.na(b) || is.na(t)) return(NA_character_)
-  sprintf("%.4f (%.3f)", b, t)
+  if (is.na(b) || is.na(t)) return(NA_character_)
+  sprintf("%.3f (%.2f)", b, t)
 }
 
-# Construye 2 tablas: (A) EC terms, (B) F tests
-make_aecm_tables <- function(fit) {
+# ECUACIÓN 
+make_equation_align <- function(mod, p_lags) {
+  cc <- summary(mod)$coefficients
+  rn <- rownames(cc)
 
-  # --- (A) ECM terms ---
-  ecm <- fit$ecm_terms
-  if (is.null(ecm)) stop("No existe fit$ecm_terms en este objeto.")
-
-  need1 <- c("equation","regressor","estimate","t_value")
-  miss1 <- setdiff(need1, colnames(ecm))
-  if (length(miss1) > 0) stop(paste("Faltan columnas en ecm_terms:", paste(miss1, collapse=", ")))
-
-  ecm$value <- mapply(fmt_et, ecm$estimate, ecm$t_value)
-
-  eqs  <- unique(ecm$equation)
-  regs <- unique(ecm$regressor)
-
-  ecm_wide <- data.frame(equation = eqs, stringsAsFactors = FALSE)
-  for (r in regs) ecm_wide[[r]] <- NA_character_
-
-  for (i in seq_len(nrow(ecm))) {
-    rr <- ecm$regressor[i]
-    ee <- ecm$equation[i]
-    ecm_wide[ecm_wide$equation == ee, rr] <- ecm$value[i]
+  get <- function(term) {
+    if (!(term %in% rn)) return(NULL)
+    c(b = as.numeric(cc[term, "Estimate"]),
+      t = as.numeric(cc[term, "t value"]))
   }
 
-  # --- (B) F tests ---
-  Ft <- fit$F_tests
-  if (is.null(Ft)) stop("No existe fit$F_tests en este objeto.")
+  ic <- get("(Intercept)")
+  if (is.null(ic)) stop("El modelo no tiene intercepto.")
 
-  need2 <- c("test","meaning","F","p")
-  miss2 <- setdiff(need2, colnames(Ft))
-  if (length(miss2) > 0) stop(paste("Faltan columnas en F_tests:", paste(miss2, collapse=", ")))
+  pieces <- list()
+  pieces[[1]] <- paste0(
+    "\\Delta p^{min}_{t} &= ",
+    sprintf("%.3f", ic["b"]), "\\;(", sprintf("%.2f", ic["t"]), ")"
+  )
 
-  Ft$`F (p)` <- sprintf("%.2f (%.3f)", Ft$F, Ft$p)
-  Ft_out <- Ft[, c("test","meaning","F (p)")]
+  add_term_piece <- function(b, t, latex_term) {
+    sgn <- ifelse(b >= 0, "+", "−")
+    paste0("&\\quad ", sgn, " ",
+           sprintf("%.3f", abs(b)), "\\,",
+           latex_term, "\\;(", sprintf("%.2f", t), ")")
+  }
 
-  list(ec = ecm_wide, F = Ft_out)
+  if (p_lags > 0) {
+    for (j in seq_len(p_lags)) {
+      tr <- get(paste0("dpR_l", j))
+      if (!is.null(tr)) {
+        pieces[[length(pieces) + 1]] <- add_term_piece(
+          tr["b"], tr["t"], paste0("\\Delta p^{min}_{t-", j, "}")
+        )
+      }
+    }
+
+    for (j in seq_len(p_lags)) {
+      tw <- get(paste0("dpW_l", j))
+      if (!is.null(tw)) {
+        pieces[[length(pieces) + 1]] <- add_term_piece(
+          tw["b"], tw["t"], paste0("\\Delta p^{may}_{t-", j, "}")
+        )
+      }
+    }
+  }
+
+  tp <- get("mu_plus_l1")
+  if (!is.null(tp)) pieces[[length(pieces) + 1]] <- add_term_piece(tp["b"], tp["t"], "\\mu^{+}_{t-1}")
+
+  tm <- get("mu_minus_l1")
+  if (!is.null(tm)) pieces[[length(pieces) + 1]] <- add_term_piece(tm["b"], tm["t"], "\\mu^{-}_{t-1}")
+
+  pieces[[length(pieces) + 1]] <- "&\\quad +\\, \\varepsilon_t"
+
+  eq <- paste(pieces, collapse = " \\\\\n")
+  paste0("\\[\n\\begin{aligned}\n", eq, "\n\\end{aligned}\n\\]\n")
 }
 
-# Imprimir tabla (4 alimentos)
-nms <- names(aecm_list)
-if (is.null(nms)) {
-  nms <- paste0("group_", seq_along(aecm_list))
-  names(aecm_list) <- nms
+# tabla compacta
+make_compact_table <- function(obj, mod, p_lags) {
+  cc <- summary(mod)$coefficients
+  rn <- rownames(cc)
+
+  safe <- function(term, col) {
+    if (!(term %in% rn)) return(NA_real_)
+    as.numeric(cc[term, col])
+  }
+
+  meta <- tibble(
+    item = c("p_ECM", "τ_x", "ρ1 (M-TAR)", "ρ2 (M-TAR)", "p_M-TAR"),
+    value = c(
+      as.character(p_lags),
+      ifelse(!is.null(obj$tau_x), sprintf("%.5f", obj$tau_x), NA_character_),
+      ifelse(!is.null(obj$rho1_mtar), sprintf("%.4f", obj$rho1_mtar), NA_character_),
+      ifelse(!is.null(obj$rho2_mtar), sprintf("%.4f", obj$rho2_mtar), NA_character_),
+      ifelse(!is.null(obj$p_mtar), as.character(obj$p_mtar), NA_character_)
+    )
+  )
+
+  lag_terms_R <- if (p_lags > 0) paste0("dpR_l", seq_len(p_lags)) else character(0)
+  lag_terms_W <- if (p_lags > 0) paste0("dpW_l", seq_len(p_lags)) else character(0)
+
+  lag_rows <- bind_rows(
+    tibble(term = lag_terms_R,
+           item = if (p_lags > 0) paste0("a", seq_len(p_lags), ": Δp^{min}_{t-", seq_len(p_lags), "}") else character(0)),
+    tibble(term = lag_terms_W,
+           item = if (p_lags > 0) paste0("b", seq_len(p_lags), ": Δp^{may}_{t-", seq_len(p_lags), "}") else character(0)),
+    tibble(term = c("mu_plus_l1","mu_minus_l1"),
+           item = c("φ+: μ^{+}_{t-1}","φ−: μ^{-}_{t-1}"))
+  ) %>%
+    mutate(
+      est = map_dbl(term, ~safe(.x, "Estimate")),
+      tt  = map_dbl(term, ~safe(.x, "t value")),
+      value = mapply(fmt_et, est, tt)
+    ) %>%
+    select(item, value)
+
+  bind_rows(meta, tibble(item="—", value="—"), lag_rows)
 }
 
-printed_any <- FALSE
+# Loop
+for (nm in names(aecm_list)) {
 
-for (nm in nms) {
-
-  # filtro por alimento usando:
-  # (i) obj$articulo_ipc si existe, o
-  # (ii) el nombre "nm" si trae "articulo_ipc=..."
   obj <- aecm_list[[nm]]
 
-  food_here <- NA_character_
-  if (!is.null(obj$articulo_ipc)) food_here <- as.character(obj$articulo_ipc)
-  if (is.na(food_here)) {
-
-    m <- str_match(nm, "articulo_ipc=([^_|]+)")
-    if (!is.na(m[1,2])) food_here <- m[1,2]
-  }
-
+  food_here <- if (!is.null(obj$articulo_ipc)) as.character(obj$articulo_ipc) else NA_character_
   if (is.na(food_here) || !(food_here %in% foods_keep)) next
 
-  printed_any <- TRUE
+  # ciudad
+  cod_mun <- NA_character_
+  if (!is.null(obj$cod_mun)) cod_mun <- as.character(obj$cod_mun)
+  if (is.na(cod_mun) && !is.null(obj$name_key)) cod_mun <- extract_cod_mun(as.character(obj$name_key))
+  if (is.na(cod_mun)) cod_mun <- extract_cod_mun(as.character(nm))
 
-  # título
-  ttl <- nm
-  if (!is.null(obj$name_key)) ttl <- pretty_key(obj$name_key)
-  ttl <- pretty_key(ttl)
+  ciudad <- unname(city_lookup[cod_mun])
+  if (is.na(ciudad) || is.null(ciudad)) ciudad <- paste0("cod_mun ", cod_mun)
 
-  cat("\n\n## A-ECM – ", food_here, "\n\n", sep = "")
+  ttl_raw <- if (!is.null(obj$name_key)) as.character(obj$name_key) else as.character(nm)
+  ttl <- pretty_key(ttl_raw)
+
+  cat("\n\n## A-ECM (minorista en función de mayorista) – ", ciudad, " – ", food_here, "\n\n", sep = "")
   cat("\n\n### ", ttl, "\n\n", sep = "")
 
-  fit <- obj$fit
-  if (is.null(fit)) {
-    cat("_Warning: este grupo no trae $fit._\n\n")
-    next
-  }
+  p_ecm <- if (!is.null(obj$p_ecm)) as.integer(obj$p_ecm) else 1L
+  cat("**p_ECM (rezagos corto plazo)** = ", p_ecm, "  \n", sep = "")
+  if (!is.null(obj$tau_x)) cat("**$\\tau_x$ (umbral M-TAR)** = ", sprintf("%.5f", obj$tau_x), "  \n\n", sep = "")
 
-  # tau estimado
-  if (!is.null(fit$tau_x)) {
-    cat("**Umbral M-TAR (\\(\\tau_x\\)) = ", sprintf("%.5f", fit$tau_x), "**\n\n", sep = "")
-  }
+  cat(make_equation_align(obj$mod_retail, p_lags = p_ecm), "\n\n")
 
-  tabs <- make_aecm_tables(fit)
-
-  cat("**(A) Coeficientes de corrección de error asimétrica** (estimación (t))\n\n")
+  tab <- make_compact_table(obj, obj$mod_retail, p_lags = p_ecm)
   print(
-    kable(tabs$ec, booktabs = TRUE, align = "l") %>%
+    kable(tab, booktabs = TRUE, align = c("l","l")) %>%
       kable_styling(full_width = FALSE, position = "center")
   )
 
-  cat("\n\n**(B) Pruebas F sobre dinámica de corto plazo** (F (p))\n\n")
-  print(
-    kable(tabs$F, booktabs = TRUE, align = "l") %>%
-      kable_styling(full_width = FALSE, position = "center")
-  )
+  if (!is.null(obj$lb_h) && !is.null(obj$lb_p)) {
+    cat("\n\n*Ljung–Box*: p(Q(", obj$lb_h, ")) = ", sprintf("%.3f", obj$lb_p), "\n\n", sep = "")
+  }
 }
 
 ```

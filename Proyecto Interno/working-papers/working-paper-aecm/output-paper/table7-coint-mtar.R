@@ -1,7 +1,10 @@
 ############################################################
-## A-ECM M-TAR ITERATED (SIPSA vs IPC)
-## - Runs by (cod_mun, articulo_ipc) for 4 foods (IPC)
-## - Uses tau_x per group from tables_12.rds (mtar_consistent$tau_hat)
+##                  A-ECM M-TAR (ONLY RETAIL EQUATION)
+##                 SIPSA (mayorista) -> IPC (minorista)
+## - Groups: (cod_mun, articulo_ipc) for 4 foods
+## - tau_x and (rho1,rho2) come from tables_12.rds (mtar_consistent)
+## - A-ECM equation estimated: Δp_min,t
+## - Lag length p selected by IC (BIC/AIC) subject to Ljung-Box p-value
 ############################################################
 
 library(tidyverse)
@@ -12,20 +15,21 @@ library(kableExtra)
 ##----------------------------------------------------------
 ## 0) Paths
 ##----------------------------------------------------------
-ROOT <- "C:\\Users\\danie\\OneDrive\\Escritorio\\Least-cost-diets-and-affordability\\Proyecto Interno\\"
+root <- "C:\\Users\\danie\\OneDrive\\Escritorio\\Least-cost-diets-and-affordability\\Proyecto Interno\\"
 
-IN_FOODS <- file.path(ROOT, "working-papers/working-paper-aecm/input/261225_selected_foods_dataset.xlsx")
+in_foods   <- file.path(root, "working-papers/working-paper-aecm/input/261225_selected_foods_dataset.xlsx")
+out_dir    <- file.path(root, "working-papers/working-paper-aecm/output-paper")
+dir_tables <- file.path(out_dir, "tables")
 
-OUT_DIR  <- file.path(ROOT, "working-papers/working-paper-aecm/output-paper")
-if (!dir.exists(OUT_DIR)) dir.create(OUT_DIR, recursive = TRUE)
+if (!dir.exists(dir_tables)) dir.create(dir_tables, recursive = TRUE)
 
-RDS_TABLE7 <- file.path(OUT_DIR, "tables/tables_12.rds")        
-RDS_AECM   <- file.path(OUT_DIR, "tables/aecm_results_12.rds")   
+rds_table7 <- file.path(dir_tables, "tables_12_ipc_dep.rds")
+rds_aecm   <- file.path(dir_tables, "aecm_retail_results_12.rds")
 
 ##----------------------------------------------------------
 ## 1) Load foods (our base)
 ##----------------------------------------------------------
-foods <- read_excel(IN_FOODS) %>%
+foods <- read_excel(in_foods) %>%
   mutate(
     date = as.Date(sprintf("%04d-%02d-01", as.integer(Year), as.integer(Month))),
     precio_ipc   = as.numeric(precio_ipc),
@@ -35,9 +39,6 @@ foods <- read_excel(IN_FOODS) %>%
   ) %>%
   arrange(cod_mun, articulo_ipc, alimento_sipsa, date)
 
-##----------------------------------------------------------
-## 2) Foods to keep (articulo_ipc)
-##----------------------------------------------------------
 foods_keep_ipc <- c("ARROZ PARA SECO", "CEBOLLA CABEZONA", "PAPA", "PLÁTANO")
 
 foods_sub <- foods %>%
@@ -45,70 +46,85 @@ foods_sub <- foods %>%
   drop_na(log_sipsa, log_ipc)
 
 ##----------------------------------------------------------
-## 3) Load tau_x per group from tables_12.rds
+## 2) Load tau_x (and rho1,rho2) per group from tables_12.rds
 ##----------------------------------------------------------
-if (!file.exists(RDS_TABLE7)) {
-  stop("tables_12.rds not found. Save it first. Path:\n", RDS_TABLE7)
+if (!file.exists(rds_table7)) {
+  stop("tables_12.rds not found. Save it first at:\n", rds_table7)
 }
-tables_12 <- readRDS(RDS_TABLE7)
+tables_12 <- readRDS(rds_table7)
 
 parse_group_name <- function(nm) {
   parts <- strsplit(nm, "__", fixed = TRUE)[[1]]
   kv <- strsplit(parts, "=", fixed = TRUE)
   out <- setNames(lapply(kv, `[`, 2), sapply(kv, `[`, 1))
   tibble(
-    cod_mun = as.integer(out[["cod_mun"]]),
+    cod_mun      = as.integer(out[["cod_mun"]]),
     articulo_ipc = out[["articulo_ipc"]]
   )
 }
 
 tau_map <- imap_dfr(tables_12, ~{
-  nm <- .y
+  nm  <- .y
   obj <- .x
   key <- parse_group_name(nm)
+  
+  tau_x  <- as.numeric(obj$mtar_consistent$tau_hat)
+  rho1   <- as.numeric(obj$mtar_consistent$best$rho1)
+  rho2   <- as.numeric(obj$mtar_consistent$best$rho2)
+  p_mtar <- as.integer(obj$mtar_consistent$p_star)
+  
   tibble(
-    cod_mun = key$cod_mun,
+    cod_mun      = key$cod_mun,
     articulo_ipc = key$articulo_ipc,
-    tau_x = as.numeric(obj$mtar_consistent$tau_hat),
-    name_key = nm
+    name_key     = nm,
+    tau_x        = tau_x,
+    rho1_mtar    = rho1,
+    rho2_mtar    = rho2,
+    p_mtar       = p_mtar
   )
 }) %>%
   filter(articulo_ipc %in% foods_keep_ipc)
 
-if (nrow(tau_map) == 0) stop("No tau_x found for the selected foods in tables_12.rds. Check the naming keys.")
+if (nrow(tau_map) == 0) stop("No tau_x found for selected foods in tables_12.rds.")
 
 ##----------------------------------------------------------
-## 4) A-ECM function for ONE group (city-food)
-##   Cointegration: log_sipsa ~ 1 + log_ipc
-##   M_t: 1{ Δmu_{t-1} >= tau_x }
-##   Two equations: ΔpW and ΔpR, with intercept
+## 3) Helpers: Enders IC + Ljung-Box
 ##----------------------------------------------------------
-get_Fp <- function(mod_restricted, mod_full) {
-  an <- anova(mod_restricted, mod_full)
-  list(F = as.numeric(an$F[2]), p = as.numeric(an$`Pr(>F)`[2]))
+ic_enders <- function(ssr, Tn, n_par) {
+  aic <- Tn * log(ssr) + 2 * n_par
+  bic <- Tn * log(ssr) + n_par * log(Tn)
+  list(AIC = aic, BIC = bic)
 }
 
-run_aecm_mtar_one_group <- function(df_g, tau_x, p_lags = 1) {
+lb_pvalue <- function(e, h = 8) {
+  bt <- Box.test(e, lag = h, type = "Ljung-Box")
+  as.numeric(bt$p.value)
+}
+
+##----------------------------------------------------------
+## 4) Build A-ECM dataset for ONE group, given tau_x and p lags
+##    FIXED: use seq_len(p_lags) and dplyr::lag() to avoid j=0
+##----------------------------------------------------------
+build_aecm_df <- function(df_g, tau_x, p_lags = 1) {
+  
   df_g <- df_g %>% arrange(date) %>% drop_na(log_sipsa, log_ipc)
   Tn <- nrow(df_g)
   if (Tn < 50) return(NULL)
   
-  # (1) Cointegration and residuals
+  # cointegration (your current convention)
   reg_coint <- lm(log_sipsa ~ 1 + log_ipc, data = df_g)
   mu_hat <- resid(reg_coint)
   
-  # (2) M_t and asymmetric EC terms (lagged)
-  d_mu    <- c(NA, diff(mu_hat))               # Δμ_t
-  d_mu_l1 <- c(NA, d_mu[-length(d_mu)])        # Δμ_{t-1}
-  mu_l1   <- c(NA, mu_hat[-length(mu_hat)])    # μ_{t-1}
+  d_mu    <- c(NA, diff(mu_hat))
+  d_mu_l1 <- c(NA, d_mu[-length(d_mu)])
+  mu_l1   <- c(NA, mu_hat[-length(mu_hat)])
   
   M_t <- ifelse(d_mu_l1 >= tau_x, 1, 0)
   mu_minus_l1 <- M_t * mu_l1
   mu_plus_l1  <- (1 - M_t) * mu_l1
   
-  # (3) First differences of prices (logs)
-  dpW <- c(NA, diff(df_g$log_sipsa))  # ΔpW
-  dpR <- c(NA, diff(df_g$log_ipc))    # ΔpR
+  dpW <- c(NA, diff(df_g$log_sipsa))  # Δp^may
+  dpR <- c(NA, diff(df_g$log_ipc))    # Δp^min
   
   df_ecm <- tibble(
     dpW = dpW,
@@ -117,186 +133,198 @@ run_aecm_mtar_one_group <- function(df_g, tau_x, p_lags = 1) {
     mu_plus_l1  = mu_plus_l1
   )
   
-  # Lags for A_ij(L)
-  for (j in 1:p_lags) {
-    df_ecm[[paste0("dpW_l", j)]] <- c(rep(NA, j), dpW[1:(Tn - j)])
-    df_ecm[[paste0("dpR_l", j)]] <- c(rep(NA, j), dpR[1:(Tn - j)])
+  # ✅ IMPORTANT FIX: no 1:0, no l0 columns
+  if (p_lags > 0) {
+    for (j in seq_len(p_lags)) {
+      df_ecm[[paste0("dpW_l", j)]] <- dplyr::lag(dpW, j)
+      df_ecm[[paste0("dpR_l", j)]] <- dplyr::lag(dpR, j)
+    }
   }
   
   df_ecm <- df_ecm %>% drop_na()
   if (nrow(df_ecm) < 30) return(NULL)
   
-  rhs_lags <- c(paste0("dpW_l", 1:p_lags),
-                paste0("dpR_l", 1:p_lags))
-  rhs_all  <- c(rhs_lags, "mu_minus_l1", "mu_plus_l1")
+  list(df_ecm = df_ecm, reg_coint = reg_coint)
+}
+
+##----------------------------------------------------------
+## 5) Fit retail equation for given p, return IC + LB
+##    FIXED: rhs terms built safely so p=0 -> empty lag set
+##----------------------------------------------------------
+fit_retail_eq <- function(df_g, tau_x, p_lags = 1, h_lb = 8) {
   
-  # (4) Estimate ECMs
-  fml_W <- as.formula(paste("dpW ~ 1 +", paste(rhs_all, collapse = " + ")))
+  built <- build_aecm_df(df_g, tau_x, p_lags = p_lags)
+  if (is.null(built)) return(NULL)
+  
+  df_ecm <- built$df_ecm
+  
+  rhs_lags <- if (p_lags > 0) {
+    c(paste0("dpR_l", seq_len(p_lags)),
+      paste0("dpW_l", seq_len(p_lags)))
+  } else character(0)
+  
+  rhs_all <- c(rhs_lags, "mu_minus_l1", "mu_plus_l1")
+  
   fml_R <- as.formula(paste("dpR ~ 1 +", paste(rhs_all, collapse = " + ")))
-  
-  mod_W <- lm(fml_W, data = df_ecm)
   mod_R <- lm(fml_R, data = df_ecm)
   
-  # (5) F-tests A_ij(L)=0, keep intercept + EC terms
-  fml_W_noW <- update(
-    fml_W,
-    paste(". ~ 1 +",
-          paste(c(paste0("dpR_l", 1:p_lags), "mu_minus_l1", "mu_plus_l1"),
-                collapse = " + "))
-  )
-  Fp_11 <- get_Fp(lm(fml_W_noW, data = df_ecm), mod_W)
+  SSR <- sum(resid(mod_R)^2)
+  Tn_m <- nrow(df_ecm)
+  k    <- length(coef(mod_R))
   
-  fml_W_noR <- update(
-    fml_W,
-    paste(". ~ 1 +",
-          paste(c(paste0("dpW_l", 1:p_lags), "mu_minus_l1", "mu_plus_l1"),
-                collapse = " + "))
-  )
-  Fp_12 <- get_Fp(lm(fml_W_noR, data = df_ecm), mod_W)
-  
-  fml_R_noW <- update(
-    fml_R,
-    paste(". ~ 1 +",
-          paste(c(paste0("dpR_l", 1:p_lags), "mu_minus_l1", "mu_plus_l1"),
-                collapse = " + "))
-  )
-  Fp_21 <- get_Fp(lm(fml_R_noW, data = df_ecm), mod_R)
-  
-  fml_R_noR <- update(
-    fml_R,
-    paste(". ~ 1 +",
-          paste(c(paste0("dpW_l", 1:p_lags), "mu_minus_l1", "mu_plus_l1"),
-                collapse = " + "))
-  )
-  Fp_22 <- get_Fp(lm(fml_R_noR, data = df_ecm), mod_R)
-  
-  # (6) Extract asymmetric EC coefficients
-  coef_W <- summary(mod_W)$coefficients
-  coef_R <- summary(mod_R)$coefficients
-  
-  ecm_terms <- tibble(
-    equation  = c("ΔpW_t", "ΔpW_t", "ΔpR_t", "ΔpR_t"),
-    regressor = c("mu_minus_l1", "mu_plus_l1", "mu_minus_l1", "mu_plus_l1"),
-    estimate  = c(coef_W["mu_minus_l1","Estimate"],
-                  coef_W["mu_plus_l1", "Estimate"],
-                  coef_R["mu_minus_l1","Estimate"],
-                  coef_R["mu_plus_l1", "Estimate"]),
-    t_value   = c(coef_W["mu_minus_l1","t value"],
-                  coef_W["mu_plus_l1", "t value"],
-                  coef_R["mu_minus_l1","t value"],
-                  coef_R["mu_plus_l1", "t value"])
-  )
+  ic <- ic_enders(SSR, Tn_m, k)
+  p_lb <- lb_pvalue(resid(mod_R), h = h_lb)
   
   list(
-    reg_coint = reg_coint,
-    tau_x = tau_x,
     p_lags = p_lags,
-    mod_W = mod_W,
-    mod_R = mod_R,
-    F_tests = tibble(
-      test = c("F_11","F_12","F_21","F_22"),
-      meaning = c("ΔpW lags in ΔpW eq.",
-                  "ΔpR lags in ΔpW eq.",
-                  "ΔpW lags in ΔpR eq.",
-                  "ΔpR lags in ΔpR eq."),
-      F = c(Fp_11$F, Fp_12$F, Fp_21$F, Fp_22$F),
-      p = c(Fp_11$p, Fp_12$p, Fp_21$p, Fp_22$p)
-    ),
-    ecm_terms = ecm_terms
+    mod_R  = mod_R,
+    reg_coint = built$reg_coint,
+    AIC = ic$AIC,
+    BIC = ic$BIC,
+    p_LB = p_lb,
+    h_LB = h_lb
   )
 }
 
 ##----------------------------------------------------------
-## 5) Iterate: (cod_mun, articulo_ipc) using tau_map
+## 6) Select p* by IC subject to Ljung-Box on retail equation
 ##----------------------------------------------------------
-p_lags_ecm <- 1
+select_p_retail <- function(df_g, tau_x,
+                            p_max = 6,
+                            ic = c("BIC","AIC"),
+                            alpha_LB = 0.05,
+                            h_lb = 8) {
+  
+  ic <- match.arg(ic)
+  
+  fits <- map(0:p_max, ~fit_retail_eq(df_g, tau_x, p_lags = .x, h_lb = h_lb))
+  
+  keep <- !map_lgl(fits, is.null)
+  fits <- fits[keep]
+  pset <- (0:p_max)[keep]
+  
+  if (length(fits) == 0) return(NULL)
+  
+  tab <- tibble(
+    p = pset,
+    AIC = map_dbl(fits, "AIC"),
+    BIC = map_dbl(fits, "BIC"),
+    p_LB = map_dbl(fits, "p_LB")
+  )
+  
+  ok <- tab %>% filter(p_LB >= alpha_LB)
+  
+  if (nrow(ok) > 0) {
+    p_star <- ok$p[which.min(ok[[ic]])]
+    note <- paste0("Selected p* by ", ic, " among models with Ljung-Box p(Q(", h_lb, ")) >= ", alpha_LB, ".")
+  } else {
+    p_star <- tab$p[which.min(tab[[ic]])]
+    note <- paste0("WARNING: no model passed Ljung-Box; selected p* by ", ic, " anyway.")
+  }
+  
+  best_fit <- fits[[which(pset == p_star)]]
+  
+  list(p_star = p_star, best = best_fit, table = tab, note = note)
+}
 
+##----------------------------------------------------------
+## 7) Iterate all groups and save
+##----------------------------------------------------------
 groups_12 <- tau_map %>%
-  distinct(cod_mun, articulo_ipc, tau_x, name_key) %>%
+  distinct(cod_mun, articulo_ipc, tau_x, rho1_mtar, rho2_mtar, p_mtar, name_key) %>%
   arrange(cod_mun, articulo_ipc)
 
-aecm_results_12 <- pmap(
-  list(groups_12$cod_mun, groups_12$articulo_ipc, groups_12$tau_x, groups_12$name_key),
-  function(cod_mun, articulo_ipc, tau_x, name_key) {
+aecm_retail_results <- pmap(
+  list(groups_12$cod_mun, groups_12$articulo_ipc, groups_12$tau_x,
+       groups_12$rho1_mtar, groups_12$rho2_mtar, groups_12$p_mtar, groups_12$name_key),
+  function(cod_mun_i, articulo_i, tau_x_i, rho1_i, rho2_i, p_mtar_i, name_key_i) {
     
     df_g <- foods_sub %>%
-      filter(cod_mun == cod_mun, articulo_ipc == articulo_ipc) %>%
+      filter(cod_mun == cod_mun_i, articulo_ipc == articulo_i) %>%
       arrange(date)
     
-    fit <- run_aecm_mtar_one_group(df_g, tau_x = tau_x, p_lags = p_lags_ecm)
-    if (is.null(fit)) return(NULL)
+    sel <- select_p_retail(
+      df_g, tau_x = tau_x_i,
+      p_max = 6,
+      ic = "BIC",
+      alpha_LB = 0.05,
+      h_lb = 8
+    )
+    if (is.null(sel)) return(NULL)
     
     list(
-      cod_mun = cod_mun,
-      articulo_ipc = articulo_ipc,
-      name_key = name_key,
-      fit = fit
+      cod_mun = cod_mun_i,
+      articulo_ipc = articulo_i,
+      name_key = name_key_i,
+      
+      # from MTAR-consistent (Table 7 step)
+      tau_x = tau_x_i,
+      rho1_mtar = rho1_i,
+      rho2_mtar = rho2_i,
+      p_mtar = p_mtar_i,
+      
+      # from A-ECM retail eq selection
+      p_ecm = sel$p_star,
+      ic_table = sel$table,
+      note = sel$note,
+      mod_retail = sel$best$mod_R,
+      reg_coint  = sel$best$reg_coint,
+      lb_h = sel$best$h_LB,
+      lb_p = sel$best$p_LB
     )
   }
 )
 
-aecm_results_12 <- aecm_results_12[!map_lgl(aecm_results_12, is.null)]
-if (length(aecm_results_12) == 0) stop("No A-ECM results produced. Check data availability and tau_map keys.")
+aecm_retail_results <- aecm_retail_results[!map_lgl(aecm_retail_results, is.null)]
+if (length(aecm_retail_results) == 0) stop("No A-ECM retail results produced.")
 
-saveRDS(aecm_results_12, RDS_AECM)
-cat("\nSaved A-ECM results to:\n", RDS_AECM, "\n")
+saveRDS(aecm_retail_results, rds_aecm)
+cat("\nSaved A-ECM RETAIL results to:\n", rds_aecm, "\n")
 
 ##----------------------------------------------------------
-## 6) Summary table for RMD
+## 8) One summary table (for RMD)
 ##----------------------------------------------------------
-fmt_bt <- function(x) ifelse(is.na(x), NA_character_, sprintf("%.4f", x))
-fmt_p  <- function(x) ifelse(is.na(x), NA_character_, sprintf("%.3f", x))
+fmt_et <- function(b, t) ifelse(is.na(b) | is.na(t), NA_character_, sprintf("%.4f (%.3f)", b, t))
 
-summary_tbl <- map_dfr(aecm_results_12, function(obj) {
-  fit <- obj$fit
-  e <- fit$ecm_terms
+extract_retail_coefs <- function(mod, p_ecm) {
+  cc <- summary(mod)$coefficients
+  rn <- rownames(cc)
   
-  W_minus <- e %>% filter(equation == "ΔpW_t", regressor == "mu_minus_l1")
-  W_plus  <- e %>% filter(equation == "ΔpW_t", regressor == "mu_plus_l1")
-  R_minus <- e %>% filter(equation == "ΔpR_t", regressor == "mu_minus_l1")
-  R_plus  <- e %>% filter(equation == "ΔpR_t", regressor == "mu_plus_l1")
+  lag_terms <- if (p_ecm > 0) {
+    c(paste0("dpR_l", seq_len(p_ecm)),
+      paste0("dpW_l", seq_len(p_ecm)))
+  } else character(0)
   
-  Ft <- fit$F_tests %>% select(test, F, p) %>% pivot_wider(names_from = test, values_from = c(F, p))
+  wanted <- c("(Intercept)", lag_terms, "mu_plus_l1", "mu_minus_l1")
+  wanted <- wanted[wanted %in% rn]
   
   tibble(
+    term = wanted,
+    value = map_chr(wanted, ~fmt_et(cc[.x,"Estimate"], cc[.x,"t value"]))
+  ) %>% pivot_wider(names_from = term, values_from = value)
+}
+
+summary_tbl <- map_dfr(aecm_retail_results, function(obj) {
+  coefs_wide <- extract_retail_coefs(obj$mod_retail, obj$p_ecm)
+  
+  tibble(
+    group = obj$name_key,
     cod_mun = obj$cod_mun,
     articulo_ipc = obj$articulo_ipc,
-    tau_x = fit$tau_x,
-    p_lags = fit$p_lags,
-    
-    aW_minus = W_minus$estimate, tW_minus = W_minus$t_value,
-    aW_plus  = W_plus$estimate,  tW_plus  = W_plus$t_value,
-    aR_minus = R_minus$estimate, tR_minus = R_minus$t_value,
-    aR_plus  = R_plus$estimate,  tR_plus  = R_plus$t_value,
-    
-    F_11 = Ft$F_F_11, p_11 = Ft$p_F_11,
-    F_12 = Ft$F_F_12, p_12 = Ft$p_F_12,
-    F_21 = Ft$F_F_21, p_21 = Ft$p_F_21,
-    F_22 = Ft$F_F_22, p_22 = Ft$p_F_22
-  )
-}) %>%
-  mutate(
-    group = paste0("cod_mun=", cod_mun, " | articulo_ipc=", articulo_ipc),
-    tau_x = round(tau_x, 5),
-    
-    `ΔpW: μ-` = sprintf("%s (%s)", fmt_bt(aW_minus), fmt_bt(tW_minus)),
-    `ΔpW: μ+` = sprintf("%s (%s)", fmt_bt(aW_plus),  fmt_bt(tW_plus)),
-    `ΔpR: μ-` = sprintf("%s (%s)", fmt_bt(aR_minus), fmt_bt(tR_minus)),
-    `ΔpR: μ+` = sprintf("%s (%s)", fmt_bt(aR_plus),  fmt_bt(tR_plus)),
-    
-    `F_11 (p)` = sprintf("%s (%s)", fmt_bt(F_11), fmt_p(p_11)),
-    `F_12 (p)` = sprintf("%s (%s)", fmt_bt(F_12), fmt_p(p_12)),
-    `F_21 (p)` = sprintf("%s (%s)", fmt_bt(F_21), fmt_p(p_21)),
-    `F_22 (p)` = sprintf("%s (%s)", fmt_bt(F_22), fmt_p(p_22))
+    tau_x = round(obj$tau_x, 5),
+    `rho1 (MTAR)` = round(obj$rho1_mtar, 4),
+    `rho2 (MTAR)` = round(obj$rho2_mtar, 4),
+    p_mtar = obj$p_mtar,
+    p_ecm  = obj$p_ecm,
+    `LB p(Q)` = round(obj$lb_p, 3)
   ) %>%
-  select(group, tau_x, p_lags,
-         `ΔpW: μ-`, `ΔpW: μ+`, `ΔpR: μ-`, `ΔpR: μ+`,
-         `F_11 (p)`, `F_12 (p)`, `F_21 (p)`, `F_22 (p)`)
+    bind_cols(coefs_wide)
+})
 
 kable(
   summary_tbl,
   booktabs = TRUE,
-  caption = "A-ECM M-TAR summary by city-food group (SIPSA vs IPC). EC terms shown as estimate (t). F-tests shown as F (p)."
+  caption = "A-ECM (Δp^min_t) con selección de rezagos por BIC y filtro Ljung-Box. Incluye tau_x y (rho1,rho2) del M-TAR"
 ) %>%
   kable_styling(full_width = FALSE) %>%
   scroll_box(height = "450px")

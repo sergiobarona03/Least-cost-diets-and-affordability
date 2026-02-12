@@ -1,4 +1,4 @@
-This is XeTeX, Version 3.141592653-2.6-0.999997 (TeX Live 2025) (preloaded format=xelatex 2026.1.29)  9 FEB 2026 12:37
+This is XeTeX, Version 3.141592653-2.6-0.999997 (TeX Live 2025) (preloaded format=xelatex 2026.1.29)  12 FEB 2026 18:21
 entering extended mode
  restricted \write18 enabled.
  %&-line parsing enabled.
@@ -1622,66 +1622,128 @@ LaTeX Warning: `!h' float specifier changed to `!ht'.
 LaTeX Warning: `!h' float specifier changed to `!ht'.
 
 [15] [16] [17]
-Overfull \hbox (7.305pt too wide) in alignment at lines 1227--1240
+Overfull \hbox (59.565pt too wide) in alignment at lines 1227--1240
  [] [] [] [] [] 
  []
 
 [18]
-Overfull \hbox (7.305pt too wide) in alignment at lines 1245--1258
+Overfull \hbox (59.565pt too wide) in alignment at lines 1245--1258
  [] [] [] [] [] 
  []
 
 
-Overfull \hbox (7.305pt too wide) in alignment at lines 1263--1276
+Overfull \hbox (59.565pt too wide) in alignment at lines 1263--1276
  [] [] [] [] [] 
  []
 
 
-Overfull \hbox (7.305pt too wide) in alignment at lines 1281--1294
+Overfull \hbox (59.565pt too wide) in alignment at lines 1281--1294
  [] [] [] [] [] 
  []
 
 ignored error: Infinite glue shrinkage found in box being split [19]
-Overfull \hbox (7.305pt too wide) in alignment at lines 1299--1312
+Overfull \hbox (59.565pt too wide) in alignment at lines 1299--1312
  [] [] [] [] [] 
  []
 
 
-Overfull \hbox (7.305pt too wide) in alignment at lines 1317--1330
+Overfull \hbox (59.565pt too wide) in alignment at lines 1317--1330
  [] [] [] [] [] 
  []
 
 
-Overfull \hbox (7.305pt too wide) in alignment at lines 1335--1348
+Overfull \hbox (59.565pt too wide) in alignment at lines 1334--1347
  [] [] [] [] [] 
  []
 
 ignored error: Infinite glue shrinkage found in box being split [20]
-Overfull \hbox (7.305pt too wide) in alignment at lines 1353--1366
+Overfull \hbox (59.565pt too wide) in alignment at lines 1352--1365
  [] [] [] [] [] 
  []
 
 
-Overfull \hbox (7.305pt too wide) in alignment at lines 1371--1384
+Overfull \hbox (59.565pt too wide) in alignment at lines 1370--1383
  [] [] [] [] [] 
  []
 
 
-Overfull \hbox (7.305pt too wide) in alignment at lines 1389--1402
+Overfull \hbox (59.565pt too wide) in alignment at lines 1388--1401
  [] [] [] [] [] 
  []
 
 
-Overfull \hbox (7.305pt too wide) in alignment at lines 1407--1420
+Overfull \hbox (59.565pt too wide) in alignment at lines 1405--1418
  [] [] [] [] [] 
  []
 
 [21]
-Overfull \hbox (3.609pt too wide) in alignment at lines 1425--1438
+Overfull \hbox (59.565pt too wide) in alignment at lines 1423--1436
  [] [] [] [] [] 
  []
 
-[22] [23] [24] [25] [26] [27] [28]
+[22]
+Missing character: There is no τ (U+03C4) in font [lmroman12-regular]:mapping=tex-text;!
+Missing character: There is no ρ (U+03C1) in font [lmroman12-regular]:mapping=tex-text;!
+Missing character: There is no ρ (U+03C1) in font [lmroman12-regular]:mapping=tex-text;!
+Missing character: There is no φ (U+03C6) in font [lmroman12-regular]:mapping=tex-text;!
+Missing character: There is no μ (U+03BC) in font [lmroman12-regular]:mapping=tex-text;!
+Missing character: There is no φ (U+03C6) in font [lmroman12-regular]:mapping=tex-text;!
+Missing character: There is no μ (U+03BC) in font [lmroman12-regular]:mapping=tex-text;!
+ignored error: Infinite glue shrinkage found in box being split [23]
+Missing character: There is no τ (U+03C4) in font [lmroman12-regular]:mapping=tex-text;!
+Missing character: There is no ρ (U+03C1) in font [lmroman12-regular]:mapping=tex-text;!
+Missing character: There is no ρ (U+03C1) in font [lmroman12-regular]:mapping=tex-text;!
+Missing character: There is no φ (U+03C6) in font [lmroman12-regular]:mapping=tex-text;!
+Missing character: There is no μ (U+03BC) in font [lmroman12-regular]:mapping=tex-text;!
+Missing character: There is no φ (U+03C6) in font [lmroman12-regular]:mapping=tex-text;!
+Missing character: There is no μ (U+03BC) in font [lmroman12-regular]:mapping=tex-text;!
+[24]
+Missing character: There is no τ (U+03C4) in font [lmroman12-regular]:mapping=tex-text;!
+Missing character: There is no ρ (U+03C1) in font [lmroman12-regular]:mapping=tex-text;!
+Missing character: There is no ρ (U+03C1) in font [lmroman12-regular]:mapping=tex-text;!
+Missing character: There is no φ (U+03C6) in font [lmroman12-regular]:mapping=tex-text;!
+Missing character: There is no μ (U+03BC) in font [lmroman12-regular]:mapping=tex-text;!
+Missing character: There is no φ (U+03C6) in font [lmroman12-regular]:mapping=tex-text;!
+Missing character: There is no μ (U+03BC) in font [lmroman12-regular]:mapping=tex-text;!
+Missing character: There is no τ (U+03C4) in font [lmroman12-regular]:mapping=tex-text;!
+Missing character: There is no ρ (U+03C1) in font [lmroman12-regular]:mapping=tex-text;!
+Missing character: There is no ρ (U+03C1) in font [lmroman12-regular]:mapping=tex-text;!
+Missing character: There is no φ (U+03C6) in font [lmroman12-regular]:mapping=tex-text;!
+Missing character: There is no μ (U+03BC) in font [lmroman12-regular]:mapping=tex-text;!
+Missing character: There is no φ (U+03C6) in font [lmroman12-regular]:mapping=tex-text;!
+Missing character: There is no μ (U+03BC) in font [lmroman12-regular]:mapping=tex-text;!
+[25]
+Missing character: There is no τ (U+03C4) in font [lmroman12-regular]:mapping=tex-text;!
+Missing character: There is no ρ (U+03C1) in font [lmroman12-regular]:mapping=tex-text;!
+Missing character: There is no ρ (U+03C1) in font [lmroman12-regular]:mapping=tex-text;!
+Missing character: There is no φ (U+03C6) in font [lmroman12-regular]:mapping=tex-text;!
+Missing character: There is no μ (U+03BC) in font [lmroman12-regular]:mapping=tex-text;!
+Missing character: There is no φ (U+03C6) in font [lmroman12-regular]:mapping=tex-text;!
+Missing character: There is no μ (U+03BC) in font [lmroman12-regular]:mapping=tex-text;!
+[26]
+Missing character: There is no τ (U+03C4) in font [lmroman12-regular]:mapping=tex-text;!
+Missing character: There is no ρ (U+03C1) in font [lmroman12-regular]:mapping=tex-text;!
+Missing character: There is no ρ (U+03C1) in font [lmroman12-regular]:mapping=tex-text;!
+Missing character: There is no φ (U+03C6) in font [lmroman12-regular]:mapping=tex-text;!
+Missing character: There is no μ (U+03BC) in font [lmroman12-regular]:mapping=tex-text;!
+Missing character: There is no φ (U+03C6) in font [lmroman12-regular]:mapping=tex-text;!
+Missing character: There is no μ (U+03BC) in font [lmroman12-regular]:mapping=tex-text;!
+Missing character: There is no τ (U+03C4) in font [lmroman12-regular]:mapping=tex-text;!
+Missing character: There is no ρ (U+03C1) in font [lmroman12-regular]:mapping=tex-text;!
+Missing character: There is no ρ (U+03C1) in font [lmroman12-regular]:mapping=tex-text;!
+Missing character: There is no φ (U+03C6) in font [lmroman12-regular]:mapping=tex-text;!
+Missing character: There is no μ (U+03BC) in font [lmroman12-regular]:mapping=tex-text;!
+Missing character: There is no φ (U+03C6) in font [lmroman12-regular]:mapping=tex-text;!
+Missing character: There is no μ (U+03BC) in font [lmroman12-regular]:mapping=tex-text;!
+[27]
+Missing character: There is no τ (U+03C4) in font [lmroman12-regular]:mapping=tex-text;!
+Missing character: There is no ρ (U+03C1) in font [lmroman12-regular]:mapping=tex-text;!
+Missing character: There is no ρ (U+03C1) in font [lmroman12-regular]:mapping=tex-text;!
+Missing character: There is no φ (U+03C6) in font [lmroman12-regular]:mapping=tex-text;!
+Missing character: There is no μ (U+03BC) in font [lmroman12-regular]:mapping=tex-text;!
+Missing character: There is no φ (U+03C6) in font [lmroman12-regular]:mapping=tex-text;!
+Missing character: There is no μ (U+03BC) in font [lmroman12-regular]:mapping=tex-text;!
+ignored error: Infinite glue shrinkage found in box being split [28]
 No file working-paper-aecm.bbl.
 [29] (./working-paper-aecm.aux)
  ***********
@@ -1693,10 +1755,10 @@ LaTeX Warning: There were multiply-defined labels.
 
  ) 
 Here is how much of TeX's memory you used:
- 19023 strings out of 470190
- 346235 string characters out of 5477129
- 987384 words of memory out of 5000000
- 47326 multiletter control sequences out of 15000+600000
+ 18991 strings out of 470190
+ 345965 string characters out of 5477129
+ 986114 words of memory out of 5000000
+ 47294 multiletter control sequences out of 15000+600000
  636232 words of font info for 110 fonts, out of 8000000 for 9000
  14 hyphenation exceptions out of 8191
  90i,12n,114p,433b,509s stack positions out of 10000i,1000n,20000p,200000b,200000s
