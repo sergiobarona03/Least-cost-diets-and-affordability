@@ -28,10 +28,10 @@ for (y in years) {
     next
   }
   
-  # Leer el CSV del año (separador ;) 
+  # Leer el CSV del año 
   df_year <- read_delim(
     file = file_y,
-    delim = ";",
+    delim = NULL, 
     col_types = cols(.default = col_character()),
     na = c("", "NA", "N/A", ".", " ", "NULL"),
     show_col_types = FALSE

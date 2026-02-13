@@ -28,15 +28,16 @@ for (y in years) {
     next
   }
   
-  # Leer el CSV del año (separador ;)
+  # Leer el CSV del año 
   df_year <- read_delim(
     file = file_y,
-    delim = ";",
+    delim = NULL, 
     col_types = cols(.default = col_character()),
     na = c("", "NA", "N/A", ".", " ", "NULL"),
     show_col_types = FALSE
   ) %>%
     mutate(Year = y)
+  
   
   # 3) Normalizar variables
  df_year <- df_year %>%
@@ -55,3 +56,4 @@ personas_pobreza_2018_2024 <- archivos_rds %>%
   map_dfr(readRDS)
 
 saveRDS(personas_pobreza_2018_2024, file = file.path(ruta, "personas_pobreza_2018_2024.rds"))
+
