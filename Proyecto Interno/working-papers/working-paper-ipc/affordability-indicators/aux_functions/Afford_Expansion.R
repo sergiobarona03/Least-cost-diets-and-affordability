@@ -4,7 +4,7 @@
 #------------------------------------------------#
 
 
-Afford <- function(Hexpense, Model_CoCA = NULL, Model_CoNA = NULL, Model_CoRD = NULL) {
+Afford_expansion <- function(Hexpense, Model_CoCA = NULL, Model_CoNA = NULL, Model_CoRD = NULL) {
   
   # Carga de librerías
   Librerias_base <- c("here", "readxl", "tidyverse", "knitr", "moments", "xgboost", "maditr",
