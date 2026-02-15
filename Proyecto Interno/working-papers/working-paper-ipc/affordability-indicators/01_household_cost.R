@@ -9,7 +9,7 @@ library(FoodpriceR)
 #----------------------------------------------------------------------
 # Directorios
 #----------------------------------------------------------------------
-base_dir <- "C:/Users/Portatil/Desktop/Least-cost-diets-and-affordability/Proyecto Interno"
+base_dir <- "C:\\Users\\danie\\OneDrive\\Escritorio\\Least-cost-diets-and-affordability\\Proyecto Interno\\"
 
 out_dir <- file.path(base_dir, "working-papers/working-paper-ipc/output/least_cost_metrics")
 dir.create(out_dir, recursive = TRUE, showWarnings = FALSE)
@@ -20,6 +20,9 @@ dir.create(tmp_dir, recursive = TRUE, showWarnings = FALSE)
 # panel en tmp_dir (ajusta a rds o csv según lo que uses)
 # panel <- readRDS(file.path(tmp_dir, "panel_city_month_food_1999_2025.rds"))
 panel <- read.csv(file.path(tmp_dir, "panel_city_month_food_1999_2025.csv"))
+
+panel$fecha  <- as.Date(panel$fecha)
+panel$ciudad <- as.character(panel$ciudad)
 
 #----------------------------------------------------------------------
 # Vectores de ciudad y fecha
@@ -110,6 +113,8 @@ res_cona <- list()
 k_coca   <- 1
 k_cona   <- 1
 
+range(date_vector)
+
 for (city.x in city_vector) {
   for (date.x in date_vector) {
 
@@ -121,10 +126,15 @@ for (city.x in city_vector) {
       silent = TRUE
     )
     
-    if (inherits(out, "try-error") || is.null(out)) {
-      message("   -> sin resultado (error o sin datos suficientes).")
+    if (inherits(out, "try-error")) {
+      message("   -> ERROR HCost en: ", city.x, " | ", as.character(date.x))
       next
     }
+    if (is.null(out)) {
+      message("   -> NULL (sin datos suficientes) en: ", city.x, " | ", as.character(date.x))
+      next
+    }
+    
     
     res_coca[[k_coca]] <- out$CoCA
     res_cona[[k_cona]] <- out$CoNA
@@ -132,6 +142,7 @@ for (city.x in city_vector) {
     k_cona <- k_cona + 1
   }
 }
+
 
 # Consolidar en data.frames
 coca_df <- bind_rows(res_coca)

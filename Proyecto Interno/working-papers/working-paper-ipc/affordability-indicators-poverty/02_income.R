@@ -15,7 +15,7 @@ library(janitor)
 #----------------------------------------------------------------------
 # Directorio base
 #----------------------------------------------------------------------
-base_dir <- "C:/Users/sergio.barona/Desktop/Least-cost-diets-and-affordability/Proyecto Interno/"
+base_dir <- "C:\\Users\\danie\\OneDrive\\Escritorio\\Least-cost-diets-and-affordability\\Proyecto Interno\\"
 setwd(base_dir)
 
 dir.create("working-papers/working-paper-ipc/output/incomecol",
@@ -36,7 +36,7 @@ deciles_all  <- list()
 #----------------------------------------------------------------------
 # Loop años
 #----------------------------------------------------------------------
-for(k in 2018:2020){
+for(k in 2018:2024){
   
   cat("Procesando año:", k, "\n")
   
@@ -46,8 +46,23 @@ for(k in 2018:2020){
   personas.aux = readRDS(paste0("Pobreza/personas/personas_pobreza_", k, ".rds")) %>%
     clean_names()
   
+  if("dpto" %in% names(personas.aux) & !("depto" %in% names(personas.aux))){
+    names(personas.aux)[names(personas.aux) == "dpto"] <- "depto"
+  }
+  
   hogares.aux = readRDS(paste0("Pobreza/hogares/hogares_pobreza_", k, ".rds")) %>%
     clean_names()
+ 
+  if("dpto" %in% names(hogares.aux) & !("depto" %in% names(hogares.aux))){
+    names(hogares.aux)[names(hogares.aux) == "dpto"] <- "depto"
+  }
+  
+  if("ingtotarr" %in% names(hogares.aux) & 
+     !("ingtotugarr" %in% names(hogares.aux))){
+    
+    names(hogares.aux)[names(hogares.aux) == "ingtotarr"] <- "ingtotugarr"
+  }
+  
   
   #-------------------------
   # Hogares

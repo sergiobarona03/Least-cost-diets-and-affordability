@@ -14,7 +14,7 @@ library(reshape2)
 #----------------------------------------------------------------------
 # Directorios y función Afford
 #----------------------------------------------------------------------
-base_dir <- "C:/Users/Portatil/Desktop/Least-cost-diets-and-affordability/Proyecto Interno"
+base_dir <- "C:\\Users\\danie\\OneDrive\\Escritorio\\Least-cost-diets-and-affordability\\Proyecto Interno\\"
 setwd(base_dir)
 
 # Función Afford (ajusta ruta si cambia)

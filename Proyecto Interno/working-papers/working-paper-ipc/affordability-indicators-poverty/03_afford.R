@@ -15,7 +15,7 @@ library(janitor)
 #----------------------------------------------------------------------
 # Directorios
 #----------------------------------------------------------------------
-base_dir <- "C:/Users/sergio.barona/Desktop/Least-cost-diets-and-affordability/Proyecto Interno"
+base_dir <- "C:\\Users\\danie\\OneDrive\\Escritorio\\Least-cost-diets-and-affordability\\Proyecto Interno\\"
 setwd(base_dir)
 
 source("working-papers/working-paper-ipc/affordability-indicators/aux_functions/Afford_Expansion.R")
@@ -176,6 +176,8 @@ g_coca_inc <- aff_inc %>%
   filter(model == "CoCA") %>%
   ggplot(aes(x = fecha, y = incidence, color = ciudad)) +
   geom_line(linewidth = 1) +
+  scale_x_date(date_labels = "%Y-%m",
+               date_breaks = "6 months") +
   labs(title = "Incidencia de pobreza de asequibilidad (CoCA)",
        x = "Fecha",
        y = "Incidencia (%)",
@@ -191,6 +193,8 @@ g_cona_inc <- aff_inc %>%
   filter(model == "CoNA") %>%
   ggplot(aes(x = fecha, y = incidence, color = ciudad)) +
   geom_line(linewidth = 1) +
+  scale_x_date(date_labels = "%Y-%m",
+               date_breaks = "6 months") +
   labs(title = "Incidencia de pobreza de asequibilidad (CoNA)",
        x = "Fecha",
        y = "Incidencia (%)",
