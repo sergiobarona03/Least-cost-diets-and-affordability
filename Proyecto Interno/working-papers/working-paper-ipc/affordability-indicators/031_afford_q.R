@@ -8,6 +8,8 @@
 library(tidyverse)
 library(lubridate)
 library(janitor)
+library(scales)
+library(ggsci)
 
 #----------------------------------------------------------------------
 # Directorios
@@ -196,26 +198,104 @@ write.csv(aff_inc, file = file.path(afford_metrics_dir, "Afford_incidence_city_c
 #######################################################################
 ## BLOQUE 3: Gráficas trimestrales
 #######################################################################
+
+#------------------------------------------------------------
+# Estandarización ciudades
+#------------------------------------------------------------
+city_levels <- c("BOGOTA", "CALI", "MEDELLIN")
+
+std_city <- function(x) {
+  x <- as.character(x)
+  dplyr::case_when(
+    x %in% c("BOGOTÁ D.C.", "BOGOTA D.C.", "BOGOTA") ~ "BOGOTA",
+    x %in% c("MEDELLÍN", "MEDELLIN")                 ~ "MEDELLIN",
+    x %in% c("CALI")                                 ~ "CALI",
+    TRUE ~ x
+  )
+}
+
+#------------------------------------------------------------
+# Tema paper 
+#------------------------------------------------------------
+theme_paper <- theme_classic(base_size = 11) +
+  theme(
+    plot.title = element_text(face = "bold", size = 12),
+    axis.title = element_text(size = 11),
+    axis.text  = element_text(size = 10, color = "black"),
+    legend.title = element_text(size = 10),
+    legend.text  = element_text(size = 10),
+    legend.position = "top",
+    legend.justification = "left",
+    panel.grid.major = element_blank(),
+    panel.grid.minor = element_blank(),
+    axis.line = element_line(linewidth = 0.4),
+    axis.ticks = element_line(linewidth = 0.4),
+    plot.margin = margin(6, 6, 6, 6)
+  )
+
+# Escala porcentaje
+y_scale_pct <- scale_y_continuous(
+  labels = label_percent(scale = 1, accuracy = 0.1),
+  expand = expansion(mult = c(0.02, 0.02))
+)
+
+# Paleta consistente
+color_scale <- scale_color_nejm(name = "Ciudad")
+
+#------------------------------------------------------------
+# CoCA - Quarterly
+#------------------------------------------------------------
 g_coca <- aff_inc %>%
   filter(model == "CoCA") %>%
+  mutate(
+    ciudad = factor(std_city(ciudad), levels = city_levels)
+  ) %>%
   ggplot(aes(x = trimestre, y = incidence, color = ciudad, group = ciudad)) +
   geom_line(linewidth = 1) +
-  labs(title = "Incidencia de pobreza de asequibilidad (CoCA) - trimestral",
-       x = "Trimestre", y = "Incidencia (%)", color = "Ciudad") +
-  theme_classic() +
+  y_scale_pct +
+  labs(
+    title = "Affordability Poverty Incidence (CoCA)",
+    x = "Quarter",
+    y = "Incidence"
+  ) +
+  color_scale +
+  theme_paper +
   theme(axis.text.x = element_text(angle = 45, hjust = 1))
 
-ggsave(file.path(afford_metrics_dir, "Afford_Incidence_CoCA_cuartiles_city_time.png"),
-       g_coca, width = 10, height = 5)
+ggsave(
+  file.path(afford_metrics_dir, "Afford_Incidence_CoCA_cuartiles_city_time.png"),
+  g_coca,
+  width = 10,
+  height = 5,
+  dpi = 300,
+  bg = "white"
+)
 
+#------------------------------------------------------------
+# CoNA - Quarterly
+#------------------------------------------------------------
 g_cona <- aff_inc %>%
   filter(model == "CoNA") %>%
+  mutate(
+    ciudad = factor(std_city(ciudad), levels = city_levels)
+  ) %>%
   ggplot(aes(x = trimestre, y = incidence, color = ciudad, group = ciudad)) +
   geom_line(linewidth = 1) +
-  labs(title = "Incidencia de pobreza de asequibilidad (CoNA) - trimestral",
-       x = "Trimestre", y = "Incidencia (%)", color = "Ciudad") +
-  theme_classic() +
+  y_scale_pct +
+  labs(
+    title = "Affordability Poverty Incidence (CoNA)",
+    x = "Quarter",
+    y = "Incidence"
+  ) +
+  color_scale +
+  theme_paper +
   theme(axis.text.x = element_text(angle = 45, hjust = 1))
 
-ggsave(file.path(afford_metrics_dir, "Afford_Incidence_CoNA_cuartiles_city_time.png"),
-       g_cona, width = 10, height = 5)
+ggsave(
+  file.path(afford_metrics_dir, "Afford_Incidence_CoNA_cuartiles_city_time.png"),
+  g_cona,
+  width = 10,
+  height = 5,
+  dpi = 300,
+  bg = "white"
+)

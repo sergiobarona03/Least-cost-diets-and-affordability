@@ -11,6 +11,8 @@ library(tidyverse)
 library(FoodpriceR)
 library(lubridate)
 library(janitor)
+library(scales)
+library(ggsci)
 
 #----------------------------------------------------------------------
 # Directorios
@@ -170,37 +172,103 @@ write.csv(aff_inc,
 #######################################################################
 ## BLOQUE 3: Gráficas
 #######################################################################
+# Orden de ciudades
+city_levels <- c("BOGOTA", "CALI", "MEDELLIN")
 
+aff_inc <- aff_inc %>%
+  mutate(
+    ciudad = as.character(ciudad),
+    ciudad = case_when(
+      ciudad %in% c("BOGOTÁ D.C.", "BOGOTA D.C.", "BOGOTA") ~ "BOGOTA",
+      ciudad %in% c("MEDELLÍN", "MEDELLIN")                 ~ "MEDELLIN",
+      ciudad %in% c("CALI")                                 ~ "CALI",
+      TRUE ~ ciudad
+    ),
+    ciudad = factor(ciudad, levels = city_levels),
+    fecha  = as.Date(fecha)
+  )
+
+# Tema base
+theme_paper <- theme_classic(base_size = 11) +
+  theme(
+    plot.title = element_text(face = "bold", size = 12),
+    axis.title = element_text(size = 11),
+    axis.text  = element_text(size = 10, color = "black"),
+    legend.title = element_text(size = 10),
+    legend.text  = element_text(size = 10),
+    legend.position = "top",
+    legend.justification = "left",
+    panel.grid.major = element_blank(),
+    panel.grid.minor = element_blank(),
+    axis.line = element_line(linewidth = 0.4),
+    axis.ticks = element_line(linewidth = 0.4),
+    plot.margin = margin(6, 6, 6, 6)
+  )
+
+# Escalas X
+x_scale_6m <- scale_x_date(
+  date_breaks = "6 months",
+  date_labels = "%Y-%m",
+  expand = expansion(mult = c(0.01, 0.01))
+)
+
+# Y como %
+y_scale_pct <- scale_y_continuous(
+  labels = label_percent(scale = 1, accuracy = 0.1),
+  expand = expansion(mult = c(0.02, 0.02))
+)
+
+# Paleta
+color_scale <- scale_color_nejm(name = "Ciudad")  # alternativa: scale_color_aaas()
+
+#----------------------------------------------------------------------
 # CoCA
+#----------------------------------------------------------------------
+
 g_coca_inc <- aff_inc %>%
-  filter(model == "CoCA") %>%
-  ggplot(aes(x = fecha, y = incidence, color = ciudad)) +
-  geom_line(linewidth = 1) +
-  scale_x_date(date_labels = "%Y-%m",
-               date_breaks = "6 months") +
-  labs(title = "Incidencia de pobreza de asequibilidad (CoCA)",
-       x = "Fecha",
-       y = "Incidencia (%)",
-       color = "Ciudad") +
-  theme_classic()
+  filter(model == "CoCA", !is.na(ciudad), !is.na(fecha), !is.na(incidence)) %>%
+  arrange(ciudad, fecha) %>%
+  ggplot(aes(x = fecha, y = incidence, color = ciudad, group = ciudad)) +
+  geom_line(linewidth = 0.9) +
+  x_scale_6m +
+  y_scale_pct +
+  labs(
+    title = "Incidencia de pobreza de asequibilidad (CoCA)",
+    x = NULL,
+    y = "Incidencia"
+  ) +
+  color_scale +
+  theme_paper +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
 
-ggsave(file.path(afford_metrics_dir,
-                 "Afford_Incidence_CoCA_city_time.png"),
-       g_coca_inc, width = 10, height = 5)
+ggsave(
+  filename = file.path(afford_metrics_dir, "Afford_Incidence_CoCA_city_time.png"),
+  plot = g_coca_inc,
+  width = 10, height = 5, dpi = 300, bg = "white"
+)
 
+#----------------------------------------------------------------------
 # CoNA
-g_cona_inc <- aff_inc %>%
-  filter(model == "CoNA") %>%
-  ggplot(aes(x = fecha, y = incidence, color = ciudad)) +
-  geom_line(linewidth = 1) +
-  scale_x_date(date_labels = "%Y-%m",
-               date_breaks = "6 months") +
-  labs(title = "Incidencia de pobreza de asequibilidad (CoNA)",
-       x = "Fecha",
-       y = "Incidencia (%)",
-       color = "Ciudad") +
-  theme_classic()
+#----------------------------------------------------------------------
 
-ggsave(file.path(afford_metrics_dir,
-                 "Afford_Incidence_CoNA_city_time.png"),
-       g_cona_inc, width = 10, height = 5)
+g_cona_inc <- aff_inc %>%
+  filter(model == "CoNA", !is.na(ciudad), !is.na(fecha), !is.na(incidence)) %>%
+  arrange(ciudad, fecha) %>%
+  ggplot(aes(x = fecha, y = incidence, color = ciudad, group = ciudad)) +
+  geom_line(linewidth = 0.9) +
+  x_scale_6m +
+  y_scale_pct +
+  labs(
+    title = "Incidencia de pobreza de asequibilidad (CoNA)",
+    x = NULL,
+    y = "Incidencia"
+  ) +
+  color_scale +
+  theme_paper +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+ggsave(
+  filename = file.path(afford_metrics_dir, "Afford_Incidence_CoNA_city_time.png"),
+  plot = g_cona_inc,
+  width = 10, height = 5, dpi = 300, bg = "white"
+)

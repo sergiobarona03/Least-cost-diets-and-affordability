@@ -5,6 +5,10 @@ library(devtools)
 library(tidyverse)
 library(FoodpriceR)
 library(lubridate)
+library(tidyverse)
+library(stringr)
+library(scales)
+library(ggsci)
 
 #----------------------------------------------------------------------
 # Directorios
@@ -17,7 +21,6 @@ dir.create(out_dir, recursive = TRUE, showWarnings = FALSE)
 tmp_dir <- file.path(out_dir, "tmp")
 dir.create(tmp_dir, recursive = TRUE, showWarnings = FALSE)
 
-# ✅ Directorio donde vas a guardar (te faltaba en tu script final)
 afford_dir <- file.path(
   base_dir,
   "working-papers/working-paper-ipc/output/affordability"
@@ -199,41 +202,133 @@ write.csv(cona_quarter, file = file.path(afford_dir, "CoNA_city_cuartiles.csv"),
 # Gráficos TRIMESTRALES
 #   per_capita_month (mediana trimestral) por ciudad y trimestre
 #----------------------------------------------------------------------
+#-----------------------------
+# Helpers
+#-----------------------------
+to_quarter_date <- function(x) {
+  x <- gsub("\\s+", "", as.character(x))
+  year <- as.integer(str_extract(x, "^\\d{4}"))
+  q    <- as.integer(str_extract(x, "(?<=Q)\\d+"))
+  as.Date(sprintf("%d-%02d-01", year, (q - 1) * 3 + 1))
+}
 
-# CoCA
-g_coca_q <- ggplot(coca_quarter,
-                   aes(x = trimestre, y = per_capita_month, color = ciudad, group = ciudad)) +
-  geom_line() +
-  labs(
-    title = "CoCA: Costo per cápita (mediana trimestral)",
-    x = "Trimestre",
-    y = "Costo per cápita",
-    color = "Ciudad"
-  ) +
-  theme_classic() +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+std_city <- function(x) {
+  x <- as.character(x)
+  dplyr::case_when(
+    x %in% c("BOGOTÁ D.C.", "BOGOTA D.C.", "BOGOTA") ~ "BOGOTA",
+    x %in% c("MEDELLÍN", "MEDELLIN")                 ~ "MEDELLIN",
+    x %in% c("CALI")                                 ~ "CALI",
+    TRUE ~ x
+  )
+}
 
-ggsave(
-  filename = file.path(afford_dir, "CoCA_per_capita_cuartiles_city_time.png"),
-  plot     = g_coca_q,
-  width    = 9, height = 5
+city_levels <- c("BOGOTA", "CALI", "MEDELLIN")
+
+#-----------------------------
+# Prepare data 
+#-----------------------------
+coca_quarter <- coca_quarter %>%
+  mutate(
+    ciudad   = factor(std_city(ciudad), levels = city_levels),
+    tri_date = to_quarter_date(trimestre)
+  ) %>%
+  arrange(ciudad, tri_date)
+
+cona_quarter <- cona_quarter %>%
+  mutate(
+    ciudad   = factor(std_city(ciudad), levels = city_levels),
+    tri_date = to_quarter_date(trimestre)
+  ) %>%
+  arrange(ciudad, tri_date)
+
+#-----------------------------
+# Paper theme + scales
+#-----------------------------
+theme_paper <- theme_classic(base_size = 12) +
+  theme(
+    plot.title = element_text(face = "bold", size = 14),
+    axis.title = element_text(size = 12),
+    axis.text  = element_text(size = 10, color = "black"),
+    legend.position = "top",
+    legend.title = element_text(size = 11),
+    legend.text  = element_text(size = 10),
+    axis.line = element_line(linewidth = 0.4),
+    axis.ticks = element_line(linewidth = 0.4),
+    plot.margin = margin(8, 8, 8, 8)
+  )
+
+color_scale_city <- scale_color_nejm(name = "City")
+
+y_scale_cost <- scale_y_continuous(
+  labels = label_number(big.mark = ","),
+  expand = expansion(mult = c(0.02, 0.05))
 )
 
-# CoNA
-g_cona_q <- ggplot(cona_quarter,
-                   aes(x = trimestre, y = per_capita_month, color = ciudad, group = ciudad)) +
-  geom_line() +
+# Etiquetas "YYYY Q#"
+quarter_label <- function(x) {
+  paste0(year(x), " Q", quarter(x))
+}
+
+# Breaks: cada 2 años 
+x_scale_quarter_paper <- scale_x_date(
+  date_breaks = "2 years",
+  labels = quarter_label,
+  expand = expansion(mult = c(0.01, 0.01))
+)
+
+
+#======================================================================
+# CoCA – Quarterly Median Per Capita Cost
+#======================================================================
+g_coca_q <- ggplot(
+  coca_quarter,
+  aes(x = tri_date, y = per_capita_month, color = ciudad, group = ciudad)
+) +
+  geom_line(linewidth = 1.1) +
+  color_scale_city +
+  x_scale_quarter_paper +
+  y_scale_cost +
   labs(
-    title = "CoNA: Costo per cápita (mediana trimestral)",
-    x = "Trimestre",
-    y = "Costo per cápita",
-    color = "Ciudad"
+    title = "CoCA: Quarterly Median Per Capita Cost",
+    x = "Quarter",
+    y = "Per Capita Cost"
   ) +
-  theme_classic() +
+  theme_paper +
   theme(axis.text.x = element_text(angle = 45, hjust = 1))
 
 ggsave(
-  filename = file.path(afford_dir, "CoNA_per_capita_cuartiles_city_time.png"),
+  filename = file.path(afford_dir, "CoCA_per_capita_quarter_city_time.png"),
+  plot     = g_coca_q,
+  width    = 9,
+  height   = 5,
+  dpi      = 300,
+  bg       = "white"
+)
+
+#======================================================================
+# CoNA – Quarterly Median Per Capita Cost
+#======================================================================
+g_cona_q <- ggplot(
+  cona_quarter,
+  aes(x = tri_date, y = per_capita_month, color = ciudad, group = ciudad)
+) +
+  geom_line(linewidth = 1.1) +
+  color_scale_city +
+  x_scale_quarter_paper +
+  y_scale_cost +
+  labs(
+    title = "CoNA: Quarterly Median Per Capita Cost",
+    x = "Quarter",
+    y = "Per Capita Cost"
+  ) +
+  theme_paper +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+ggsave(
+  filename = file.path(afford_dir, "CoNA_per_capita_quarter_city_time.png"),
   plot     = g_cona_q,
-  width    = 9, height = 5
+  width    = 9,
+  height   = 5,
+  dpi      = 300,
+  bg       = "white"
 )

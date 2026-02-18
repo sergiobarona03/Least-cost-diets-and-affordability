@@ -227,50 +227,108 @@ write.csv(aff_inc_q,
 ## BLOQUE 3: Gráficas trimestrales de incidencia CoCA y CoNA
 #######################################################################
 
-#--------------------------
-# Gráfica 1: CoCA trimestral
-#--------------------------
-aff_inc_q_coca <- aff_inc_q %>%
-  filter(model == "CoCA")
+# Estandarización ciudades 
+city_levels <- c("BOGOTA", "CALI", "MEDELLIN")
 
-g_coca_inc_q <- ggplot(aff_inc_q_coca,
-                       aes(x = quarter_date, y = incidence, color = ciudad)) +
-  geom_line() +
+aff_inc_q <- aff_inc_q %>%
+  mutate(
+    ciudad = as.character(ciudad),
+    ciudad = case_when(
+      ciudad %in% c("BOGOTÁ D.C.", "BOGOTA D.C.", "BOGOTA") ~ "BOGOTA",
+      ciudad %in% c("MEDELLÍN", "MEDELLIN")                 ~ "MEDELLIN",
+      ciudad %in% c("CALI")                                 ~ "CALI",
+      TRUE ~ ciudad
+    ),
+    ciudad = factor(ciudad, levels = city_levels),
+    quarter_date = as.Date(quarter_date)
+  )
+
+# Tema base 
+theme_paper <- theme_classic(base_size = 11) +
+  theme(
+    plot.title = element_text(face = "bold", size = 12),
+    axis.title = element_text(size = 11),
+    axis.text  = element_text(size = 10, color = "black"),
+    legend.title = element_text(size = 10),
+    legend.text  = element_text(size = 10),
+    legend.position = "top",
+    legend.justification = "left",
+    panel.grid.major = element_blank(),
+    panel.grid.minor = element_blank(),
+    axis.line = element_line(linewidth = 0.4),
+    axis.ticks = element_line(linewidth = 0.4),
+    plot.margin = margin(6, 6, 6, 6)
+  )
+
+# Escala
+x_scale_q <- scale_x_date(
+  date_breaks = "1 year",
+  date_labels = "%Y",
+  expand = expansion(mult = c(0.01, 0.01))
+)
+
+y_scale_pct <- scale_y_continuous(
+  labels = label_percent(scale = 1, accuracy = 0.1),
+  expand = expansion(mult = c(0.02, 0.02))
+)
+
+#------------------------------------------------------------
+# 3) Paleta (MISMA que tu bloque mensual)
+#------------------------------------------------------------
+color_scale <- scale_color_nejm(name = "Ciudad")  # alternativa: scale_color_aaas()
+
+#------------------------------------------------------------
+# CoCA trimestral
+#------------------------------------------------------------
+g_coca_inc_q <- aff_inc_q %>%
+  filter(model == "CoCA", !is.na(ciudad), !is.na(quarter_date), !is.na(incidence)) %>%
+  arrange(ciudad, quarter_date) %>%
+  ggplot(aes(x = quarter_date, y = incidence, color = ciudad, group = ciudad)) +
+  geom_line(linewidth = 0.9) +
+  x_scale_q +
+  y_scale_pct +
   labs(
     title = "Incidencia trimestral de pobreza de asequibilidad (CoCA)",
-    x = "Trimestre",
-    y = "Incidencia (%)",
-    color = "Ciudad"
+    x = NULL,
+    y = "Incidencia"
   ) +
-  theme_classic()
+  color_scale +
+  theme_paper +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
 
 ggsave(
   filename = file.path(afford_metrics_q_dir, "Afford_Incidence_CoCA_quarter_city.png"),
   plot     = g_coca_inc_q,
   width    = 10,
-  height   = 5
+  height   = 5,
+  dpi      = 300,
+  bg       = "white"
 )
 
-#--------------------------
-# Gráfica 2: CoNA trimestral
-#--------------------------
-aff_inc_q_cona <- aff_inc_q %>%
-  filter(model == "CoNA")
-
-g_cona_inc_q <- ggplot(aff_inc_q_cona,
-                       aes(x = quarter_date, y = incidence, color = ciudad)) +
-  geom_line() +
+#------------------------------------------------------------
+# CoNA trimestral
+#------------------------------------------------------------
+g_cona_inc_q <- aff_inc_q %>%
+  filter(model == "CoNA", !is.na(ciudad), !is.na(quarter_date), !is.na(incidence)) %>%
+  arrange(ciudad, quarter_date) %>%
+  ggplot(aes(x = quarter_date, y = incidence, color = ciudad, group = ciudad)) +
+  geom_line(linewidth = 0.9) +
+  x_scale_q +
+  y_scale_pct +
   labs(
     title = "Incidencia trimestral de pobreza de asequibilidad (CoNA)",
-    x = "Trimestre",
-    y = "Incidencia (%)",
-    color = "Ciudad"
+    x = NULL,
+    y = "Incidencia"
   ) +
-  theme_classic()
+  color_scale +
+  theme_paper +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
 
 ggsave(
   filename = file.path(afford_metrics_q_dir, "Afford_Incidence_CoNA_quarter_city.png"),
   plot     = g_cona_inc_q,
   width    = 10,
-  height   = 5
+  height   = 5,
+  dpi      = 300,
+  bg       = "white"
 )

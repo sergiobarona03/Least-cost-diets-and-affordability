@@ -3,13 +3,10 @@
 #######################################################################
 
 #----------------------------------------------------------------------
-# Paquetes
+# Paquetes (solo los necesarios)
 #----------------------------------------------------------------------
-library(devtools)
 library(tidyverse)
-library(FoodpriceR)
 library(lubridate)
-library(reshape2)
 library(janitor)
 library(readxl)
 
@@ -37,25 +34,25 @@ prices_df <- read_excel(excel_path) %>%
   clean_names()
 
 #----------------------------------------------------------------------
-# Crear fecha mensual desde anio_mes (NO se toca después)
+# Crear fecha mensual desde anio_mes 
 #----------------------------------------------------------------------
 prices_df <- prices_df %>%
-  mutate(fecha = lubridate::ym(anio_mes)) %>%
-  filter(!is.na(fecha))
+  dplyr::mutate(fecha = lubridate::ym(anio_mes)) %>%
+  dplyr::filter(!is.na(fecha))
 
 #----------------------------------------------------------------------
-# Asegurar numérico: precio_real_base2018_12
+# Asegurar numérico: precio_real_base2018_12 
 #----------------------------------------------------------------------
 to_num <- function(x){
   as.numeric(gsub(",", ".", as.character(x)))
 }
 
 prices_df <- prices_df %>%
-  mutate(precio_real_base2018_12 = to_num(precio_real_base2018_12)) %>%
-  filter(!is.na(precio_real_base2018_12))
+  dplyr::mutate(precio_real_base2018_12 = to_num(precio_real_base2018_12)) %>%
+  dplyr::filter(!is.na(precio_real_base2018_12))
 
 #----------------------------------------------------------------------
-# Helper: nombre de archivo seguro
+# Helper: nombre de archivo 
 #----------------------------------------------------------------------
 safe_name <- function(x){
   x %>%
@@ -71,8 +68,7 @@ safe_name <- function(x){
 }
 
 #----------------------------------------------------------------------
-# SOLO estos 4 alimentos: promediar duplicados intra-mes
-# (el resto queda tal cual)
+# 4 alimentos 
 #----------------------------------------------------------------------
 foods_fix <- c(
   "HARINA DE TRIGO",
@@ -81,26 +77,10 @@ foods_fix <- c(
   "FECULA DE MAIZ"
 )
 
-# 1) Base SOLO de esos 4, promediada por mes
-prices_fix <- prices_df %>%
-  filter(articulo %in% foods_fix) %>%
-  group_by(nombre_ciudad, articulo, subclase6, fecha) %>%
-  summarise(precio_real_base2018_12 = mean(precio_real_base2018_12, na.rm = TRUE),
-            .groups = "drop")
-
-# 2) Base de TODOS los demás alimentos, sin tocar
-prices_rest <- prices_df %>%
-  filter(!(articulo %in% foods_fix)) %>%
-  select(nombre_ciudad, articulo, subclase6, fecha, precio_real_base2018_12)
-
-# 3) Base final para graficar (TODOS los alimentos)
-prices_plot <- bind_rows(prices_rest, prices_fix) %>%
-  arrange(nombre_ciudad, articulo, fecha)
-
 #----------------------------------------------------------------------
-# Loop por ciudad y por alimento (sin filtrar cities_keep)
+# Loop por ciudad y por alimento
 #----------------------------------------------------------------------
-ciudades <- prices_plot %>% distinct(nombre_ciudad) %>% pull(nombre_ciudad)
+ciudades <- prices_df %>% dplyr::distinct(nombre_ciudad) %>% dplyr::pull(nombre_ciudad)
 
 for (cc in ciudades) {
   
@@ -115,21 +95,23 @@ for (cc in ciudades) {
   dir_city <- file.path(out_dir, cc_folder)
   dir.create(dir_city, recursive = TRUE, showWarnings = FALSE)
   
-  df_city <- prices_plot %>%
-    filter(nombre_ciudad == cc) %>%
-    arrange(fecha)
+  df_city <- prices_df %>%
+    dplyr::filter(nombre_ciudad == cc) %>%
+    dplyr::arrange(fecha)
   
-  alimentos <- df_city %>% distinct(articulo) %>% pull(articulo)
+  alimentos <- df_city %>% dplyr::distinct(articulo) %>% dplyr::pull(articulo)
   
   for (a in alimentos) {
     
     df_a <- df_city %>%
-      filter(articulo == a) %>%
-      arrange(fecha)
+      dplyr::filter(articulo == a) %>%
+      dplyr::arrange(fecha)
     
-    if (nrow(df_a) < 6) next
+    if (!(a %in% foods_fix) && nrow(df_a) < 6) next
     
-    subclase_txt <- df_a %>% distinct(subclase6) %>% pull(subclase6)
+    if (nrow(df_a) < 2) next
+    
+    subclase_txt <- df_a %>% dplyr::distinct(subclase6) %>% dplyr::pull(subclase6)
     subclase_txt <- subclase_txt[!is.na(subclase_txt)][1]
     if (is.na(subclase_txt)) subclase_txt <- "NA"
     
@@ -155,5 +137,4 @@ for (cc in ciudades) {
 }
 
 cat("✅ Listo. Gráficos guardados en: ", file.path(base_dir, out_dir), "\n")
-
 
