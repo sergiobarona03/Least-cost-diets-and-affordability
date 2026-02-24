@@ -8,7 +8,7 @@ source("working-papers/working-paper-ipc/least-cost-metrics/00_config.R")
 panel <- readRDS(file.path(tmp_dir, "panel_city_month_food_1999_2025.rds"))
 
 panel2 <- panel %>%
-  rename(
+  dplyr::rename(
     Energy = energia_kcal,
     Protein = proteina_g,
     Lipids = lipidos_g,
@@ -63,7 +63,7 @@ for (cc in sort(unique(panel2$ciudad))) {
     # collapse duplicates by Food (avoids LP problems)
     df.aux <- df.aux %>%
       group_by(Food) %>%
-      summarise(
+      dplyr::summarise(
         Price_100g = mean(Price_100g, na.rm = TRUE),
         Serving = 100,
         across(all_of(nutr_cols), ~ mean(.x, na.rm = TRUE)),

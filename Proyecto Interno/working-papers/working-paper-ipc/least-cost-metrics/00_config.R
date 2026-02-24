@@ -15,7 +15,7 @@ suppressPackageStartupMessages({
 # -----------------------------
 # Paths (EDIT ONLY THIS BLOCK)
 # -----------------------------
-base_dir <- "C:/Users/sergio.barona/Desktop/Least-cost-diets-and-affordability/Proyecto Interno"
+base_dir <- "C:\\Users\\danie\\OneDrive\\Escritorio\\Least-cost-diets-and-affordability\\Proyecto Interno\\"
 
 # Extended prices (from IPC script)
 in_prices_ext <- file.path(

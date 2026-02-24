@@ -33,13 +33,11 @@ dir.create(afford_metrics_dir, recursive = TRUE, showWarnings = FALSE)
 #----------------------------------------------------------------------
 #  Cargar IncomeCol (archivos anuales)
 #----------------------------------------------------------------------
-
 income_files <- list.files(income_dir,
                            pattern = "IncomeCol_.*\\.rds$",
                            full.names = TRUE)
 
 income_list <- lapply(income_files, readRDS)
-
 income_df <- bind_rows(income_list)
 
 #-------------------------
@@ -53,19 +51,25 @@ income_df <- income_df %>%
   )
 
 #----------------------------------------------------------------------
-#  Cargar CoCA y CoNA
+#  Cargar CoCA, CoNA y CoRD  <<< NUEVO
 #----------------------------------------------------------------------
-
 coca_df <- read.csv(file.path(afford_cost_dir, "CoCA_city_month.csv"))
 cona_df <- read.csv(file.path(afford_cost_dir, "CoNA_city_month.csv"))
 
+# CoRD puede existir o no: lo cargamos "suave" para no romper nada
+cord_path_csv <- file.path(afford_cost_dir, "CoRD_city_month.csv")
+cord_df <- NULL
+if (file.exists(cord_path_csv)) {
+  cord_df <- read.csv(cord_path_csv)
+}
+
 coca_df$fecha <- as.Date(coca_df$fecha)
 cona_df$fecha <- as.Date(cona_df$fecha)
+if (!is.null(cord_df)) cord_df$fecha <- as.Date(cord_df$fecha)
 
 #----------------------------------------------------------------------
 # Vectores ciudad–fecha
 #----------------------------------------------------------------------
-
 income_df$ciudad[income_df$ciudad == "MEDELLIN"] = "MEDELLÍN"
 income_df$ciudad[income_df$ciudad == "BOGOTA"] = "BOGOTÁ D.C."
 
@@ -97,7 +101,7 @@ for (city.x in city_vector) {
     if (nrow(inc_aux) == 0) next
     
     #-------------------------
-    # Filtrar CoCA y CoNA
+    # Filtrar CoCA, CoNA y CoRD
     #-------------------------
     coca_aux <- coca_df %>%
       filter(ciudad == city.x,
@@ -107,7 +111,11 @@ for (city.x in city_vector) {
       filter(ciudad == city.x,
              fecha  == fecha.x)
     
-    if (nrow(coca_aux) == 0 | nrow(cona_aux) == 0) next
+    cord_aux <- cord_df %>%
+      filter(ciudad == city.x,
+             fecha  == fecha.x)
+    
+    if (nrow(coca_aux) == 0 | nrow(cona_aux) == 0 | nrow(cord_aux) == 0) next
     
     #-------------------------
     # Ejecutar Afford
@@ -116,7 +124,8 @@ for (city.x in city_vector) {
       Afford_expansion(
         Hexpense   = inc_aux,
         Model_CoCA = coca_aux,
-        Model_CoNA = cona_aux
+        Model_CoNA = cona_aux,
+        Model_CoRD = cord_aux   
       ),
       silent = TRUE
     )
@@ -139,7 +148,6 @@ afford_df <- bind_rows(res_afford)
 #----------------------------------------------------------------------
 # Guardar resultados detallados
 #----------------------------------------------------------------------
-
 saveRDS(afford_df,
         file = file.path(afford_metrics_dir, "Afford_city_month.rds"))
 
@@ -219,12 +227,11 @@ y_scale_pct <- scale_y_continuous(
 )
 
 # Paleta
-color_scale <- scale_color_nejm(name = "Ciudad")  # alternativa: scale_color_aaas()
+color_scale <- scale_color_nejm(name = "City")
 
 #----------------------------------------------------------------------
 # CoCA
 #----------------------------------------------------------------------
-
 g_coca_inc <- aff_inc %>%
   filter(model == "CoCA", !is.na(ciudad), !is.na(fecha), !is.na(incidence)) %>%
   arrange(ciudad, fecha) %>%
@@ -233,9 +240,9 @@ g_coca_inc <- aff_inc %>%
   x_scale_6m +
   y_scale_pct +
   labs(
-    title = "Incidencia de pobreza de asequibilidad (CoCA)",
+    title = "Affordability poverty incidence (CoCA)",
     x = NULL,
-    y = "Incidencia"
+    y = "Incidence"
   ) +
   color_scale +
   theme_paper +
@@ -250,7 +257,6 @@ ggsave(
 #----------------------------------------------------------------------
 # CoNA
 #----------------------------------------------------------------------
-
 g_cona_inc <- aff_inc %>%
   filter(model == "CoNA", !is.na(ciudad), !is.na(fecha), !is.na(incidence)) %>%
   arrange(ciudad, fecha) %>%
@@ -259,9 +265,9 @@ g_cona_inc <- aff_inc %>%
   x_scale_6m +
   y_scale_pct +
   labs(
-    title = "Incidencia de pobreza de asequibilidad (CoNA)",
+    title = "Affordability poverty incidence (CoNA)",
     x = NULL,
-    y = "Incidencia"
+    y = "Incidence"
   ) +
   color_scale +
   theme_paper +
@@ -270,5 +276,30 @@ g_cona_inc <- aff_inc %>%
 ggsave(
   filename = file.path(afford_metrics_dir, "Afford_Incidence_CoNA_city_time.png"),
   plot = g_cona_inc,
+  width = 10, height = 5, dpi = 300, bg = "white"
+)
+
+#----------------------------------------------------------------------
+# CoRD
+#----------------------------------------------------------------------
+g_cord_inc <- aff_inc %>%
+  filter(model == "CoRD", !is.na(ciudad), !is.na(fecha), !is.na(incidence)) %>%
+  arrange(ciudad, fecha) %>%
+  ggplot(aes(x = fecha, y = incidence, color = ciudad, group = ciudad)) +
+  geom_line(linewidth = 0.9) +
+  x_scale_6m +
+  y_scale_pct +
+  labs(
+    title = "Affordability poverty incidence (CoRD)",
+    x = NULL,
+    y = "Incidence"
+  ) +
+  color_scale +
+  theme_paper +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+ggsave(
+  filename = file.path(afford_metrics_dir, "Afford_Incidence_CoRD_city_time.png"),
+  plot = g_cord_inc,
   width = 10, height = 5, dpi = 300, bg = "white"
 )

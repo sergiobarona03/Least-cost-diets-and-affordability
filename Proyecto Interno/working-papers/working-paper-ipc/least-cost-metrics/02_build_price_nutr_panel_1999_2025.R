@@ -6,6 +6,22 @@
 
 source("working-papers/working-paper-ipc/least-cost-metrics/00_config.R")
 
+suppressPackageStartupMessages({
+  library(tidyverse)
+  library(readxl)
+  library(janitor)
+  library(lubridate)
+})
+
+# ------------------------------------------------------------
+# Helper: first non-missing character value
+# ------------------------------------------------------------
+first_non_na <- function(x) {
+  x <- x[!is.na(x) & x != ""]
+  if (length(x) == 0) return(NA_character_)
+  x[1]
+}
+
 # 1) Load extended prices (from IPC)
 prices_ext <- readRDS(in_prices_ext)
 
@@ -34,14 +50,28 @@ if (!("codigo_articulo" %in% names(prices_ext))) {
       articulo = as.character(articulo)
     ) %>%
     group_by(articulo) %>%
-    summarise(codigo_articulo = mode1(codigo_articulo), .groups = "drop")
+    dplyr::summarise(codigo_articulo = mode1(codigo_articulo), .groups = "drop")
   
   prices_ext <- prices_ext %>%
     left_join(dane_map, by = "articulo")
 }
 
-# 3) Load tcac master
+# 3) Load tcac master (must already include Group + Subgroup)
 tcac_master <- readRDS(file.path(tmp_dir, "tcac_master.rds"))
+
+# If tcac_master still has grupos_gabas/subgrupos_gabas, normalize names
+if (all(c("grupos_gabas","subgrupos_gabas") %in% names(tcac_master)) &&
+    !all(c("Group","Subgroup") %in% names(tcac_master))) {
+  tcac_master <- tcac_master %>%
+    rename(Group = grupos_gabas, Subgroup = subgrupos_gabas)
+}
+
+# Sanity: ensure expected columns exist
+need_tcac_cols <- c("codigo_articulo","articulo","parte_comestible_percent","Group","Subgroup")
+miss_tcac <- setdiff(need_tcac_cols, names(tcac_master))
+if (length(miss_tcac) > 0) {
+  stop("tcac_master missing required columns: ", paste(miss_tcac, collapse = ", "))
+}
 
 # 4) Merge prices + tcac
 panel <- prices_ext %>%
@@ -50,13 +80,15 @@ panel <- prices_ext %>%
 
 # Diagnostics on nutrition merge
 diag <- panel %>%
-  summarise(
+  dplyr::summarise(
     pct_missing_pc = mean(is.na(parte_comestible_percent)) * 100,
-    pct_missing_energy = mean(is.na(energia_kcal)) * 100
+    pct_missing_energy = if ("energia_kcal" %in% names(panel)) mean(is.na(energia_kcal)) * 100 else NA_real_
   )
 
 message("Missing parte_comestible_percent (%): ", round(diag$pct_missing_pc, 2))
-message("Missing energia_kcal (%): ", round(diag$pct_missing_energy, 2))
+if (!is.na(diag$pct_missing_energy)) {
+  message("Missing energia_kcal (%): ", round(diag$pct_missing_energy, 2))
+}
 
 # 5) Build price variables:
 # precio_final is per 500g (from your retail normalization).
@@ -78,6 +110,11 @@ panel <- panel %>%
 
 # Optional: exclude ultraprocessed / condiments / composites (your list)
 alimentos_excluir <- c(
+  # --- AZUCARES (cambio metodológico CoRD)
+  "AZÚCAR NATURAL O MORENA",
+  "AZÚCAR REFINADA",
+  
+  # --- Lista original
   "AREPAS  PRECOCIDAS", "AREPAS RELLENAS CON ALGO", "BOCADILLOS",
   "CEREAL ALIMENTO PARA BEBÉ", "CEREAL PARA DESAYUNO", "CHOCOLATE INSTANTANEO",
   "CHORIZO", "GALLETAS DE SAL", "GALLETAS DULCES", "GALLETAS INTEGRALES",
@@ -89,7 +126,7 @@ alimentos_excluir <- c(
   "CILANTRO", "COLOR", "COMINOS", "LAUREL", "MOSTAZA",
   "PIMIENTA", "TOMILLO", "REVUELTO VERDE",
   "ALMUERZO CORRIENTE O EJECUTIVO", "ALMUERZO ESPECIAL O A LA CARTA",
-  "CHOCOLATE EN PASTA", "CAFÉ INSTANTANEO", "COMBOS",
+  "CHOCOLATE EN PASTA", "CAFÉ INSTANTANEO", "CAFÉ MOLIDO", "COMBOS",
   "CREMAS", "ENSALADA  DE FRUTAS", "QUESO CREMA", "TINTO",
   "HAMBURGUESA", "KUMIS", "JUGOS NATURALES", "SUERO"
 )
@@ -97,19 +134,29 @@ alimentos_excluir <- c(
 panel <- panel %>%
   filter(!articulo %in% alimentos_excluir)
 
-# 6) Collapse duplicates per city-month-food (safe, like your Cali approach)
+# 6) Collapse duplicates per city-month-food (safe, keep Group/Subgroup)
 panel <- panel %>%
   group_by(ciudad, fecha, ano, mes_num, articulo, codigo_articulo) %>%
-  summarise(
+  dplyr::summarise(
+    # Keep GABAS classifications
+    Group = first_non_na(Group),
+    Subgroup = first_non_na(Subgroup),
+    
+    # Price variables
     precio_100g = mean(precio_100g, na.rm = TRUE),
     precio_500g = mean(precio_500g, na.rm = TRUE),
     pc = mean(pc, na.rm = TRUE),
-    across(where(is.numeric) & !any_of(c("precio_100g","precio_500g","pc")),
-           ~ mean(.x, na.rm = TRUE)),
+    
+    # All other numeric columns (nutrients, edible portion raw if present, etc.)
+    across(
+      where(is.numeric) & !any_of(c("precio_100g","precio_500g","pc")),
+      ~ mean(.x, na.rm = TRUE)
+    ),
     .groups = "drop"
   )
 
+# 7) Save outputs
 saveRDS(panel, file.path(tmp_dir, "panel_city_month_food_1999_2025.rds"))
 write_csv(panel, file.path(tmp_dir, "panel_city_month_food_1999_2025.csv"))
 
-message("Saved panel to tmp_dir.")
+message("Saved panel to tmp_dir (incluye Group/Subgroup).")
