@@ -1,274 +1,266 @@
 #######################################################################
-## Afford trimestral: costos promediados y hogares agrupados por trimestre
-#######################################################################
-
-#######################################################################
-## Afford trimestral: costos promediados y hogares agrupados por trimestre
-## + CoRD (igual que CoCA y CoNA)
+## Afford TRIMESTRAL: Income trimestral + CoCA/CoNA/CoRD trimestral
 #######################################################################
 
 #----------------------------------------------------------------------
 # Paquetes
 #----------------------------------------------------------------------
-library(devtools)
 library(tidyverse)
-library(FoodpriceR)
 library(lubridate)
-library(reshape2)
+library(janitor)
 library(scales)
 library(ggsci)
 
 #----------------------------------------------------------------------
-# Directorios y función Afford
+# Directorios
 #----------------------------------------------------------------------
 base_dir <- "C:\\Users\\danie\\OneDrive\\Escritorio\\Least-cost-diets-and-affordability\\Proyecto Interno\\"
 setwd(base_dir)
 
-# Función Afford (ajusta ruta si cambia)
-source("working-papers\\working-paper-ipc\\affordability-indicators\\aux_functions\\Afford_Expansion.R")
+source("working-papers/working-paper-ipc/affordability-indicators/aux_functions/Afford_Expansion.R")
 
-# Directorio general de output
 out_dir <- file.path(base_dir, "working-papers/working-paper-ipc/output")
-dir.create(out_dir, recursive = TRUE, showWarnings = FALSE)
 
-# Directorios ya existentes de costo e ingreso (MENSUALES)
-income_dir      <- file.path(out_dir, "incomecol")
-afford_cost_dir <- file.path(out_dir, "affordability")
-
-# NUEVO directorio para métricas trimestrales
-afford_metrics_q_dir <- file.path(out_dir, "affordability_metrics_quarterly")
-dir.create(afford_metrics_q_dir, recursive = TRUE, showWarnings = FALSE)
+income_dir         <- file.path(out_dir, "incomecol")
+afford_cost_dir    <- file.path(out_dir, "affordability")
+afford_metrics_dir <- file.path(out_dir, "affordability_metrics")
+dir.create(afford_metrics_dir, recursive = TRUE, showWarnings = FALSE)
 
 #----------------------------------------------------------------------
-# Cargar resultados previos MENSUALES de CoCA / CoNA / CoRD e ingreso
+# 0) FIX: aseguramos que NO haya una versión vieja de collapse_to_person()
 #----------------------------------------------------------------------
-coca_df   <- read.csv(file.path(afford_cost_dir, "CoCA_city_month.csv"))
-cona_df   <- read.csv(file.path(afford_cost_dir, "CoNA_city_month.csv"))
-cord_df   <- read.csv(file.path(afford_cost_dir, "CoRD_city_month.csv"))   # <<< NUEVO
-income_df <- read.csv(file.path(income_dir, "IncomeCol_city_month.csv"))
+if (exists("collapse_to_person", envir = .GlobalEnv)) {
+  rm(list = "collapse_to_person", envir = .GlobalEnv)
+}
 
-#----------------------------------------------------------------------
-# Asegurar que las fechas sean Date
-#----------------------------------------------------------------------
-suppressWarnings({
-  coca_df$fecha   <- as.Date(coca_df$fecha)
-  cona_df$fecha   <- as.Date(cona_df$fecha)
-  cord_df$fecha   <- as.Date(cord_df$fecha)   # <<< NUEVO
-  income_df$fecha <- as.Date(income_df$fecha)
-})
-
-#----------------------------------------------------------------------
-# Crear variables de año y trimestre
-#----------------------------------------------------------------------
-coca_df <- coca_df %>%
-  mutate(
-    year    = year(fecha),
-    quarter = quarter(fecha)
+# FIX mínimo ROBUSTO (sin across): deja 1 fila por Person
+collapse_to_person <- function(df) {
+  if (!("Person" %in% names(df))) return(df)
+  
+  num_cols <- names(df)[sapply(df, is.numeric)]
+  num_cols <- setdiff(num_cols, "Person")
+  
+  out <- stats::aggregate(
+    df[, num_cols, drop = FALSE],
+    by = list(Person = df$Person),
+    FUN = function(x) mean(x, na.rm = TRUE)
   )
+  out
+}
 
-cona_df <- cona_df %>%
-  mutate(
-    year    = year(fecha),
-    quarter = quarter(fecha)
-  )
+#----------------------------------------------------------------------
+# 1) Income TRIMESTRAL 
+#----------------------------------------------------------------------
+income_files <- list.files(
+  income_dir,
+  pattern = "^IncomeCol_quartiles_.*\\.rds$",
+  full.names = TRUE
+)
 
-cord_df <- cord_df %>%                                # <<< NUEVO
-  mutate(
-    year    = year(fecha),
-    quarter = quarter(fecha)
-  )
+income_df <- income_files %>%
+  lapply(readRDS) %>%
+  bind_rows()
 
+# Normalizar ciudad + trimestre
 income_df <- income_df %>%
   mutate(
-    year    = year(fecha),
-    quarter = quarter(fecha)
+    ciudad = dominio,
+    trimestre = if ("trimestre" %in% names(.)) as.character(trimestre) else paste0(year, "Q", q),
+    year = if ("year" %in% names(.)) as.integer(year) else as.integer(str_extract(trimestre, "^\\d{4}")),
+    q    = if ("q" %in% names(.)) as.integer(q) else as.integer(str_extract(trimestre, "(?<=Q)\\d+"))
   )
 
-#----------------------------------------------------------------------
-# Construir CoCA / CoNA / CoRD TRIMESTRALES: promediar costos dentro del trimestre
-#----------------------------------------------------------------------
-# Estructura original típica de CoCA/CoNA/CoRD:
-# Demo_Group, Sex, Person, cost_day, total_household,
-# per_capita, per_capita_year, per_capita_month, ciudad, fecha
+income_df$ciudad[income_df$ciudad == "MEDELLIN"] <- "MEDELLÍN"
+income_df$ciudad[income_df$ciudad == "BOGOTA"]   <- "BOGOTÁ D.C."
 
-coca_q <- coca_df %>%
-  group_by(ciudad, year, quarter, Demo_Group, Sex, Person) %>%
-  dplyr::summarise(
-    cost_day         = mean(cost_day, na.rm = TRUE),
-    total_household  = mean(total_household, na.rm = TRUE),
-    per_capita       = mean(per_capita, na.rm = TRUE),
-    per_capita_year  = mean(per_capita_year, na.rm = TRUE),
-    per_capita_month = mean(per_capita_month, na.rm = TRUE),
-    .groups = "drop"
-  )
-
-cona_q <- cona_df %>%
-  group_by(ciudad, year, quarter, Demo_Group, Sex, Person) %>%
-  dplyr::summarise(
-    cost_day         = mean(cost_day, na.rm = TRUE),
-    total_household  = mean(total_household, na.rm = TRUE),
-    per_capita       = mean(per_capita, na.rm = TRUE),
-    per_capita_year  = mean(per_capita_year, na.rm = TRUE),
-    per_capita_month = mean(per_capita_month, na.rm = TRUE),
-    .groups = "drop"
-  )
-
-cord_q <- cord_df %>%                                 
-  group_by(ciudad, year, quarter, Demo_Group, Sex, Person) %>%
-  dplyr::summarise(
-    cost_day         = mean(cost_day, na.rm = TRUE),
-    total_household  = mean(total_household, na.rm = TRUE),
-    per_capita       = mean(per_capita, na.rm = TRUE),
-    per_capita_year  = mean(per_capita_year, na.rm = TRUE),
-    per_capita_month = mean(per_capita_month, na.rm = TRUE),
-    .groups = "drop"
-  )
-
-#----------------------------------------------------------------------
-# Construir ingreso TRIMESTRAL: agrupar (stackear) hogares dentro del trimestre
-#----------------------------------------------------------------------
-income_q <- income_df %>%
-  filter(!is.na(year), !is.na(quarter))
-
-#----------------------------------------------------------------------
-# Vectores ciudad–año–trimestre
-#----------------------------------------------------------------------
-city_vector  <- sort(unique(income_q$ciudad_panel))
-year_vector  <- sort(unique(income_q$year))
-quarter_vec  <- sort(unique(income_q$quarter))
-
-#######################################################################
-## BLOQUE 1: Cálculo de Afford trimestral ciudad–año–trimestre
-#######################################################################
-
-res_afford_q <- list()
-k <- 1
-
-for (city.x in city_vector) {
-  for (yy in year_vector) {
-    for (qq in quarter_vec) {
-      
-      # Filtramos Income para la ciudad–año–trimestre
-      inc_aux <- income_q %>%
-        filter(
-          ciudad_panel == city.x,
-          year == yy,
-          quarter == qq
-        )
-      
-      if (nrow(inc_aux) == 0) next
-      
-      # CoCA trimestral correspondiente
-      coca_aux <- coca_q %>%
-        filter(
-          ciudad == city.x,
-          year == yy,
-          quarter == qq
-        )
-      
-      # CoNA trimestral correspondiente
-      cona_aux <- cona_q %>%
-        filter(
-          ciudad == city.x,
-          year == yy,
-          quarter == qq
-        )
-      
-      # CoRD trimestral correspondiente  <<< NUEVO (igual que las otras)
-      cord_aux <- cord_q %>%
-        filter(
-          ciudad == city.x,
-          year == yy,
-          quarter == qq
-        )
-      
-      # Si falta cualquiera de los 3, saltamos (igual para todos)
-      if (nrow(coca_aux) == 0 || nrow(cona_aux) == 0 || nrow(cord_aux) == 0) next
-      
-      message("Procesando Afford TRIMESTRAL: ciudad = ", city.x,
-              " | año = ", yy,
-              " | trimestre = ", qq, " ...")
-      
-      out_q <- try(
-        Afford(
-          Hexpense   = inc_aux,
-          Model_CoCA = coca_aux,
-          Model_CoNA = cona_aux,
-          Model_CoRD = cord_aux
-        ),
-        silent = TRUE
-      )
-      
-      if (inherits(out_q, "try-error") || is.null(out_q)) {
-        message("   -> error en Afford() trimestral")
-        next
-      }
-      
-      po_q <- out_q$Poverty_outcome %>%
-        mutate(
-          ciudad  = city.x,
-          year    = yy,
-          quarter = qq
-        )
-      
-      res_afford_q[[k]] <- po_q
-      k <- k + 1
-    }
+# Asegurar deciles como "Decil X"
+if ("deciles" %in% names(income_df)) {
+  if (!is.character(income_df$deciles) || !all(grepl("^Decil\\s", income_df$deciles))) {
+    income_df$deciles <- paste0("Decil ", income_df$deciles)
   }
 }
 
-afford_q_df <- bind_rows(res_afford_q)
+#----------------------------------------------------------------------
+# 1.1) Compatibilidad con tu Afford_expansion()
+#----------------------------------------------------------------------
+income_df <- income_df %>%
+  mutate(
+    ung = if ("ung" %in% names(.)) ung else if ("nug" %in% names(.)) nug else ung,
+    fex_c18 = if ("fex_c18" %in% names(.)) fex_c18 else if ("fex_c" %in% names(.)) as.numeric(fex_c) else 1,
+    food_income = if ("food_income" %in% names(.)) food_income else if ("food_exp" %in% names(.)) food_exp else NA_real_,
+    food_exp_per_capita_year = if ("food_exp_per_capita_year" %in% names(.)) food_exp_per_capita_year else (food_exp_per_capita * 12)
+  )
 
-# Guardar tabla trimestral por decil
-saveRDS(afford_q_df, file = file.path(afford_metrics_q_dir, "Afford_quarter_city.rds"))
-write.csv(afford_q_df,
-          file = file.path(afford_metrics_q_dir, "Afford_quarter_city.csv"),
+needed_hexp <- c(
+  "deciles","income","ung","per_capita_income","food_exp_per_capita",
+  "food_exp_per_capita_year","share","fex_c18","food_income"
+)
+missing_hexp <- setdiff(needed_hexp, names(income_df))
+if (length(missing_hexp) > 0) {
+  stop("A Income trimestral le faltan columnas requeridas por Afford_expansion(): ",
+       paste(missing_hexp, collapse = ", "))
+}
+
+#----------------------------------------------------------------------
+# 2) CoCA/CoNA/CoRD TRIMESTRAL 
+#----------------------------------------------------------------------
+coca_q_path <- file.path(afford_cost_dir, "CoCA_city_cuartiles.rds")
+cona_q_path <- file.path(afford_cost_dir, "CoNA_city_cuartiles.rds")
+cord_q_path <- file.path(afford_cost_dir, "CoRD_city_cuartiles.rds")
+
+if (!file.exists(coca_q_path)) stop("No encuentro: ", coca_q_path)
+if (!file.exists(cona_q_path)) stop("No encuentro: ", cona_q_path)
+if (!file.exists(cord_q_path)) stop("No encuentro: ", cord_q_path)
+
+coca_df <- readRDS(coca_q_path)
+cona_df <- readRDS(cona_q_path)
+cord_df <- readRDS(cord_q_path)
+
+coca_df$ciudad <- as.character(coca_df$ciudad)
+cona_df$ciudad <- as.character(cona_df$ciudad)
+cord_df$ciudad <- as.character(cord_df$ciudad)
+
+# asegurar trimestre si no está
+if (!("trimestre" %in% names(coca_df))) coca_df <- coca_df %>% mutate(trimestre = paste0(year, "Q", q))
+if (!("trimestre" %in% names(cona_df))) cona_df <- cona_df %>% mutate(trimestre = paste0(year, "Q", q))
+if (!("trimestre" %in% names(cord_df))) cord_df <- cord_df %>% mutate(trimestre = paste0(year, "Q", q))
+
+coca_df$trimestre <- as.character(coca_df$trimestre)
+cona_df$trimestre <- as.character(cona_df$trimestre)
+cord_df$trimestre <- as.character(cord_df$trimestre)
+
+#----------------------------------------------------------------------
+# 2.1) Compatibilidad con Afford_expansion(): necesita columna 'per_capita'
+#   - si solo tienes per_capita_month, reconstruimos per_capita (diario aprox.)
+#----------------------------------------------------------------------
+if (!("per_capita" %in% names(coca_df))) {
+  if ("per_capita_month" %in% names(coca_df)) {
+    coca_df <- coca_df %>% mutate(per_capita = per_capita_month / 30.4167)
+  } else {
+    stop("CoCA trimestral no tiene 'per_capita' ni 'per_capita_month'. Revisa columnas.")
+  }
+}
+
+if (!("per_capita" %in% names(cona_df))) {
+  if ("per_capita_month" %in% names(cona_df)) {
+    cona_df <- cona_df %>% mutate(per_capita = per_capita_month / 30.4167)
+  } else {
+    stop("CoNA trimestral no tiene 'per_capita' ni 'per_capita_month'. Revisa columnas.")
+  }
+}
+
+if (!("per_capita" %in% names(cord_df))) {
+  if ("per_capita_month" %in% names(cord_df)) {
+    cord_df <- cord_df %>% mutate(per_capita = per_capita_month / 30.4167)
+  } else {
+    stop("CoRD trimestral no tiene 'per_capita' ni 'per_capita_month'. Revisa columnas.")
+  }
+}
+
+#----------------------------------------------------------------------
+# 3) Vectores ciudad–trimestre
+#----------------------------------------------------------------------
+city_vector <- sort(unique(income_df$ciudad))
+tri_vector  <- sort(unique(income_df$trimestre))
+
+#######################################################################
+## BLOQUE 1: Afford ciudad–trimestre
+#######################################################################
+res_afford <- list()
+k <- 1
+
+for (city.x in city_vector) {
+  for (tri.x in tri_vector) {
+    
+    message("Procesando Afford TRIMESTRAL: ", city.x, " | ", tri.x)
+    
+    inc_aux <- income_df %>%
+      filter(ciudad == city.x, trimestre == tri.x)
+    if (nrow(inc_aux) == 0) next
+    
+    coca_aux <- coca_df %>%
+      filter(ciudad == city.x, trimestre == tri.x)
+    cona_aux <- cona_df %>%
+      filter(ciudad == city.x, trimestre == tri.x)
+    cord_aux <- cord_df %>%
+      filter(ciudad == city.x, trimestre == tri.x)
+    
+    if (nrow(coca_aux) == 0 | nrow(cona_aux) == 0 | nrow(cord_aux) == 0) next
+    
+    # FIX mínimo: pasar de 9 filas (Person repetido) a 3 filas (Person 1-3)
+    coca_aux <- collapse_to_person(coca_aux)
+    cona_aux <- collapse_to_person(cona_aux)
+    cord_aux <- collapse_to_person(cord_aux)
+    
+    out <- try(
+      Afford_expansion(
+        Hexpense   = inc_aux,
+        Model_CoCA = coca_aux,
+        Model_CoNA = cona_aux,
+        Model_CoRD = cord_aux
+      ),
+      silent = TRUE
+    )
+    
+    if (inherits(out, "try-error") | is.null(out)) {
+      message("  -> error/NULL en: ", city.x, " | ", tri.x)
+      next
+    }
+    
+    po <- out$Poverty_outcome %>%
+      mutate(ciudad = city.x, trimestre = tri.x)
+    
+    res_afford[[k]] <- po
+    k <- k + 1
+  }
+}
+
+afford_df <- bind_rows(res_afford)
+
+#----------------------------------------------------------------------
+# Guardar resultados detallados trimestrales
+#----------------------------------------------------------------------
+saveRDS(afford_df, file = file.path(afford_metrics_dir, "Afford_city_cuartiles.rds"))
+write.csv(afford_df, file = file.path(afford_metrics_dir, "Afford_city_cuartiles.csv"),
           row.names = FALSE)
 
 #######################################################################
-## BLOQUE 2: Construcción de la INCIDENCIA TRIMESTRAL
+## BLOQUE 2: Incidencia promedio por ciudad–trimestre
 #######################################################################
-
-aff_inc_q <- afford_q_df %>%
-  group_by(ciudad, year, quarter, model) %>%
+aff_inc <- afford_df %>%
+  group_by(ciudad, trimestre, model) %>%
   dplyr::summarise(
     n_deciles = n_distinct(deciles),
-    sum_rate  = sum(rate, na.rm = TRUE),
-    incidence = (1 / n_deciles) * sum_rate,
+    incidence = mean(rate, na.rm = TRUE),
     .groups   = "drop"
   )
 
-# Fecha representativa del trimestre (primer día del trimestre)
-aff_inc_q <- aff_inc_q %>%
-  mutate(
-    quarter_month = (quarter - 1) * 3 + 1,
-    quarter_date  = as.Date(paste0(year, "-", quarter_month, "-01"))
-  )
-
-saveRDS(aff_inc_q, file = file.path(afford_metrics_q_dir, "Afford_incidence_quarter_city.rds"))
-write.csv(aff_inc_q,
-          file = file.path(afford_metrics_q_dir, "Afford_incidence_quarter_city.csv"),
+saveRDS(aff_inc, file = file.path(afford_metrics_dir, "Afford_incidence_city_cuartiles.rds"))
+write.csv(aff_inc, file = file.path(afford_metrics_dir, "Afford_incidence_city_cuartiles.csv"),
           row.names = FALSE)
 
 #######################################################################
-## BLOQUE 3: Gráficas trimestrales de incidencia CoCA / CoNA / CoRD
+## BLOQUE 3: Gráficas trimestrales
 #######################################################################
 
+#------------------------------------------------------------
+# Estandarización ciudades
+#------------------------------------------------------------
 city_levels <- c("BOGOTA", "CALI", "MEDELLIN")
 
-aff_inc_q <- aff_inc_q %>%
-  mutate(
-    ciudad = as.character(ciudad),
-    ciudad = case_when(
-      ciudad %in% c("BOGOTÁ D.C.", "BOGOTA D.C.", "BOGOTA") ~ "BOGOTA",
-      ciudad %in% c("MEDELLÍN", "MEDELLIN")                 ~ "MEDELLIN",
-      ciudad %in% c("CALI")                                 ~ "CALI",
-      TRUE ~ ciudad
-    ),
-    ciudad = factor(ciudad, levels = city_levels),
-    quarter_date = as.Date(quarter_date)
+std_city <- function(x) {
+  x <- as.character(x)
+  dplyr::case_when(
+    x %in% c("BOGOTÁ D.C.", "BOGOTA D.C.", "BOGOTA") ~ "BOGOTA",
+    x %in% c("MEDELLÍN", "MEDELLIN")                 ~ "MEDELLIN",
+    x %in% c("CALI")                                 ~ "CALI",
+    TRUE ~ x
   )
+}
 
+#------------------------------------------------------------
+# Tema paper 
+#------------------------------------------------------------
 theme_paper <- theme_classic(base_size = 11) +
   theme(
     plot.title = element_text(face = "bold", size = 12),
@@ -285,32 +277,27 @@ theme_paper <- theme_classic(base_size = 11) +
     plot.margin = margin(6, 6, 6, 6)
   )
 
-x_scale_q <- scale_x_date(
-  date_breaks = "1 year",
-  date_labels = "%Y",
-  expand = expansion(mult = c(0.01, 0.01))
-)
-
+# Escala porcentaje
 y_scale_pct <- scale_y_continuous(
   labels = label_percent(scale = 1, accuracy = 0.1),
   expand = expansion(mult = c(0.02, 0.02))
 )
 
+# Paleta consistente
 color_scale <- scale_color_nejm(name = "City")
 
-#-----------------------------
-# CoCA trimestral 
-#-----------------------------
-g_coca_inc_q <- aff_inc_q %>%
-  filter(model == "CoCA", !is.na(ciudad), !is.na(quarter_date), !is.na(incidence)) %>%
-  arrange(ciudad, quarter_date) %>%
-  ggplot(aes(x = quarter_date, y = incidence, color = ciudad, group = ciudad)) +
-  geom_line(linewidth = 0.9) +
-  x_scale_q +
+#------------------------------------------------------------
+# CoCA - Quarterly
+#------------------------------------------------------------
+g_coca <- aff_inc %>%
+  filter(model == "CoCA") %>%
+  mutate(ciudad = factor(std_city(ciudad), levels = city_levels)) %>%
+  ggplot(aes(x = trimestre, y = incidence, color = ciudad, group = ciudad)) +
+  geom_line(linewidth = 1) +
   y_scale_pct +
   labs(
-    title = "Affordability poverty incidence (CoCA) — Quarterly",
-    x = NULL,
+    title = "Affordability Poverty Incidence (CoCA)",
+    x = "Quarter",
     y = "Incidence"
   ) +
   color_scale +
@@ -318,24 +305,26 @@ g_coca_inc_q <- aff_inc_q %>%
   theme(axis.text.x = element_text(angle = 45, hjust = 1))
 
 ggsave(
-  filename = file.path(afford_metrics_q_dir, "Afford_Incidence_CoCA_quarter_city.png"),
-  plot     = g_coca_inc_q,
-  width    = 10, height = 5, dpi = 300, bg = "white"
+  file.path(afford_metrics_dir, "Afford_Incidence_CoCA_cuartiles_city_time.png"),
+  g_coca,
+  width = 10,
+  height = 5,
+  dpi = 300,
+  bg = "white"
 )
 
-#-----------------------------
-# CoNA trimestral 
-#-----------------------------
-g_cona_inc_q <- aff_inc_q %>%
-  filter(model == "CoNA", !is.na(ciudad), !is.na(quarter_date), !is.na(incidence)) %>%
-  arrange(ciudad, quarter_date) %>%
-  ggplot(aes(x = quarter_date, y = incidence, color = ciudad, group = ciudad)) +
-  geom_line(linewidth = 0.9) +
-  x_scale_q +
+#------------------------------------------------------------
+# CoNA - Quarterly
+#------------------------------------------------------------
+g_cona <- aff_inc %>%
+  filter(model == "CoNA") %>%
+  mutate(ciudad = factor(std_city(ciudad), levels = city_levels)) %>%
+  ggplot(aes(x = trimestre, y = incidence, color = ciudad, group = ciudad)) +
+  geom_line(linewidth = 1) +
   y_scale_pct +
   labs(
-    title = "Affordability poverty incidence (CoNA) — Quarterly",
-    x = NULL,
+    title = "Affordability Poverty Incidence (CoNA)",
+    x = "Quarter",
     y = "Incidence"
   ) +
   color_scale +
@@ -343,24 +332,26 @@ g_cona_inc_q <- aff_inc_q %>%
   theme(axis.text.x = element_text(angle = 45, hjust = 1))
 
 ggsave(
-  filename = file.path(afford_metrics_q_dir, "Afford_Incidence_CoNA_quarter_city.png"),
-  plot     = g_cona_inc_q,
-  width    = 10, height = 5, dpi = 300, bg = "white"
+  file.path(afford_metrics_dir, "Afford_Incidence_CoNA_cuartiles_city_time.png"),
+  g_cona,
+  width = 10,
+  height = 5,
+  dpi = 300,
+  bg = "white"
 )
 
-#-----------------------------
-# CoRD trimestral 
-#-----------------------------
-g_cord_inc_q <- aff_inc_q %>%
-  filter(model == "CoRD", !is.na(ciudad), !is.na(quarter_date), !is.na(incidence)) %>%
-  arrange(ciudad, quarter_date) %>%
-  ggplot(aes(x = quarter_date, y = incidence, color = ciudad, group = ciudad)) +
-  geom_line(linewidth = 0.9) +
-  x_scale_q +
+#------------------------------------------------------------
+# CoRD - Quarterly
+#------------------------------------------------------------
+g_cord <- aff_inc %>%
+  filter(model == "CoRD") %>%
+  mutate(ciudad = factor(std_city(ciudad), levels = city_levels)) %>%
+  ggplot(aes(x = trimestre, y = incidence, color = ciudad, group = ciudad)) +
+  geom_line(linewidth = 1) +
   y_scale_pct +
   labs(
-    title = "Affordability poverty incidence (CoRD) — Quarterly",
-    x = NULL,
+    title = "Affordability Poverty Incidence (CoRD)",
+    x = "Quarter",
     y = "Incidence"
   ) +
   color_scale +
@@ -368,7 +359,10 @@ g_cord_inc_q <- aff_inc_q %>%
   theme(axis.text.x = element_text(angle = 45, hjust = 1))
 
 ggsave(
-  filename = file.path(afford_metrics_q_dir, "Afford_Incidence_CoRD_quarter_city.png"),
-  plot     = g_cord_inc_q,
-  width    = 10, height = 5, dpi = 300, bg = "white"
+  file.path(afford_metrics_dir, "Afford_Incidence_CoRD_cuartiles_city_time.png"),
+  g_cord,
+  width = 10,
+  height = 5,
+  dpi = 300,
+  bg = "white"
 )
