@@ -4,7 +4,7 @@
 ## + EXCLUDE AZUCARES from Grupos_GABAS
 ########################################################
 
-source("working-papers/working-paper-ipc/least-cost-metrics/00_config.R")
+source("working-papers/working-paper-ipc/least-cost-metrics/real/00_config.R")
 
 tcac_raw <- read_excel(in_tcac_map) %>%
   clean_names()
