@@ -3,7 +3,7 @@
 ## CoCA for 3 cities, all months up to last IPC date
 ########################################################
 
-source("working-papers/working-paper-ipc/least-cost-metrics/00_config.R")
+source("working-papers/working-paper-ipc/least-cost-metrics/real/00_config.R")
 
 panel <- readRDS(file.path(tmp_dir, "panel_city_month_food_1999_2025.rds"))
 

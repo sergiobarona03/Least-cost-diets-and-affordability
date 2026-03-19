@@ -11,7 +11,7 @@ suppressPackageStartupMessages({
   library(rlang)
 })
 
-source("working-papers/working-paper-ipc/least-cost-metrics/00_config.R")
+source("working-papers/working-paper-ipc/least-cost-metrics/real/00_config.R")
 source("ajustes_FoodpriceR/CoRD_Herforth.R")
 
 # ------------------------------------------------------------
@@ -45,49 +45,98 @@ canon_subgroup <- function(x) {
   )
 }
 
+assign_person <- function(demo_group, sex) {
+  sex_chr <- case_when(
+    sex %in% c(0, "0", "H", "MASC", "Male", "male") ~ "H",
+    sex %in% c(1, "1", "M", "FEM", "Female", "female") ~ "M",
+    TRUE ~ NA_character_
+  )
+  
+  case_when(
+    demo_group == "31 a 50 años" & sex_chr == "H" ~ 1L,
+    demo_group == "31 a 50 años" & sex_chr == "M" ~ 2L,
+    demo_group == "9 a 13 años"  & sex_chr == "M" ~ 3L,
+    TRUE ~ NA_integer_
+  )
+}
+
+normalize_serv_subgroup <- function(x) {
+  case_when(
+    norm_txt(x) == "CEREALES"     ~ "Cereales",
+    norm_txt(x) == "RAICES"       ~ "Raices",
+    norm_txt(x) == "TUBERCULOS"   ~ "Tuberculos",
+    norm_txt(x) == "FRUTAS"       ~ "Frutas",
+    norm_txt(x) == "VERDURAS"     ~ "Verduras",
+    norm_txt(x) == "LACTEOS"      ~ "Lácteos",
+    norm_txt(x) == "CARNES"       ~ "Carnes",
+    norm_txt(x) == "LEGUMINOSAS"  ~ "Leguminosas",
+    norm_txt(x) == "GRASAS"       ~ "Grasas",
+    norm_txt(x) == "AZUCARES"     ~ "Azúcares",
+    TRUE ~ as.character(x)
+  )
+}
+
 # ------------------------------------------------------------
-# 1) Cargar serv2 / diverse
+# 1) Cargar serv2 / diverse y normalizar
 # ------------------------------------------------------------
 data("serv2",   package = "FoodpriceR")
 data("diverse", package = "FoodpriceR")
 
-serv_tbl    <- as_tibble(serv2)
-diverse_tbl <- as_tibble(diverse)
+serv_tbl <- as_tibble(serv2) %>%
+  mutate(Subgroup = normalize_serv_subgroup(Subgroup))
+
+diverse_tbl <- as_tibble(diverse) %>%
+  mutate(Subgroup = normalize_serv_subgroup(Subgroup))
 
 stopifnot(all(c("Age","Serving","Subgroup") %in% names(serv_tbl)))
 stopifnot(all(c("Subgroup","Number") %in% names(diverse_tbl)))
 
-message("serv2$Subgroup unique:")
+message("serv_tbl$Subgroup unique (con azúcares):")
 print(sort(unique(serv_tbl$Subgroup)))
 
+message("diverse_tbl$Subgroup unique (con azúcares):")
+print(sort(unique(diverse_tbl$Subgroup)))
+
 # ------------------------------------------------------------
-# 1.1) Mapping canónico -> serv2$Subgroup + excluir azúcares
+# 1.1) Mapping canónico -> serv2$Subgroup
 # ------------------------------------------------------------
 canon2serv <- tribble(
   ~canon,        ~serv2_label,
   "CEREALES",     "Cereales",
   "RAICES",       "Raices",
   "TUBERCULOS",   "Tuberculos",
-  "PLATANOS",     "Frutas",        # serv2 no tiene Plátanos separado
+  "PLATANOS",     "Frutas",
   "FRUTAS",       "Frutas",
   "VERDURAS",     "Verduras",
   "LACTEOS",      "Lácteos",
   "CARNES",       "Carnes",
-  "HUEVOS",       "Carnes",        # serv2 no tiene Huevos separado
+  "HUEVOS",       "Carnes",
   "LEGUMINOSAS",  "Leguminosas",
   "GRASAS",       "Grasas",
-  "AZUCARES",     NA_character_    # EXCLUIR
+  "AZUCARES",     "Azúcares"
 )
 
-needed_labels <- canon2serv %>% filter(!is.na(serv2_label)) %>% pull(serv2_label) %>% unique()
-missing_labels <- setdiff(needed_labels, unique(serv_tbl$Subgroup))
+needed_labels <- canon2serv %>%
+  filter(!is.na(serv2_label)) %>%
+  pull(serv2_label) %>%
+  unique()
+
+needed_labels_norm <- norm_txt(needed_labels)
+serv_labels_norm   <- norm_txt(unique(serv_tbl$Subgroup))
+
+missing_labels <- needed_labels[!(needed_labels_norm %in% serv_labels_norm)]
+
 if (length(missing_labels) > 0) {
-  stop("Estos labels del mapping no existen en serv2$Subgroup (revisa tildes): ",
-       paste(missing_labels, collapse = ", "))
+  stop(
+    "Estos labels del mapping no existen en serv_tbl$Subgroup aun después de normalizar texto: ",
+    paste(missing_labels, collapse = ", ")
+  )
 }
 
 map_to_serv2 <- function(canon_vec) {
-  canon2serv$serv2_label[match(canon_vec, canon2serv$canon)]
+  canon_norm <- norm_txt(canon_vec)
+  ref_norm   <- norm_txt(canon2serv$canon)
+  canon2serv$serv2_label[match(canon_norm, ref_norm)]
 }
 
 # ------------------------------------------------------------
@@ -95,21 +144,20 @@ map_to_serv2 <- function(canon_vec) {
 # ------------------------------------------------------------
 panel <- readRDS(file.path(tmp_dir, "panel_city_month_food_1999_2025.rds"))
 
-need_panel <- c("ciudad","fecha","articulo","precio_100g")
+need_panel <- c(
+  "ciudad","fecha","articulo","precio_100g",
+  "gramos_g_1_intercambio_1_intercambio"
+)
 miss_panel <- setdiff(need_panel, names(panel))
-if (length(miss_panel) > 0) stop("panel missing required columns: ", paste(miss_panel, collapse = ", "))
+if (length(miss_panel) > 0) {
+  stop("panel missing required columns: ", paste(miss_panel, collapse = ", "))
+}
 
 panel2 <- panel %>%
-  mutate(ciudad = as.character(ciudad),
-         articulo = as.character(articulo))
-
-if (inherits(panel2$fecha, "Date")) {
-  # ok
-} else if (is.numeric(panel2$fecha)) {
-  panel2 <- panel2 %>% mutate(fecha = as.Date(fecha, origin = "1899-12-30"))
-} else {
-  panel2 <- panel2 %>% mutate(fecha = as.Date(fecha))
-}
+  mutate(
+    ciudad = as.character(ciudad),
+    articulo = as.character(articulo)
+  )
 
 panel2 <- panel2 %>%
   dplyr::rename(
@@ -132,12 +180,16 @@ panel2 <- panel2 %>%
     Zinc          = zinc_mg
   )
 
-nutr_cols <- c("Energy","Protein","Lipids","Carbohydrates","VitaminC","Folate","VitaminA",
-               "Thiamine","Riboflavin","Niacin","VitaminB12","Magnesium","Phosphorus",
-               "Sodium","Calcium","Iron","Zinc")
+nutr_cols <- c(
+  "Energy","Protein","Lipids","Carbohydrates","VitaminC","Folate","VitaminA",
+  "Thiamine","Riboflavin","Niacin","VitaminB12","Magnesium","Phosphorus",
+  "Sodium","Calcium","Iron","Zinc"
+)
+
+cities_use_std <- c("CALI", "BOGOTA", "MEDELLIN")
 
 panel2 <- panel2 %>%
-  filter(ciudad %in% cities_use) %>%
+  filter(ciudad %in% cities_use_std) %>%
   arrange(ciudad, fecha, articulo)
 
 if (!("Subgroup" %in% names(panel2)) && !("Group" %in% names(panel2))) {
@@ -145,7 +197,7 @@ if (!("Subgroup" %in% names(panel2)) && !("Group" %in% names(panel2))) {
 }
 
 # ------------------------------------------------------------
-# 3) Builder: CREA Subgroup + Group + excluye azúcares
+# 3) Builder: CREA Subgroup + Group + usa gramos de intercambio
 # ------------------------------------------------------------
 build_cordH_df <- function(df_city_month) {
   
@@ -161,17 +213,11 @@ build_cordH_df <- function(df_city_month) {
     mutate(
       Group_raw   = grp_src,
       Group_canon = canon_subgroup(grp_src),
-      
-      # label exacto como serv2
       Subgroup    = map_to_serv2(Group_canon),
-      
-      # <<<<<< CLAVE: CoRD requiere Group >>>>>>
-      # lo alineamos con Subgroup para que calce con serv2/diverse
       Group       = Subgroup,
-      
       Food        = as.character(articulo),
-      Serving_g   = 100,
-      Price_serving = suppressWarnings(as.numeric(precio_100g))
+      Serving_g   = suppressWarnings(as.numeric(gramos_g_1_intercambio_1_intercambio)),
+      Price_serving = suppressWarnings(as.numeric(precio_100g)) * Serving_g / 100
     ) %>%
     transmute(
       Food, Serving_g, Price_serving,
@@ -180,8 +226,9 @@ build_cordH_df <- function(df_city_month) {
     ) %>%
     filter(
       !is.na(Food), Food != "",
-      !is.na(Group),            # excluye Azúcares 
+      !is.na(Group),
       !is.na(Subgroup),
+      !is.na(Serving_g), is.finite(Serving_g), Serving_g > 0,
       !is.na(Price_serving), is.finite(Price_serving), Price_serving > 0
     ) %>%
     group_by(Food, Group, Subgroup) %>%
@@ -232,7 +279,7 @@ for (cc in sort(unique(panel2$ciudad))) {
   
   message("== CoRD_Herforth city: ", cc)
   
-  panel_c <- panel2 %>% filter(ciudad == cc)
+  panel_c <- panel2 %>% filter(ciudad == cc) %>% arrange(fecha)
   fechas  <- sort(unique(panel_c$fecha))
   
   for (f in fechas) {
@@ -242,8 +289,9 @@ for (cc in sort(unique(panel2$ciudad))) {
     
     if (nrow(df_in) == 0) {
       fail_cordH[[length(fail_cordH) + 1]] <- tibble(
-        ciudad = cc, fecha = f,
-        motivo = "No valid foods/groups after cleaning (maybe missing price/energy or all sugars)"
+        ciudad = cc,
+        fecha  = f,
+        motivo = "No valid foods/groups after cleaning (missing serving_g/price/energy)"
       )
       next
     }
@@ -258,10 +306,20 @@ for (cc in sort(unique(panel2$ciudad))) {
       )
       
       cost_df <- as_tibble(cordH$cost) %>%
-        mutate(ciudad = cc, fecha = f, escenario = "precio_100g")
+        dplyr::select(-dplyr::any_of(c("fecha", "trimestre", "year", "q"))) %>%
+        mutate(
+          ciudad = cc,
+          fecha = f,
+          escenario = "price_serving_from_precio_100g"
+        )
       
       comp_df <- as_tibble(cordH$comp) %>%
-        mutate(ciudad = cc, fecha = f, escenario = "precio_100g")
+        dplyr::select(-dplyr::any_of(c("fecha", "trimestre", "year", "q"))) %>%
+        mutate(
+          ciudad = cc,
+          fecha = f,
+          escenario = "price_serving_from_precio_100g"
+        )
       
       list(cost = cost_df, comp = comp_df)
       
@@ -276,6 +334,7 @@ for (cc in sort(unique(panel2$ciudad))) {
         call   = paste(deparse(conditionCall(e)), collapse = " "),
         trace  = if (is.null(tr)) NA_character_ else paste(capture.output(print(tr)), collapse = "\n")
       )
+      
       NULL
     })
     
@@ -288,22 +347,66 @@ for (cc in sort(unique(panel2$ciudad))) {
 
 cord_cost <- if (length(results_cost) == 0) tibble() else bind_rows(results_cost)
 cord_comp <- if (length(results_comp) == 0) tibble() else bind_rows(results_comp)
+cord_fail <- if (length(fail_cordH) == 0) tibble() else bind_rows(fail_cordH)
+
+# blindaje final de fecha: dejarla tal como viene del loop
+if (nrow(cord_cost) > 0) {
+  cord_cost <- cord_cost %>%
+    mutate(fecha = as.Date(fecha))
+}
+
+if (nrow(cord_comp) > 0 && "fecha" %in% names(cord_comp)) {
+  cord_comp <- cord_comp %>%
+    mutate(fecha = as.Date(fecha))
+}
+
+# ------------------------------------------------------------
+# 4.1) Variables auxiliares para compatibilidad con figuras
+# ------------------------------------------------------------
+if (nrow(cord_cost) > 0) {
+  cord_cost <- cord_cost %>%
+    mutate(
+      person = assign_person(Demo_Group, Sex),
+      per_capita = as.numeric(cost_day)
+    )
+}
+
+# trimestral desde mensual
+if (nrow(cord_cost) > 0) {
+  cord_cost_q <- cord_cost %>%
+    dplyr::mutate(
+      fecha = as.Date(fecha),
+      fecha_q = floor_date(fecha, "quarter"),
+      trimestre = paste0(year(fecha_q), "Q", quarter(fecha_q))
+    ) %>%
+    dplyr::group_by(ciudad, fecha = fecha_q, trimestre, Demo_Group, Sex, person) %>%
+    dplyr::summarise(
+      across(
+        any_of(c("cost_day", "Cost_1000kcal", "energy_day", "per_capita")),
+        ~ mean(as.numeric(.x), na.rm = TRUE)
+      ),
+      .groups = "drop"
+    )
+} else {
+  cord_cost_q <- tibble()
+}
 
 # ------------------------------------------------------------
 # 5) Save outputs
 # ------------------------------------------------------------
-saveRDS(cord_cost, file.path(out_dir, "cordH_cost_fullsample.rds"))
-saveRDS(cord_comp, file.path(out_dir, "cordH_comp_fullsample.rds"))
-write_csv(cord_cost, file.path(out_dir, "cordH_cost_fullsample.csv"))
-write_csv(cord_comp, file.path(out_dir, "cordH_comp_fullsample.csv"))
+saveRDS(cord_cost, file.path(out_dir, "cord_cost_fullsample.rds"))
+saveRDS(cord_comp, file.path(out_dir, "cord_comp_fullsample.rds"))
+write_csv(cord_cost, file.path(out_dir, "cord_cost_fullsample.csv"))
+write_csv(cord_comp, file.path(out_dir, "cord_comp_fullsample.csv"))
 
 write_xlsx(
   list(
     cord_cost = cord_cost,
     cord_comp = cord_comp,
+    cord_fail = cord_fail,
     canon2serv = canon2serv
   ),
-  file.path(out_dir, "cordH_fullsample.xlsx")
+  file.path(out_dir, "cord_fullsample.xlsx")
 )
 
-message("Saved CoRD_Herforth in: ", out_dir)
+message("Saved corrected CoRD_Herforth outputs in: ", out_dir)

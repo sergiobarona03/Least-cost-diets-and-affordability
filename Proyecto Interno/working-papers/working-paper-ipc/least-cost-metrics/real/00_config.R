@@ -20,13 +20,13 @@ base_dir <- "C:\\Users\\danie\\OneDrive\\Escritorio\\Least-cost-diets-and-afford
 # Extended prices (from IPC script)
 in_prices_ext <- file.path(
   base_dir,
-  "working-papers/working-paper-ipc/output/forecasting_fullsample/prices_extended_city_article_month.rds"
+  "working-papers/working-paper-ipc/output/forecasting_fullsample/real/prices_extended_city_article_month.rds"
 )
 
 # Original retail file (for mapping articulo -> codigo_articulo if needed)
 in_retail_99_18 <- file.path(
   base_dir,
-  "Precios DANE/OUTPUT_DANE/precios_unadj_DANE_1999_2018.xlsx"
+  "Precios DANE/OUTPUT_DANE/precios_unadj_DANE_1999_2018_deflactados_base2018_12.xlsx"
 )
 
 # Nutrient mapping file (your TCAC join file)
@@ -36,7 +36,7 @@ in_tcac_map <- file.path(
 )
 
 # Outputs requested
-out_dir <- file.path(base_dir, "working-papers/working-paper-ipc/output/least_cost_metrics")
+out_dir <- file.path(base_dir, "working-papers/working-paper-ipc/output/least_cost_metrics/real")
 dir.create(out_dir, recursive = TRUE, showWarnings = FALSE)
 
 tmp_dir <- file.path(out_dir, "tmp")

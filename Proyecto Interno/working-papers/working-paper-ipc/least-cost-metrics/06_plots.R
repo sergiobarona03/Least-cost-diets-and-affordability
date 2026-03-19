@@ -1,5 +1,5 @@
 ########################################################
-## 06_plots_coca_cona_cord.R
+## 06_plots.R
 ## Plots for CoCA, CoNA and CoRD (full sample, 3 cities)
 ## Inputs (created by scripts 00–04):
 ##  - out_dir/coca_fullsample.rds

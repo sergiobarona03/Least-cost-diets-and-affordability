@@ -25,7 +25,7 @@ dir.create(out_dir, recursive = TRUE, showWarnings = FALSE)
 #----------------------------------------------------------------------
 # Ruta Excel (relativa al base_dir)
 #----------------------------------------------------------------------
-excel_path <- "Precios DANE/OUTPUT_DANE/precios_DANE_deflactados_base2018_12.xlsx"
+excel_path <- "Precios DANE\\OUTPUT_DANE\\precios_unadj_DANE_1999_2018_deflactados_base2018_12.xlsx"
 
 #----------------------------------------------------------------------
 # Cargar base
@@ -41,15 +41,15 @@ prices_df <- prices_df %>%
   dplyr::filter(!is.na(fecha))
 
 #----------------------------------------------------------------------
-# Asegurar numérico: precio_real_base2018_12 
+# Asegurar numérico: precio_500g_real_base2018_12 
 #----------------------------------------------------------------------
 to_num <- function(x){
   as.numeric(gsub(",", ".", as.character(x)))
 }
 
 prices_df <- prices_df %>%
-  dplyr::mutate(precio_real_base2018_12 = to_num(precio_real_base2018_12)) %>%
-  dplyr::filter(!is.na(precio_real_base2018_12))
+  dplyr::mutate(precio_500g_real_base2018_12 = to_num(precio_500g_real_base2018_12)) %>%
+  dplyr::filter(!is.na(precio_500g_real_base2018_12))
 
 #----------------------------------------------------------------------
 # Helper: nombre de archivo 
@@ -115,7 +115,7 @@ for (cc in ciudades) {
     subclase_txt <- subclase_txt[!is.na(subclase_txt)][1]
     if (is.na(subclase_txt)) subclase_txt <- "NA"
     
-    p <- ggplot(df_a, aes(x = fecha, y = precio_real_base2018_12)) +
+    p <- ggplot(df_a, aes(x = fecha, y = precio_500g_real_base2018_12)) +
       geom_line(linewidth = 1, color = "black") +
       labs(
         title = paste0(cc, " — ", a),

@@ -1,0 +1,19 @@
+ciudad,articulo,motivo,subclase,method
+BOGOTA D.C.,CEBADA,Could not assign a single IPC subclase,NA,NA
+BOGOTA D.C.,CUCHUCO  DE MAÍZ,Could not assign a single IPC subclase,NA,NA
+BOGOTA D.C.,CUCHUCO  DE TRIGO,IPC missing at anchor month,011106,producto
+BOGOTA D.C.,FECULA DE MAÍZ,No unique anchor date index,011106,producto
+BOGOTA D.C.,HARINA DE TRIGO,No unique anchor date index,011105,producto
+BOGOTA D.C.,HARINA PRECOCIDA,No unique anchor date index,011106,producto
+BOGOTA D.C.,MANGOS,Could not assign a single IPC subclase,NA,NA
+BOGOTA D.C.,MANTEQUILLA,Could not assign a single IPC subclase,NA,NA
+CALI,FECULA DE MAÍZ,No unique anchor date index,011105,producto
+CALI,HARINA DE TRIGO,No unique anchor date index,011105,producto
+CALI,HARINA PRECOCIDA,No unique anchor date index,011106,producto
+CALI,MANGOS,Could not assign a single IPC subclase,NA,NA
+CALI,MANTEQUILLA,Could not assign a single IPC subclase,NA,NA
+MEDELLIN,FECULA DE MAÍZ,No unique anchor date index,011106,producto
+MEDELLIN,HARINA DE TRIGO,No unique anchor date index,011105,producto
+MEDELLIN,HARINA PRECOCIDA,No unique anchor date index,011106,producto
+MEDELLIN,MANGOS,Could not assign a single IPC subclase,NA,NA
+MEDELLIN,MANTEQUILLA,Could not assign a single IPC subclase,NA,NA

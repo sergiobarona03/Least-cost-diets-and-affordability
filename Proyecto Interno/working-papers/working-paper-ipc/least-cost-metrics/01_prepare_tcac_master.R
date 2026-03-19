@@ -1,23 +1,12 @@
 ########################################################
 ## 01_prepare_tcac_master.R
 ## Build nutrient master from Copia_DANE_4_DIC_2025act.xlsx
-## + EXCLUDE AZUCARES from Grupos_GABAS
 ########################################################
 
 source("working-papers/working-paper-ipc/least-cost-metrics/00_config.R")
 
 tcac_raw <- read_excel(in_tcac_map) %>%
   clean_names()
-
-# ------------------------------------------------------------
-# FILTRO: excluir grupo AZUCARES (columna: grupos_gabas)
-# ------------------------------------------------------------
-if ("grupos_gabas" %in% names(tcac_raw)) {
-  tcac_raw <- tcac_raw %>%
-    filter(toupper(trimws(grupos_gabas)) != "AZUCARES")
-} else {
-  warning("No encuentro la columna 'grupos_gabas' en el Excel. Revisa el nombre tras clean_names().")
-}
 
 tcac <- tcac_raw %>%
   dplyr::rename(articulo = articulo_dane) %>%
@@ -38,7 +27,7 @@ keep_cols <- c(
   "niacina_mg","vitamina_b12_mcg","magnesio_mg","fosforo_mg","sodio_mg",
   "calcio_mg","hierro_mg","zinc_mg",
   # group CoRD
-  "grupos_gabas", "subgrupos_gabas"
+  "grupos_gabas", "subgrupos_gabas", "gramos_g_1_intercambio_1_intercambio"
 )
 
 tcac <- tcac %>%

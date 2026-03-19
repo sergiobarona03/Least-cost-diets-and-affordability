@@ -1,8 +1,10 @@
 ---
-title: "Deflactación de precios y visualización temporal: SIPSA y DANE"
+title: 'Deflactación de precios y visualización temporal: SIPSA y DANE'
 date: "`r Sys.Date()`"
 output:
   pdf_document: default
+  html_document:
+    df_print: paged
 ---
 
 ```{r set knitr options, echo = FALSE}
@@ -143,7 +145,7 @@ head(sipsa_def, 10)
 ## DANE deflactado (base dic-2018)
 
 ```{r, echo=FALSE, warning=FALSE}
-dane_def_path <- "C:/Users/danie/OneDrive/Escritorio/Least-cost-diets-and-affordability/Proyecto Interno/Precios DANE/OUTPUT_DANE/precios_DANE_deflactados_base2018_12_con_grupo.xlsx"
+dane_def_path <- "C:/Users/danie/OneDrive/Escritorio/Least-cost-diets-and-affordability/Proyecto Interno/Precios DANE/OUTPUT_DANE/precios_unadj_DANE_1999_2018_deflactados_base2018_12_con_grupo.xlsx"
 dane_def <- readxl::read_excel(dane_def_path) %>% janitor::clean_names()
 
 head(dane_def, 10)
@@ -160,21 +162,35 @@ Se muestran dos versiones:
 
 - Cuartiles.
 
+```{r setup_heatmaps, include=FALSE}
+# ---------------- directorios base ----------------
+dir_sipsa <- "C:/Users/danie/OneDrive/Escritorio/Least-cost-diets-and-affordability/Proyecto Interno/Precios al por mayor/Series/Graficas/heatmap"
+
+dir_dane <- "C:/Users/danie/OneDrive/Escritorio/Least-cost-diets-and-affordability/Proyecto Interno/Precios DANE/OUTPUT_DANE/heatmaps"
+
+show_img <- function(path){
+  if (file.exists(path)) {
+    knitr::include_graphics(path)
+  } else {
+    cat("No se encontró:", path)
+  }
+}
+```
 
 ## SIPSA: heatmaps por ciudad (escala continua)
 
-```{r sip_Cali_cont, echo=FALSE, fig.cap="SIPSA – Cali: heatmap precios reales (escala continua)", out.width="0.85\\linewidth", fig.height=6, fig.width=8}
-knitr::include_graphics(
-  "C:/Users/danie/OneDrive/Escritorio/Least-cost-diets-and-affordability/Proyecto Interno/Precios al por mayor/Series/Graficas/heatmap/heatmap_Cali_defl_cont.png"
-)
+```{r,echo=FALSE}
+show_img(file.path(dir_sipsa,"heatmap_Cali_defl_cont.png"))
+show_img(file.path(dir_sipsa,"heatmap_Medellin_defl_cont.png"))
+show_img(file.path(dir_sipsa,"heatmap_Bogota_defl_cont.png"))
 ```
 
 ## DANE: heatmaps por ciudad (escala continua)
 
-```{r dane_Cal_cont, echo=FALSE, fig.cap="DANE – Cali: heatmap IPC alimentos (escala continua)", out.width="0.85\\linewidth", fig.height=6, fig.width=8}
-knitr::include_graphics(
-  "C:/Users/danie/OneDrive/Escritorio/Least-cost-diets-and-affordability/Proyecto Interno/Precios DANE/OUTPUT_DANE/heatmaps/heatmap_DANE_Cali_cont_2013_2018.png"
-)
+```{r,echo=FALSE}
+show_img(file.path(dir_dane,"heatmap_DANE_Cali_cont_2013_2018.png"))
+show_img(file.path(dir_dane,"heatmap_DANE_Medellin_cont_2013_2018.png"))
+show_img(file.path(dir_dane,"heatmap_DANE_Bogota_cont_2013_2018.png"))
 ```
 
 ## Heatmaps por cuartiles
@@ -190,18 +206,18 @@ En los heatmaps por cuartiles, el color ya no representa el valor exacto del pre
 
 ### SIPSA: heatmaps por ciudad (cuartiles)
 
-```{r sip_Cali_quart, echo=FALSE, fig.cap="SIPSA – Cali: heatmap por cuartiles de precio real", out.width="0.85\\linewidth", fig.height=6, fig.width=8}
-knitr::include_graphics(
-  "C:/Users/danie/OneDrive/Escritorio/Least-cost-diets-and-affordability/Proyecto Interno/Precios al por mayor/Series/Graficas/heatmap/heatmap_Cali_defl_quart.png"
-)
+```{r,echo=FALSE}
+show_img(file.path(dir_sipsa,"heatmap_Cali_defl_quart.png"))
+show_img(file.path(dir_sipsa,"heatmap_Medellin_defl_quart.png"))
+show_img(file.path(dir_sipsa,"heatmap_Bogota_defl_quart.png"))
 ```
 
 ### DANE: heatmaps por ciudad (cuartiles)
 
-```{r dane_Cal_quart, echo=FALSE, fig.cap="DANE – Cali: heatmap por cuartiles IPC alimentos", out.width="0.85\\linewidth", fig.height=6, fig.width=8}
-knitr::include_graphics(
-  "C:/Users/danie/OneDrive/Escritorio/Least-cost-diets-and-affordability/Proyecto Interno/Precios DANE/OUTPUT_DANE/heatmaps/heatmap_DANE_Cali_quart_2013_2018.png"
-)
+```{r,echo=FALSE}
+show_img(file.path(dir_dane,"heatmap_DANE_Cali_quart_2013_2018.png"))
+show_img(file.path(dir_dane,"heatmap_DANE_Medellin_quart_2013_2018.png"))
+show_img(file.path(dir_dane,"heatmap_DANE_Bogota_quart_2013_2018.png"))
 ```
 
 # Nota metodológica: deflactor para SIPSA (mayorista)

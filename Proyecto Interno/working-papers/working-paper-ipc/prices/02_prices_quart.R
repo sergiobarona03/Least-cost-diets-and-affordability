@@ -22,7 +22,7 @@ dir.create(out_dir, recursive = TRUE, showWarnings = FALSE)
 #----------------------------------------------------------------------
 # Excel path (relative to base_dir)
 #----------------------------------------------------------------------
-excel_path <- "Precios DANE/OUTPUT_DANE/precios_DANE_deflactados_base2018_12.xlsx"
+excel_path <- "Precios DANE\\OUTPUT_DANE\\precios_unadj_DANE_1999_2018_deflactados_base2018_12.xlsx"
 
 #----------------------------------------------------------------------
 # Read data
@@ -52,16 +52,16 @@ safe_name <- function(x){
 }
 
 #----------------------------------------------------------------------
-# Monthly date + numeric price (same logic as your working monthly code)
+# Monthly date + numeric price 
 #----------------------------------------------------------------------
 prices_clean <- prices_raw %>%
   dplyr::mutate(
     fecha = lubridate::ym(anio_mes),
-    precio_real_base2018_12 = to_num(precio_real_base2018_12)
+    precio_500g_real_base2018_12 = to_num(precio_500g_real_base2018_12)
   ) %>%
   dplyr::filter(
     !is.na(fecha),
-    !is.na(precio_real_base2018_12)
+    !is.na(precio_500g_real_base2018_12)
   )
 
 cat("Rows in clean base:", nrow(prices_clean), "\n")
@@ -78,7 +78,7 @@ prices_clean <- prices_clean %>%
 prices_quart <- prices_clean %>%
   dplyr::group_by(nombre_ciudad, articulo, subclase6, fecha_q) %>%
   dplyr::summarise(
-    precio_real_q = mean(precio_real_base2018_12, na.rm = TRUE),
+    precio_real_q = mean(precio_500g_real_base2018_12, na.rm = TRUE),
     .groups = "drop"
   ) %>%
   dplyr::arrange(nombre_ciudad, articulo, fecha_q)

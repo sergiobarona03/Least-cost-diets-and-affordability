@@ -1,0 +1,981 @@
+---
+title: "Análisis de la población de Cali, Valle del Cauca, Bogotá, D.C y Medellín, Antioquia sobre los requerimientos promedio de energía diarios, información antropométrica y actividad física"
+subtitle: "Proyecto: Análisis sobre la asequibilidad de os hogares urbanos a dietas de costo mínimo para tres ciudades principales de Colombia durante el período 2019-2023"
+author: "Daniela Valdés Cárdenas"
+date: "`r format(Sys.Date(), '%d/%m/%Y')`"
+output:
+  html_document:
+    toc: true
+    toc_float: true
+    number_sections: true
+    theme: cosmo
+    code_folding: hide
+    df_print: paged
+---
+
+```{r setup, echo=FALSE, include=FALSE}
+knitr::opts_chunk$set(
+  echo = FALSE,
+  warning = FALSE,
+  message = FALSE,
+  fig.width = 10,
+  fig.height = 6
+)
+
+library(readr)
+library(readxl)
+library(haven)
+library(dplyr)
+library(tidyr)
+library(stringr)
+library(forcats)
+library(purrr)
+library(ggplot2)
+library(knitr)
+library(scales)
+```
+
+# Objetivo
+
+Este documento resume, para **Cali**, **Bogotá** y **Medellín**, la estructura poblacional por sexo y edad, la antropometría promedio, la actividad física predominante y los **requerimientos estimados de energía (EER)** calculados con las ecuaciones de la **NASEM 2023**.
+
+El propósito es construir, para cada ciudad, una caracterización demográfica y antropométrica que permita aproximar los requerimientos diarios de energía de la población urbana, diferenciando por sexo y grupos etarios. Posteriormente, estos requerimientos se ponderan con la estructura poblacional observada en el **CNPV 2018**.
+
+# Rutas y parámetros
+
+```{r rutas, echo=FALSE}
+base_dir  <- "C:/Users/danie/OneDrive/Escritorio/Least-cost-diets-and-affordability/Proyecto Interno/EER act"
+cnpv_dir  <- file.path(base_dir, "cnpv2018")
+ensin_dir <- file.path(base_dir, "ensin-2015/Formato_Stata")
+sabe_dir  <- file.path(base_dir, "base-de-datos-SABE-2015/Base de datos y diccionario/Base de datos - Capitulos")
+out_dir   <- file.path(base_dir, "salidas_html")
+dir.create(out_dir, showWarnings = FALSE, recursive = TRUE)
+
+ciudades_info <- tibble::tribble(
+  ~dominio_geo, ~U_DPTO, ~U_MPIO, ~subregion_ensin,
+  "Cali",       "76",    "001",   "Cali A.M.",
+  "Bogotá",     "11",    "001",   "Bogota",
+  "Medellín",   "05",    "001",   "Medellin A.M."
+)
+
+edad_labels_cnpv <- c(
+  "0 a 4", "5 a 9", "10 a 14", "15 a 19", "20 a 24", "25 a 29",
+  "30 a 34", "35 a 39", "40 a 44", "45 a 49", "50 a 54", "55 a 59",
+  "60 a 64", "65 a 69", "70 a 74", "75 a 79", "80 a 84", "85 a 89",
+  "90 a 94", "95 a 99", "100 y más"
+)
+```
+
+# Funciones auxiliares
+
+```{r funciones, echo=FALSE}
+buscar_var <- function(df, candidatos){
+  ok <- candidatos[candidatos %in% names(df)]
+  if(length(ok) == 0) return(NA_character_)
+  ok[1]
+}
+
+w_mean <- function(x, w){
+  ok <- !is.na(x) & !is.na(w) & w > 0
+  if(!any(ok)) return(NA_real_)
+  weighted.mean(x[ok], w[ok])
+}
+
+grupo_af_html <- function(edad){
+  case_when(
+    edad >= 4  & edad < 9   ~ "[4,9)",
+    edad >= 9  & edad < 14  ~ "[9,14)",
+    edad >= 14 & edad < 18  ~ "[14,18)",
+    edad >= 18 & edad < 30  ~ "[18,30)",
+    edad >= 30 & edad < 60  ~ "[30,60)",
+    edad >= 60              ~ "[60,Inf)",
+    TRUE ~ NA_character_
+  )
+}
+
+grupo_div1 <- function(edad){
+  case_when(
+    edad >= 14 & edad < 18 ~ "[14,18)",
+    edad >= 18 & edad < 30 ~ "[18,30)",
+    edad >= 30 & edad < 60 ~ "[30,60)",
+    edad >= 60             ~ "[60,Inf)",
+    TRUE ~ NA_character_
+  )
+}
+
+grupo_div2 <- function(edad){
+  case_when(
+    edad >= 14 & edad < 18 ~ "[14,18)",
+    edad >= 18 & edad < 31 ~ "[18,31)",
+    edad >= 31 & edad < 51 ~ "[31,51)",
+    edad >= 51 & edad < 70 ~ "[51,70)",
+    edad >= 70             ~ "[70,Inf)",
+    TRUE ~ NA_character_
+  )
+}
+
+grupo_cnpv_a_div1 <- function(grupo){
+  case_when(
+    grupo %in% c("10 a 14") ~ "[14,18)",
+    grupo %in% c("15 a 19") ~ "[14,18)",
+    grupo %in% c("20 a 24", "25 a 29") ~ "[18,30)",
+    grupo %in% c("30 a 34", "35 a 39", "40 a 44", "45 a 49", "50 a 54", "55 a 59") ~ "[30,60)",
+    grupo %in% c("60 a 64", "65 a 69", "70 a 74", "75 a 79", "80 a 84", "85 a 89", "90 a 94", "95 a 99", "100 y más") ~ "[60,Inf)",
+    TRUE ~ NA_character_
+  )
+}
+
+grupo_cnpv_a_div2 <- function(grupo){
+  case_when(
+    grupo %in% c("10 a 14", "15 a 19") ~ "[14,18)",
+    grupo %in% c("20 a 24", "25 a 29", "30 a 34") ~ "[18,31)",
+    grupo %in% c("35 a 39", "40 a 44", "45 a 49", "50 a 54") ~ "[31,51)",
+    grupo %in% c("55 a 59", "60 a 64", "65 a 69") ~ "[51,70)",
+    grupo %in% c("70 a 74", "75 a 79", "80 a 84", "85 a 89", "90 a 94", "95 a 99", "100 y más") ~ "[70,Inf)",
+    TRUE ~ NA_character_
+  )
+}
+
+map_pal_iom <- function(af_predominante){
+  case_when(
+    af_predominante == "Ligera"   ~ "Low active",
+    af_predominante == "Moderada" ~ "Active",
+    af_predominante == "Inactiva" ~ "Inactive",
+    af_predominante == "Alta"     ~ "Very active",
+    TRUE ~ NA_character_
+  )
+}
+
+eer_iom_2023 <- function(age, height, weight, sexo, pal_cat){
+  if(any(is.na(c(age, height, weight))) || is.na(sexo) || is.na(pal_cat)) return(NA_real_)
+
+  if(age >= 14 & age < 19){
+    if(sexo == "Masculino" && pal_cat == "Inactive")    return(-447.51 + 3.68*age + 13.01*height + 13.15*weight + 20)
+    if(sexo == "Masculino" && pal_cat == "Low active")  return(  19.12 + 3.68*age +  8.62*height + 20.28*weight + 20)
+    if(sexo == "Masculino" && pal_cat == "Active")      return(-388.19 + 3.68*age + 12.66*height + 20.46*weight + 20)
+    if(sexo == "Masculino" && pal_cat == "Very active") return(-671.75 + 3.68*age + 15.38*height + 23.25*weight + 20)
+
+    if(sexo == "Femenino"  && pal_cat == "Inactive")    return(  55.59 - 22.25*age +  8.43*height + 17.07*weight + 20)
+    if(sexo == "Femenino"  && pal_cat == "Low active")  return(-297.54 - 22.25*age + 12.77*height + 14.73*weight + 20)
+    if(sexo == "Femenino"  && pal_cat == "Active")      return(-189.55 - 22.25*age + 11.74*height + 18.34*weight + 20)
+    if(sexo == "Femenino"  && pal_cat == "Very active") return(-709.59 - 22.25*age + 18.22*height + 14.25*weight + 20)
+  }
+
+  if(age >= 19){
+    if(sexo == "Masculino" && pal_cat == "Inactive")    return( 753.07 - 10.83*age +  6.50*height + 14.10*weight)
+    if(sexo == "Masculino" && pal_cat == "Low active")  return( 581.47 - 10.83*age +  8.30*height + 14.94*weight)
+    if(sexo == "Masculino" && pal_cat == "Active")      return(1004.82 - 10.83*age +  6.52*height + 15.91*weight)
+    if(sexo == "Masculino" && pal_cat == "Very active") return(-517.88 - 10.83*age + 15.61*height + 19.11*weight)
+
+    if(sexo == "Femenino"  && pal_cat == "Inactive")    return( 584.90 -  7.01*age +  5.72*height + 11.71*weight)
+    if(sexo == "Femenino"  && pal_cat == "Low active")  return( 575.77 -  7.01*age +  6.60*height + 12.14*weight)
+    if(sexo == "Femenino"  && pal_cat == "Active")      return( 710.25 -  7.01*age +  6.54*height + 12.34*weight)
+    if(sexo == "Femenino"  && pal_cat == "Very active") return( 511.83 -  7.01*age +  9.07*height + 12.56*weight)
+  }
+
+  NA_real_
+}
+
+tabla_poblacion <- function(data){
+  data %>%
+    count(grupo, sexo, name = "poblacion") %>%
+    tidyr::pivot_wider(
+      names_from = sexo,
+      values_from = poblacion,
+      values_fill = 0
+    ) %>%
+    mutate(
+      Masculino = ifelse(is.na(Masculino), 0, Masculino),
+      Femenino  = ifelse(is.na(Femenino), 0, Femenino),
+      total = Masculino + Femenino
+    ) %>%
+    select(grupo, Masculino, Femenino, total)
+}
+
+piramide_plot <- function(data, nombre){
+  piramide <- data %>%
+    filter(!is.na(grupo), !is.na(sexo)) %>%
+    count(grupo, sexo, name = "poblacion") %>%
+    mutate(valor = ifelse(sexo == "Masculino", -poblacion, poblacion))
+
+  ggplot(piramide, aes(x = grupo, y = valor, fill = sexo)) +
+    geom_col(width = 0.85) +
+    coord_flip() +
+    scale_fill_manual(values = c("Masculino" = "#4472C4", "Femenino" = "#C0504D")) +
+    scale_y_continuous(labels = \(x) comma(abs(x))) +
+    labs(
+      title = paste("Pirámide poblacional:", nombre),
+      x = "Grupo etario", y = "Población", fill = "Sexo"
+    ) +
+    theme_minimal(base_size = 12)
+}
+```
+
+# CNPV 2018: estructura poblacional
+
+La estructura poblacional constituye el punto de partida para el cálculo de los requerimientos promedio de energía, pues permite identificar la composición por sexo y edad de la población residente en cada ciudad.
+
+```{r cnpv, echo=FALSE}
+archivos_cnpv <- c(
+  "CNPV2018_5PER_A2_05.CSV",
+  "CNPV2018_5PER_A2_11.CSV",
+  "CNPV2018_5PER_A2_76.CSV"
+)
+
+cnpv <- map_dfr(
+  archivos_cnpv,
+  ~ read_csv(
+    file.path(cnpv_dir, .x),
+    show_col_types = FALSE,
+    col_types = cols(.default = col_character())
+  )
+) %>%
+  mutate(
+    U_DPTO = str_pad(U_DPTO, 2, pad = "0"),
+    U_MPIO = str_pad(U_MPIO, 3, pad = "0"),
+    P_SEXO = suppressWarnings(as.numeric(P_SEXO)),
+    P_EDADR = suppressWarnings(as.numeric(P_EDADR)),
+    sexo = case_when(
+      P_SEXO == 1 ~ "Masculino",
+      P_SEXO == 2 ~ "Femenino",
+      TRUE ~ NA_character_
+    ),
+    grupo = factor(P_EDADR, levels = 1:21, labels = edad_labels_cnpv)
+  )
+
+cnpv_ciudades <- ciudades_info %>%
+  transmute(U_DPTO, U_MPIO, dominio_geo) %>%
+  left_join(cnpv, by = c("U_DPTO", "U_MPIO")) %>%
+  mutate(dominio_geo = factor(dominio_geo, levels = c("Cali", "Bogotá", "Medellín")))
+```
+
+## Cali
+
+El Censo Nacional de Población y Vivienda 2018 permite identificar la distribución por sexo y grupos de edad de la población de **Cali**. Esta estructura es relevante porque sirve como ponderador demográfico en la estimación final de los requerimientos diarios promedio de energía.
+
+```{r cnpv-cali, echo=FALSE}
+tmp <- cnpv_ciudades %>% filter(dominio_geo == "Cali")
+kable(tabla_poblacion(tmp), caption = "Estructura poblacional de Cali (CNPV 2018)")
+piramide_plot(tmp, "Cali")
+```
+
+## Bogotá
+
+La información censal de **Bogotá** permite observar la composición etaria y por sexo de la ciudad. Esta composición se incorpora posteriormente al promedio ponderado de requerimientos energéticos.
+
+```{r cnpv-bogota, echo=FALSE}
+tmp <- cnpv_ciudades %>% filter(dominio_geo == "Bogotá")
+kable(tabla_poblacion(tmp), caption = "Estructura poblacional de Bogotá (CNPV 2018)")
+piramide_plot(tmp, "Bogotá")
+```
+
+## Medellín
+
+Para **Medellín**, el CNPV 2018 también ofrece la base demográfica con la cual se organiza la población por grupos etarios y sexo, insumo fundamental para construir los promedios de energía por ciudad.
+
+```{r cnpv-medellin, echo=FALSE}
+tmp <- cnpv_ciudades %>% filter(dominio_geo == "Medellín")
+kable(tabla_poblacion(tmp), caption = "Estructura poblacional de Medellín (CNPV 2018)")
+piramide_plot(tmp, "Medellín")
+```
+
+# ENSIN 2015: antropometría
+
+A continuación se presentan los promedios de **peso** y **talla** obtenidos a partir de la base de **antropometría de la ENSIN 2015**. El objetivo de esta sección es construir, para cada grupo etario y sexo, los insumos antropométricos necesarios para la estimación de los requerimientos de energía.
+
+```{r antropometria,echo=FALSE}
+antropo <- read_dta(file.path(ensin_dir, "ANTROPOMETRIA.DTA"))
+
+var_exp   <- buscar_var(antropo, c("FactorExpansionPer", "FactorExpansiónPer", "FactorExpansiÃ³nPer"))
+var_peso  <- buscar_var(antropo, c("AN_7", "PESO", "peso", "Peso"))
+var_talla <- buscar_var(antropo, c("AN_8", "TALLA", "talla", "Talla"))
+var_edad  <- buscar_var(antropo, c("AN_EDAD", "edad", "Edad"))
+var_sexo  <- buscar_var(antropo, c("ANTSEXO", "sexo", "Sexo"))
+
+agregar_dominios_antropo <- function(df){
+  base <- df %>%
+    mutate(
+      Region = as.character(Region),
+      Subregion = as.character(Subregion)
+    )
+  bind_rows(
+    base %>% filter(Subregion == "Cali A.M.")      %>% mutate(dominio_geo = "Cali"),
+    base %>% filter(Subregion == "Bogota")         %>% mutate(dominio_geo = "Bogotá"),
+    base %>% filter(Subregion == "Medellin A.M.")  %>% mutate(dominio_geo = "Medellín"),
+    base %>% mutate(dominio_geo = "Colombia")
+  )
+}
+
+antropo_base <- agregar_dominios_antropo(antropo) %>%
+  transmute(
+    dominio_geo,
+    sexo = case_when(
+      .data[[var_sexo]] %in% c(1, "1") ~ "Masculino",
+      .data[[var_sexo]] %in% c(2, "2") ~ "Femenino",
+      TRUE ~ NA_character_
+    ),
+    edad = suppressWarnings(as.numeric(.data[[var_edad]])),
+    peso = suppressWarnings(as.numeric(.data[[var_peso]])),
+    talla = suppressWarnings(as.numeric(.data[[var_talla]])),
+    factor_exp = suppressWarnings(as.numeric(.data[[var_exp]]))
+  ) %>%
+  filter(
+    dominio_geo %in% c("Cali", "Bogotá", "Medellín", "Colombia"),
+    !is.na(sexo), !is.na(edad), !is.na(peso), !is.na(talla), !is.na(factor_exp),
+    edad >= 14, peso > 0, talla > 0, factor_exp > 0
+  )
+
+resumen_antropo <- function(data, grupo_fun){
+  data %>%
+    mutate(grupo_edad = grupo_fun(edad)) %>%
+    dplyr::filter(!is.na(grupo_edad)) %>%
+    dplyr::group_by(dominio_geo, sexo, grupo_edad) %>%
+    dplyr::summarise(
+      edad_rep   = w_mean(edad, factor_exp),
+      peso_prom  = w_mean(peso, factor_exp),
+      talla_prom = w_mean(talla, factor_exp),
+      n = n(),
+      .groups = "drop"
+    ) %>%
+    mutate(across(c(dominio_geo, sexo, grupo_edad), as.character))
+}
+
+antropo_div1 <- resumen_antropo(antropo_base, grupo_div1)
+antropo_div2 <- resumen_antropo(antropo_base, grupo_div2)
+```
+
+```{r antropometria-tablas, echo=FALSE}
+kable(antropo_div1 %>% filter(dominio_geo != "Colombia"), digits = 2,
+      caption = "Antropometría promedio por sexo y grupo etario - división 1")
+
+kable(antropo_div2 %>% filter(dominio_geo != "Colombia"), digits = 2,
+      caption = "Antropometría promedio por sexo y grupo etario - división 2")
+```
+
+# Actividad física predominante
+
+Siguiendo la lógica del documento base, la actividad física se clasifica aquí a partir de la información disponible en **ENSIN 2015**. Dado el tipo de variables disponibles, la aproximación utilizada distingue principalmente entre **actividad ligera** y **actividad moderada**, categorías que luego se traducen a los niveles de actividad requeridos por las ecuaciones de energía.
+
+```{r actividad-fisica, echo=FALSE}
+# 1. ENSIN
+af_ado <- read_dta(file.path(ensin_dir, "AF_ADOLESCENTES.dta"))
+af_adu <- read_dta(file.path(ensin_dir, "AF_ADULTOS.dta"))
+
+var_exp_ado <- buscar_var(af_ado, c("FactorExpansiónAF", "FactorExpansionAF", "FactorExpansiÃ³nAF"))
+var_exp_adu <- buscar_var(af_adu, c("FactorExpansiónAF", "FactorExpansionAF", "FactorExpansiÃ³nAF"))
+
+agregar_dominios_af <- function(df){
+  base <- df %>%
+    mutate(
+      Region = as.character(Region),
+      Subregion = as.character(Subregion)
+    )
+
+  bind_rows(
+    base %>% filter(Subregion == "9")  %>% mutate(dominio_geo = "Cali"),
+    base %>% filter(Subregion == "5")  %>% mutate(dominio_geo = "Bogotá"),
+    base %>% filter(Subregion == "12") %>% mutate(dominio_geo = "Medellín"),
+    base %>% mutate(dominio_geo = "Colombia")
+  )
+}
+
+af_ado_limpia <- agregar_dominios_af(af_ado) %>%
+  transmute(
+    dominio_geo,
+    sexo = case_when(
+      AFSEXO %in% c(1, "1") ~ "Masculino",
+      AFSEXO %in% c(2, "2") ~ "Femenino",
+      TRUE ~ NA_character_
+    ),
+    edad = suppressWarnings(as.numeric(AFEDAD)),
+    factor_exp = suppressWarnings(as.numeric(.data[[var_exp_ado]])),
+    af_cat = case_when(
+      activof %in% c(1, "1") ~ "Moderada",
+      activof %in% c(0, "0") ~ "Ligera",
+      TRUE ~ NA_character_
+    )
+  ) %>%
+  filter(
+    dominio_geo %in% c("Cali", "Bogotá", "Medellín", "Colombia"),
+    !is.na(sexo), !is.na(edad), !is.na(factor_exp),
+    edad >= 14, edad < 18, factor_exp > 0
+  )
+
+af_adu_limpia <- agregar_dominios_af(af_adu) %>%
+  transmute(
+    dominio_geo,
+    sexo = case_when(
+      AFSEXO %in% c(1, "1") ~ "Masculino",
+      AFSEXO %in% c(2, "2") ~ "Femenino",
+      TRUE ~ NA_character_
+    ),
+    edad = suppressWarnings(as.numeric(AFEDAD)),
+    factor_exp = suppressWarnings(as.numeric(.data[[var_exp_adu]])),
+    af_cat = case_when(
+      meetcombinatt %in% c(1, "1") ~ "Moderada",
+      meetcombinatt %in% c(0, "0") ~ "Ligera",
+      TRUE ~ NA_character_
+    )
+  ) %>%
+  filter(
+    dominio_geo %in% c("Cali", "Bogotá", "Medellín", "Colombia"),
+    !is.na(sexo), !is.na(edad), !is.na(factor_exp),
+    edad >= 18, factor_exp > 0
+  )
+
+af_ensin <- bind_rows(af_ado_limpia, af_adu_limpia)
+
+# 2. FUNCIÓN RESUMEN
+resumen_af <- function(data, grupo_fun){
+  data %>%
+    dplyr::mutate(grupo_edad = grupo_fun(edad)) %>%
+    dplyr::filter(!is.na(grupo_edad), !is.na(af_cat), factor_exp > 0) %>%
+    dplyr::group_by(dominio_geo, sexo, grupo_edad, af_cat) %>%
+    dplyr::summarise(freq = sum(factor_exp, na.rm = TRUE), .groups = "drop") %>%
+    dplyr::group_by(dominio_geo, sexo, grupo_edad) %>%
+    slice_max(order_by = freq, n = 1, with_ties = FALSE) %>%
+    ungroup() %>%
+    rename(AF_predominante = af_cat) %>%
+    mutate(across(c(dominio_geo, sexo, grupo_edad), as.character))
+}
+
+# 3. SABE 2015: complemento para adultos mayores
+leer_txt_seguro <- function(path){
+  suppressWarnings(
+    tryCatch(
+      read_tsv(path, show_col_types = FALSE, progress = FALSE),
+      error = function(e) {
+        tryCatch(
+          read_delim(path, delim = ";", show_col_types = FALSE, progress = FALSE),
+          error = function(e2) {
+            tryCatch(
+              read_delim(path, delim = ",", show_col_types = FALSE, progress = FALSE),
+              error = function(e3) NULL
+            )
+          }
+        )
+      }
+    )
+  )
+}
+
+archivos_sabe <- list.files(sabe_dir, pattern = "\\.txt$", full.names = TRUE)
+
+path_cap1 <- archivos_sabe[str_detect(basename(archivos_sabe), regex("Cap1Parte1", ignore_case = TRUE))]
+path_cap4 <- archivos_sabe[str_detect(basename(archivos_sabe), regex("Cap4", ignore_case = TRUE))]
+path_cap7 <- archivos_sabe[str_detect(basename(archivos_sabe), regex("Cap7", ignore_case = TRUE))]
+
+sabe_ok <- FALSE
+af_sabe <- NULL
+
+if (length(path_cap1) > 0 && length(path_cap4) > 0 && length(path_cap7) > 0) {
+
+  cap1 <- leer_txt_seguro(path_cap1[1])
+  cap4 <- leer_txt_seguro(path_cap4[1])
+  cap7 <- leer_txt_seguro(path_cap7[1])
+
+  if (!is.null(cap1) && !is.null(cap4) && !is.null(cap7)) {
+
+    if (all(c("NumIdentificador", "P121", "P122EDAD") %in% names(cap1))) {
+
+      cap1s <- cap1 %>%
+        transmute(
+          NumIdentificador = NumIdentificador,
+          sexo = case_when(
+            P121 %in% c(1, "1") ~ "Masculino",
+            P121 %in% c(2, "2") ~ "Femenino",
+            TRUE ~ NA_character_
+          ),
+          edad = suppressWarnings(as.numeric(P122EDAD))
+        )
+
+      cap4s <- cap4 %>%
+        transmute(
+          NumIdentificador = NumIdentificador,
+          p407b2 = if ("P407B_2" %in% names(cap4)) suppressWarnings(as.numeric(P407B_2)) else NA_real_,
+          p40911 = if ("P409_11" %in% names(cap4)) suppressWarnings(as.numeric(P409_11)) else NA_real_
+        )
+
+      cap7s <- cap7 %>%
+        transmute(
+          NumIdentificador = NumIdentificador,
+          p719 = if ("P719" %in% names(cap7)) suppressWarnings(as.numeric(P719)) else NA_real_,
+          p720 = if ("P720" %in% names(cap7)) suppressWarnings(as.numeric(P720)) else NA_real_,
+          p721 = if ("P721" %in% names(cap7)) suppressWarnings(as.numeric(P721)) else NA_real_
+        )
+
+      af_sabe <- cap1s %>%
+        left_join(cap4s, by = "NumIdentificador") %>%
+        left_join(cap7s, by = "NumIdentificador") %>%
+        filter(!is.na(sexo), !is.na(edad), edad >= 60) %>%
+        mutate(
+          af_sabe_flag = case_when(
+            p407b2 == 1 | p40911 == 1 | p719 == 1 | p720 == 1 | p721 == 1 ~ 1,
+            TRUE ~ 0
+          ),
+          af_cat = case_when(
+            af_sabe_flag == 1 ~ "Moderada",
+            af_sabe_flag == 0 ~ "Ligera",
+            TRUE ~ NA_character_
+          ),
+          factor_exp = 1,
+          dominio_geo = "Colombia"
+        ) %>%
+        select(dominio_geo, sexo, edad, factor_exp, af_cat)
+
+      sabe_ok <- TRUE
+    }
+  }
+}
+
+# 4. RESULTADOS ENSIN
+af_pred_div1_ensin <- resumen_af(af_ensin, grupo_div1)
+af_pred_div2_ensin <- resumen_af(af_ensin, grupo_div2)
+
+# 5. INTEGRACIÓN SABE
+if (sabe_ok) {
+  af_pred_div1_sabe <- resumen_af(af_sabe, grupo_div1)
+  af_pred_div2_sabe <- resumen_af(af_sabe, grupo_div2)
+
+  af_pred_div1 <- bind_rows(
+    af_pred_div1_ensin,
+    af_pred_div1_sabe %>% filter(grupo_edad == "[60,Inf)")
+  )
+
+  af_pred_div2 <- bind_rows(
+    af_pred_div2_ensin,
+    af_pred_div2_sabe %>% filter(grupo_edad == "[70,Inf)")
+  )
+} else {
+  af_pred_div1 <- af_pred_div1_ensin
+  af_pred_div2 <- af_pred_div2_ensin
+}
+```
+
+```{r actividad-fisica-tablas,echo=FALSE}
+kable(af_pred_div1 %>% filter(dominio_geo != "Colombia"),
+      caption = "Actividad física predominante - división 1")
+
+kable(af_pred_div2 %>% filter(dominio_geo != "Colombia"),
+      caption = "Actividad física predominante - división 2")
+```
+
+## Ecuaciones NASEM 2023 utilizadas en el cálculo del EER
+
+A continuación se explicitan las ecuaciones de **requerimiento estimado de energía (EER)** utilizadas en este documento. Estas corresponden a las ecuaciones actualizadas de la **National Academies of Sciences, Engineering, and Medicine (2023)** para adolescentes de **14 a 18.99 años** y para población adulta de **19 años o más**.
+
+```{r tabla-ecuaciones-eer, echo=FALSE}
+ecuaciones_eer <- tibble::tribble(
+  ~grupo_edad_modelo, ~sexo, ~categoria_pal, ~ecuacion,
+  "19+ años", "M", "Inactivo", "EER = 753.07 - (10.83 × edad) + (6.50 × altura) + (14.10 × peso)",
+  "19+ años", "M", "Baja actividad", "EER = 581.47 - (10.83 × edad) + (8.30 × altura) + (14.94 × peso)",
+  "19+ años", "M", "Activo", "EER = 1004.82 - (10.83 × edad) + (6.52 × altura) + (15.91 × peso)",
+  "19+ años", "M", "Muy activo", "EER = -517.88 - (10.83 × edad) + (15.61 × altura) + (19.11 × peso)",
+  "19+ años", "F", "Inactivo", "EER = 584.90 - (7.01 × edad) + (5.72 × altura) + (11.71 × peso)",
+  "19+ años", "F", "Baja actividad", "EER = 575.77 - (7.01 × edad) + (6.60 × altura) + (12.14 × peso)",
+  "19+ años", "F", "Activo", "EER = 710.25 - (7.01 × edad) + (6.54 × altura) + (12.34 × peso)",
+  "19+ años", "F", "Muy activo", "EER = 511.83 - (7.01 × edad) + (9.07 × altura) + (12.56 × peso)",
+  "14 a 18.99 años", "M", "Inactivo", "EER = -447.51 + (3.68 × edad) + (13.01 × altura) + (13.15 × peso) + 20",
+  "14 a 18.99 años", "M", "Baja actividad", "EER = 19.12 + (3.68 × edad) + (8.62 × altura) + (20.28 × peso) + 20",
+  "14 a 18.99 años", "M", "Activo", "EER = -388.19 + (3.68 × edad) + (12.66 × altura) + (20.46 × peso) + 20",
+  "14 a 18.99 años", "M", "Muy activo", "EER = -671.75 + (3.68 × edad) + (15.38 × altura) + (23.25 × peso) + 20",
+  "14 a 18.99 años", "F", "Inactivo", "EER = 55.59 - (22.25 × edad) + (8.43 × altura) + (17.07 × peso) + 20",
+  "14 a 18.99 años", "F", "Baja actividad", "EER = -297.54 - (22.25 × edad) + (12.77 × altura) + (14.73 × peso) + 20",
+  "14 a 18.99 años", "F", "Activo", "EER = -189.55 - (22.25 × edad) + (11.74 × altura) + (18.34 × peso) + 20",
+  "14 a 18.99 años", "F", "Muy activo", "EER = -709.59 - (22.25 × edad) + (18.22 × altura) + (14.25 × peso) + 20"
+)
+
+kable(
+  ecuaciones_eer,
+  caption = "Ecuaciones NASEM 2023 utilizadas para el cálculo del EER"
+)
+```
+
+En este documento, las ecuaciones anteriores se implementan directamente en la función `eer_iom_2023()`. Por tanto, los requerimientos energéticos calculados para **Cali**, **Bogotá** y **Medellín** sí se basan en las ecuaciones nuevas que compartiste.
+
+
+## Distribución de actividad física por ciudad, sexo y grupo etario
+
+La siguiente gráfica muestra la composición relativa de la actividad física observada en cada ciudad, diferenciando por sexo y grupos etarios. Esto permite identificar en qué segmentos predomina una actividad ligera o moderada.
+
+```{r graf-af-distribucion, echo=FALSE}
+af_dist_html <- af_ensin %>%
+  mutate(
+    dominio_geo = trimws(as.character(dominio_geo)),
+    sexo = trimws(as.character(sexo)),
+    af_cat = trimws(as.character(af_cat)),
+    grupo_edad = grupo_af_html(edad)
+  ) %>%
+  dplyr::filter(
+    dominio_geo %in% c("Cali", "Bogotá", "Medellín", "Bogota", "Medellin"),
+    !is.na(grupo_edad),
+    !is.na(sexo),
+    !is.na(af_cat)
+  ) %>%
+  mutate(
+    dominio_geo = dplyr::case_when(
+      dominio_geo == "Bogota" ~ "Bogotá",
+      dominio_geo == "Medellin" ~ "Medellín",
+      TRUE ~ dominio_geo
+    ),
+    grupo_edad = factor(
+      grupo_edad,
+      levels = c("[4,9)", "[9,14)", "[14,18)", "[18,30)", "[30,60)", "[60,Inf)")
+    ),
+    af_cat = factor(af_cat, levels = c("Ligera", "Moderada"))
+  ) %>%
+  dplyr::group_by(dominio_geo, sexo, grupo_edad, af_cat) %>%
+  dplyr::summarise(freq = dplyr::n(), .groups = "drop")
+
+if (nrow(af_dist_html) == 0) {
+  cat("No hay observaciones disponibles para construir la gráfica de distribución de actividad física.")
+} else {
+  ggplot(af_dist_html, aes(x = grupo_edad, y = freq, fill = af_cat)) +
+    geom_col(position = position_dodge(width = 0.85), width = 0.75) +
+    facet_grid(sexo ~ dominio_geo) +
+    scale_fill_manual(values = c("Ligera" = "#FF1A1A", "Moderada" = "#B22222")) +
+    labs(
+      title = "Actividad física por ciudad, sexo y grupos etarios (ENSIN, 2015)",
+      x = "Grupos etarios",
+      y = "Frecuencia",
+      fill = "Actividad"
+    ) +
+    theme_minimal(base_size = 12) +
+    theme(
+      legend.position = "right",
+      axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5)
+    )
+}
+```
+
+## Actividad física predominante por ciudad, sexo y grupo etario
+
+Esta visualización resume, por grupo etario, cuál es la categoría predominante de actividad física identificada en cada ciudad.
+
+```{r graf-af-predominante, echo=FALSE}
+af_plot_pred <- af_ensin %>%
+  mutate(
+    dominio_geo = trimws(as.character(dominio_geo)),
+    sexo = trimws(as.character(sexo)),
+    af_cat = trimws(as.character(af_cat)),
+    grupo_edad = grupo_af_html(edad)
+  ) %>%
+  dplyr::filter(
+    dominio_geo %in% c("Cali", "Bogotá", "Medellín", "Bogota", "Medellin"),
+    !is.na(grupo_edad),
+    !is.na(sexo),
+    !is.na(af_cat)
+  ) %>%
+  mutate(
+    dominio_geo = dplyr::case_when(
+      dominio_geo == "Bogota" ~ "Bogotá",
+      dominio_geo == "Medellin" ~ "Medellín",
+      TRUE ~ dominio_geo
+    )
+  ) %>%
+  dplyr::group_by(dominio_geo, sexo, grupo_edad, af_cat) %>%
+  dplyr::summarise(freq = dplyr::n(), .groups = "drop") %>%
+  dplyr::group_by(dominio_geo, sexo, grupo_edad) %>%
+  dplyr::slice_max(order_by = freq, n = 1, with_ties = FALSE) %>%
+  dplyr::ungroup() %>%
+  mutate(
+    grupo_edad = factor(
+      grupo_edad,
+      levels = c("[4,9)", "[9,14)", "[14,18)", "[18,30)", "[30,60)", "[60,Inf)")
+    ),
+    af_cat = factor(af_cat, levels = c("Ligera", "Moderada"))
+  )
+
+if (nrow(af_plot_pred) == 0) {
+  cat("No hay observaciones disponibles para la gráfica de actividad física predominante.")
+} else {
+  ggplot(af_plot_pred, aes(x = grupo_edad, y = freq, fill = af_cat)) +
+    geom_col(width = 0.75) +
+    facet_grid(sexo ~ dominio_geo) +
+    scale_fill_manual(values = c("Ligera" = "#FF1A1A", "Moderada" = "#B22222")) +
+    labs(
+      title = "Actividad física predominante por ciudad, sexo y grupos etarios",
+      x = "Grupos etarios",
+      y = "Frecuencia",
+      fill = "AF predominante"
+    ) +
+    theme_minimal(base_size = 12) +
+    theme(
+      legend.position = "right",
+      axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5)
+    )
+}
+```
+
+## Comparación general de actividad física por ciudad
+
+Finalmente, se presenta una comparación agregada entre ciudades, útil para una lectura más ejecutiva del perfil de actividad física.
+
+```{r graf-af-ciudad, echo=FALSE}
+af_ciudad_resumen <- af_ensin %>%
+  mutate(
+    dominio_geo = trimws(as.character(dominio_geo)),
+    af_cat = trimws(as.character(af_cat)),
+    dominio_geo = dplyr::case_when(
+      dominio_geo == "Bogota" ~ "Bogotá",
+      dominio_geo == "Medellin" ~ "Medellín",
+      TRUE ~ dominio_geo
+    )
+  ) %>%
+  dplyr::filter(
+    dominio_geo %in% c("Cali", "Bogotá", "Medellín"),
+    !is.na(af_cat)
+  ) %>%
+  dplyr::group_by(dominio_geo, af_cat) %>%
+  dplyr::summarise(freq = dplyr::n(), .groups = "drop") %>%
+  mutate(
+    dominio_geo = factor(dominio_geo, levels = c("Bogotá", "Cali", "Medellín")),
+    af_cat = factor(af_cat, levels = c("Ligera", "Moderada"))
+  )
+
+if (nrow(af_ciudad_resumen) == 0) {
+  cat("No hay observaciones disponibles para la comparación general de actividad física.")
+} else {
+  ggplot(af_ciudad_resumen, aes(x = dominio_geo, y = freq, fill = af_cat)) +
+    geom_col(position = position_dodge(width = 0.8), width = 0.7) +
+    scale_fill_manual(values = c("Ligera" = "#FF1A1A", "Moderada" = "#B22222")) +
+    labs(
+      title = "Composición general de actividad física por ciudad",
+      x = "Ciudad",
+      y = "Frecuencia",
+      fill = "Actividad física"
+    ) +
+    theme_minimal(base_size = 12) +
+    theme(legend.position = "right")
+}
+```
+
+# EER por sexo, edad y ciudad
+
+Con base en la antropometría promedio y en la categoría de actividad física predominante, se calculan los **requerimientos estimados de energía (EER)** para cada ciudad, sexo y grupo etario.
+
+```{r eer, echo=FALSE}
+aplicar_eer_tabla <- function(df){
+  df %>%
+    mutate(
+      pal_iom = map_pal_iom(AF_predominante),
+      eer_kcal_dia = pmap_dbl(
+        list(edad_rep, talla_prom, peso_prom, sexo, pal_iom),
+        eer_iom_2023
+      )
+    )
+}
+
+tabla_final_div1 <- antropo_div1 %>%
+  left_join(af_pred_div1, by = c("dominio_geo", "sexo", "grupo_edad")) %>%
+  aplicar_eer_tabla()
+
+tabla_final_div2 <- antropo_div2 %>%
+  left_join(af_pred_div2, by = c("dominio_geo", "sexo", "grupo_edad")) %>%
+  aplicar_eer_tabla()
+```
+
+## Resultados detallados: división 1
+
+```{r eer-div1, echo=FALSE}
+kable(tabla_final_div1 %>% filter(dominio_geo != "Colombia"), digits = 2,
+      caption = "EER calculado - división 1")
+```
+
+## Resultados detallados: división 2
+
+```{r eer-div2, echo=FALSE}
+kable(tabla_final_div2 %>% filter(dominio_geo != "Colombia"), digits = 2,
+      caption = "EER calculado - división 2")
+```
+
+# Resumen poblacional ponderado con CNPV
+
+Una vez calculado el EER por grupo etario y sexo, se obtiene un promedio diario ponderado utilizando la estructura poblacional del censo. Este paso permite aproximar un requerimiento energético promedio para el conjunto de la población de cada ciudad.
+
+```{r resumen-poblacional, echo=FALSE}
+pob_div1 <- cnpv_ciudades %>%
+  filter(!is.na(sexo), !is.na(grupo)) %>%
+  mutate(grupo_edad = grupo_cnpv_a_div1(as.character(grupo))) %>%
+  filter(!is.na(grupo_edad)) %>%
+  count(dominio_geo, sexo, grupo_edad, name = "poblacion") %>%
+  mutate(across(c(dominio_geo, sexo, grupo_edad), as.character))
+
+pob_div2 <- cnpv_ciudades %>%
+  filter(!is.na(sexo), !is.na(grupo)) %>%
+  mutate(grupo_edad = grupo_cnpv_a_div2(as.character(grupo))) %>%
+  filter(!is.na(grupo_edad)) %>%
+  count(dominio_geo, sexo, grupo_edad, name = "poblacion") %>%
+  mutate(across(c(dominio_geo, sexo, grupo_edad), as.character))
+
+eer_ciudad_div1 <- tabla_final_div1 %>%
+  dplyr::filter(dominio_geo %in% c("Cali", "Bogotá", "Medellín")) %>%
+  left_join(pob_div1, by = c("dominio_geo", "sexo", "grupo_edad")) %>%
+  dplyr::group_by(dominio_geo) %>%
+  dplyr::summarise(
+    eer_prom_ponderado = weighted.mean(eer_kcal_dia, w = poblacion, na.rm = TRUE),
+    .groups = "drop"
+  )
+
+eer_ciudad_div2 <- tabla_final_div2 %>%
+  dplyr::filter(dominio_geo %in% c("Cali", "Bogotá", "Medellín")) %>%
+  left_join(pob_div2, by = c("dominio_geo", "sexo", "grupo_edad")) %>%
+  dplyr::group_by(dominio_geo) %>%
+  dplyr::summarise(
+    eer_prom_ponderado = weighted.mean(eer_kcal_dia, w = poblacion, na.rm = TRUE),
+    .groups = "drop"
+  )
+
+kable(eer_ciudad_div1, digits = 1,
+      caption = "EER promedio diario ponderado por estructura poblacional - división 1")
+
+kable(eer_ciudad_div2, digits = 1,
+      caption = "EER promedio diario ponderado por estructura poblacional - división 2")
+```
+
+# Gráficas 
+
+## EER por sexo y grupo etario
+
+```{r graf-eer, echo=FALSE}
+g_eer <- tabla_final_div2 %>%
+  filter(dominio_geo %in% c("Cali", "Bogotá", "Medellín")) %>%
+  ggplot(aes(x = grupo_edad, y = eer_kcal_dia, fill = sexo)) +
+  geom_col(position = position_dodge(width = 0.8)) +
+  facet_wrap(~ dominio_geo, scales = "free_y") +
+  labs(
+    title = "Requerimientos estimados de energía por ciudad, sexo y grupo etario",
+    x = "Grupo etario", y = "EER (kcal/día)", fill = "Sexo"
+  ) +
+  theme_minimal(base_size = 12)
+
+g_eer
+```
+
+## Peso promedio por ciudad, sexo y grupo etario
+
+```{r graf-peso, echo=FALSE}
+g_peso <- antropo_div2 %>%
+  filter(dominio_geo %in% c("Cali", "Bogotá", "Medellín")) %>%
+  ggplot(aes(x = grupo_edad, y = peso_prom, color = sexo, group = sexo)) +
+  geom_line(linewidth = 1) +
+  geom_point(size = 2) +
+  facet_wrap(~ dominio_geo) +
+  labs(
+    title = "Peso promedio por ciudad, sexo y grupo etario",
+    x = "Grupo etario", y = "Peso promedio (kg)", color = "Sexo"
+  ) +
+  theme_minimal(base_size = 12)
+
+g_peso
+```
+
+## Talla promedio por ciudad, sexo y grupo etario
+
+```{r graf-talla, echo=FALSE}
+g_talla <- antropo_div2 %>%
+  filter(dominio_geo %in% c("Cali", "Bogotá", "Medellín")) %>%
+  ggplot(aes(x = grupo_edad, y = talla_prom, color = sexo, group = sexo)) +
+  geom_line(linewidth = 1) +
+  geom_point(size = 2) +
+  facet_wrap(~ dominio_geo) +
+  labs(
+    title = "Talla promedio por ciudad, sexo y grupo etario",
+    x = "Grupo etario", y = "Talla promedio (cm)", color = "Sexo"
+  ) +
+  theme_minimal(base_size = 12)
+
+g_talla
+```
+
+## Comparación del EER promedio ponderado por ciudad
+
+```{r graf-resumen, echo=FALSE}
+eer_ciudad_div2 <- tabla_final_div2 %>%
+  mutate(
+    dominio_geo = trimws(as.character(dominio_geo)),
+    dominio_geo = dplyr::case_when(
+      dominio_geo == "Bogota" ~ "Bogotá",
+      dominio_geo == "Medellin" ~ "Medellín",
+      TRUE ~ dominio_geo
+    )
+  ) %>%
+  dplyr::filter(dominio_geo %in% c("Cali", "Bogotá", "Medellín")) %>%
+  left_join(
+    pob_div2 %>%
+      mutate(
+        dominio_geo = trimws(as.character(dominio_geo)),
+        dominio_geo = dplyr::case_when(
+          dominio_geo == "Bogota" ~ "Bogotá",
+          dominio_geo == "Medellin" ~ "Medellín",
+          TRUE ~ dominio_geo
+        )
+      ),
+    by = c("dominio_geo", "sexo", "grupo_edad")
+  ) %>%
+  dplyr::filter(!is.na(eer_kcal_dia), !is.na(poblacion), poblacion > 0) %>%
+  group_by(dominio_geo) %>%
+  summarise(
+    eer_prom_ponderado = weighted.mean(eer_kcal_dia, w = poblacion, na.rm = TRUE),
+    .groups = "drop"
+  )
+```
+
+# Comparación de resultados
+
+En esta sección se sintetizan algunos indicadores descriptivos que facilitan una lectura comparada entre ciudades: el rango de EER estimado, así como los promedios de peso y talla.
+
+```{r lectura-rapida, echo=FALSE}
+lectura <- tabla_final_div2 %>%
+  mutate(
+    dominio_geo = trimws(as.character(dominio_geo)),
+    dominio_geo = dplyr::case_when(
+      dominio_geo == "Bogota" ~ "Bogotá",
+      dominio_geo == "Medellin" ~ "Medellín",
+      TRUE ~ dominio_geo
+    ),
+    eer_kcal_dia = as.numeric(eer_kcal_dia),
+    peso_prom = as.numeric(peso_prom),
+    talla_prom = as.numeric(talla_prom)
+  ) %>%
+  dplyr::filter(
+    dominio_geo %in% c("Cali", "Bogotá", "Medellín"),
+    !is.na(eer_kcal_dia),
+    is.finite(eer_kcal_dia)
+  ) %>%
+  dplyr::group_by(dominio_geo) %>%
+  dplyr::summarise(
+    eer_min = min(eer_kcal_dia, na.rm = TRUE),
+    eer_max = max(eer_kcal_dia, na.rm = TRUE),
+    peso_promedio = mean(peso_prom, na.rm = TRUE),
+    talla_promedio = mean(talla_prom, na.rm = TRUE),
+    .groups = "drop"
+  )
+
+if (nrow(lectura) == 0) {
+  cat("No hay observaciones disponibles para el resumen descriptivo por ciudad.")
+} else {
+  kable(
+    lectura,
+    digits = 1,
+    caption = "Resumen descriptivo por ciudad"
+  )
+}
+```
+
+```{r exportar, echo=FALSE}
+write.csv(tabla_final_div1, file.path(out_dir, "tabla_final_eer_div1.csv"), row.names = FALSE)
+write.csv(tabla_final_div2, file.path(out_dir, "tabla_final_eer_div2.csv"), row.names = FALSE)
+write.csv(eer_ciudad_div1,  file.path(out_dir, "eer_ciudad_div1.csv"), row.names = FALSE)
+write.csv(eer_ciudad_div2,  file.path(out_dir, "eer_ciudad_div2.csv"), row.names = FALSE)
+```
+
+# Nota metodológica
+
+1. La antropometría y la actividad física se estiman con **ENSIN 2015**.  
+2. La estructura poblacional proviene del **CNPV 2018**.  
+3. El EER se calcula con ecuaciones **NASEM 2023**.  
+4. La categoría de actividad física se aproxima así: **Ligera → Low active** y **Moderada → Active**.  
+5. El promedio final por ciudad puede presentarse de dos maneras: por grupos etarios o ponderado por la estructura poblacional observada en el censo.  
+6. La narrativa del documento sigue la lógica del HTML inicial, adaptándola de una ciudad a un análisis comparativo para **Cali, Bogotá y Medellín**.
+7. La actividad física se estimó principalmente con **ENSIN 2015 para Cali, Bogotá y Medellín**. Para adultos mayores, se incorporó una exploración complementaria con **SABE 2015** a partir de variables de ejercicio y caminata frecuente (P407B_2, P409_11, P719, P720 y P721). Dado que en la versión trabajada de SABE no se incorporó una desagregación urbana equivalente para las tres ciudades, este complemento se interpreta como referencia agregada para población mayor.
