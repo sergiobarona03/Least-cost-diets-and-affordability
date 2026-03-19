@@ -16,7 +16,7 @@ library(stringr)
 #----------------------------------------------------------------------
 # Base directory
 #----------------------------------------------------------------------
-base_dir <- "C:\\Users\\danie\\OneDrive\\Escritorio\\Least-cost-diets-and-affordability\\Proyecto Interno\\"
+base_dir <- "C:\\Users\\Portatil\\Desktop\\Least-cost-diets-and-affordability\\Proyecto Interno\\"
 setwd(base_dir)
 
 out_dir <- "working-papers/working-paper-ipc/output"

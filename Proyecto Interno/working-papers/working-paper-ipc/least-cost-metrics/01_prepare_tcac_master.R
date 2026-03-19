@@ -56,4 +56,4 @@ tcac_master <- tcac %>%
 saveRDS(tcac_master, file.path(tmp_dir, "tcac_master.rds"))
 write_csv(tcac_master, file.path(tmp_dir, "tcac_master.csv"))
 
-message("Saved tcac_master (sin AZUCARES, con Group/Subgroup) to tmp_dir.")
+message("Saved tcac_master (con Group/Subgroup) to tmp_dir.")
