@@ -14,7 +14,7 @@ suppressPackageStartupMessages({
 #----------------------------------------------------------------------
 # Directorios
 #----------------------------------------------------------------------
-base_dir <- "C:\\Users\\danie\\OneDrive\\Escritorio\\Least-cost-diets-and-affordability\\Proyecto Interno\\"
+base_dir <- "C:\\Users\\Portatil\\Desktop\\Least-cost-diets-and-affordability\\Proyecto Interno\\"
 
 out_dir <- file.path(base_dir, "working-papers/working-paper-ipc/output/least_cost_metrics")
 dir.create(out_dir, recursive = TRUE, showWarnings = FALSE)
@@ -814,3 +814,5 @@ if (!is.null(cord_sum) && nrow(cord_sum) > 0) {
     width    = 7.5, height = 5.5, dpi = 300, bg = "white"
   )
 }
+
+message("Done. Outputs saved in: ", fig_dir)

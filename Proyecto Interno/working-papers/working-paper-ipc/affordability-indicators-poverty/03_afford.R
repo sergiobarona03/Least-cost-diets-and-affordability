@@ -17,7 +17,7 @@ library(ggsci)
 #----------------------------------------------------------------------
 # Directorios
 #----------------------------------------------------------------------
-base_dir <- "C:\\Users\\danie\\OneDrive\\Escritorio\\Least-cost-diets-and-affordability\\Proyecto Interno\\"
+base_dir <- "C:\\Users\\Portatil\\Desktop\\Least-cost-diets-and-affordability\\Proyecto Interno\\"
 setwd(base_dir)
 
 source("working-papers/working-paper-ipc/affordability-indicators/aux_functions/Afford_Expansion.R")
@@ -55,17 +55,12 @@ income_df <- income_df %>%
 #----------------------------------------------------------------------
 coca_df <- read.csv(file.path(afford_cost_dir, "CoCA_city_month.csv"))
 cona_df <- read.csv(file.path(afford_cost_dir, "CoNA_city_month.csv"))
+cord_df <- read.csv(file.path(afford_cost_dir, "CoRD_city_month.csv")) 
 
-# CoRD puede existir o no: lo cargamos "suave" para no romper nada
-cord_path_csv <- file.path(afford_cost_dir, "CoRD_city_month.csv")
-cord_df <- NULL
-if (file.exists(cord_path_csv)) {
-  cord_df <- read.csv(cord_path_csv)
-}
 
 coca_df$fecha <- as.Date(coca_df$fecha)
 cona_df$fecha <- as.Date(cona_df$fecha)
-if (!is.null(cord_df)) cord_df$fecha <- as.Date(cord_df$fecha)
+cord_df$fecha <- as.Date(cord_df$fecha)
 
 #----------------------------------------------------------------------
 # Vectores ciudad–fecha
@@ -75,6 +70,15 @@ income_df$ciudad[income_df$ciudad == "BOGOTA"] = "BOGOTÁ D.C."
 
 income_df$ung = income_df$nug
 income_df$deciles = paste0("Decil ", income_df$deciles)
+
+coca_df$ciudad[coca_df$ciudad == "MEDELLIN"] = "MEDELLÍN"
+coca_df$ciudad[coca_df$ciudad == "BOGOTA"] = "BOGOTÁ D.C."
+
+cona_df$ciudad[cona_df$ciudad == "MEDELLIN"] = "MEDELLÍN"
+cona_df$ciudad[cona_df$ciudad == "BOGOTA"] = "BOGOTÁ D.C."
+
+cord_df$ciudad[cord_df$ciudad == "MEDELLIN"] = "MEDELLÍN"
+cord_df$ciudad[cord_df$ciudad == "BOGOTA"] = "BOGOTÁ D.C."
 
 city_vector <- sort(unique(income_df$ciudad))
 date_vector <- sort(unique(income_df$fecha))
