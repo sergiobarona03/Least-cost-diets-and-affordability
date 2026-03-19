@@ -214,8 +214,8 @@ write.csv(deciles_final,
           row.names = FALSE)
 
 saveRDS(poverty_final,
-        "working-papers/working-paper-ipc/output/poverty_rates/poverty_rates_city_cuartiles.rds")
+        "working-papers/working-paper-ipc/output/poverty_rates/real/poverty_rates_city_cuartiles.rds")
 
 write.csv(poverty_final,
-          "working-papers/working-paper-ipc/output/poverty_rates/poverty_rates_city_cuartiles.csv",
+          "working-papers/working-paper-ipc/output/poverty_rates/real/poverty_rates_city_cuartiles.csv",
           row.names = FALSE)

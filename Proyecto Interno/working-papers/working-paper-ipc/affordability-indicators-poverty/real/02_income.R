@@ -18,13 +18,13 @@ library(janitor)
 base_dir <- "C:\\Users\\danie\\OneDrive\\Escritorio\\Least-cost-diets-and-affordability\\Proyecto Interno\\"
 setwd(base_dir)
 
-dir.create("working-papers/working-paper-ipc/output/incomecol",
+dir.create("working-papers/working-paper-ipc/output/incomecol/real",
            recursive = TRUE, showWarnings = FALSE)
 
-dir.create("working-papers/working-paper-ipc/output/poverty_rates",
+dir.create("working-papers/working-paper-ipc/output/poverty_rates/real",
            recursive = TRUE, showWarnings = FALSE)
 
-dir.create("working-papers/working-paper-ipc/output/deciles_income",
+dir.create("working-papers/working-paper-ipc/output/deciles_income/real",
            recursive = TRUE, showWarnings = FALSE)
 
 #----------------------------------------------------------------------
@@ -210,15 +210,15 @@ deciles_final <- bind_rows(deciles_all)
 # Guardar
 #----------------------------------------------------------------------
 saveRDS(deciles_final,
-        "working-papers/working-paper-ipc/output/deciles_income/deciles_food_income.rds")
+        "working-papers/working-paper-ipc/output/deciles_income/real/deciles_food_income.rds")
 
 write.csv(deciles_final,
-          "working-papers/working-paper-ipc/output/deciles_income/deciles_food_income.csv",
+          "working-papers/working-paper-ipc/output/deciles_income/real/deciles_food_income.csv",
           row.names = FALSE)
 
 saveRDS(poverty_final,
-        "working-papers/working-paper-ipc/output/poverty_rates/poverty_rates_city_month.rds")
+        "working-papers/working-paper-ipc/output/poverty_rates/real/poverty_rates_city_month.rds")
 
 write.csv(poverty_final,
-          "working-papers/working-paper-ipc/output/poverty_rates/poverty_rates_city_month.csv",
+          "working-papers/working-paper-ipc/output/poverty_rates/real/poverty_rates_city_month.csv",
           row.names = FALSE)

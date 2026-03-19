@@ -1,19 +1,36 @@
-ciudad,articulo,motivo,subclase,method
-BOGOTA D.C.,CEBADA,Could not assign a single IPC subclase,NA,NA
-BOGOTA D.C.,CUCHUCO  DE MAÍZ,Could not assign a single IPC subclase,NA,NA
-BOGOTA D.C.,CUCHUCO  DE TRIGO,IPC missing at anchor month,011106,producto
-BOGOTA D.C.,FECULA DE MAÍZ,No unique anchor date index,011106,producto
-BOGOTA D.C.,HARINA DE TRIGO,No unique anchor date index,011105,producto
-BOGOTA D.C.,HARINA PRECOCIDA,No unique anchor date index,011106,producto
-BOGOTA D.C.,MANGOS,Could not assign a single IPC subclase,NA,NA
-BOGOTA D.C.,MANTEQUILLA,Could not assign a single IPC subclase,NA,NA
-CALI,FECULA DE MAÍZ,No unique anchor date index,011105,producto
-CALI,HARINA DE TRIGO,No unique anchor date index,011105,producto
-CALI,HARINA PRECOCIDA,No unique anchor date index,011106,producto
-CALI,MANGOS,Could not assign a single IPC subclase,NA,NA
-CALI,MANTEQUILLA,Could not assign a single IPC subclase,NA,NA
-MEDELLIN,FECULA DE MAÍZ,No unique anchor date index,011106,producto
-MEDELLIN,HARINA DE TRIGO,No unique anchor date index,011105,producto
-MEDELLIN,HARINA PRECOCIDA,No unique anchor date index,011106,producto
-MEDELLIN,MANGOS,Could not assign a single IPC subclase,NA,NA
-MEDELLIN,MANTEQUILLA,Could not assign a single IPC subclase,NA,NA
+ciudad,articulo,codigo_articulo,motivo,subclase,method
+BOGOTÁ D.C.,AJO,1310405,IPC missing at anchor month,011716,gasto_basico
+BOGOTÁ D.C.,CEBADA,1110503,Could not assign a single IPC subclase,NA,NA
+BOGOTÁ D.C.,CUCHUCO  DE MAÍZ,1110504,Could not assign a single IPC subclase,NA,NA
+BOGOTÁ D.C.,CUCHUCO  DE TRIGO,1110505,IPC missing at anchor month,011106,producto
+BOGOTÁ D.C.,FECULA DE MAÍZ,1110202,No unique anchor date index,011105,producto
+BOGOTÁ D.C.,FECULA DE MAÍZ,1110205,No unique anchor date index,011106,producto
+BOGOTÁ D.C.,HABICHUELAS FRESCAS,1310401,IPC missing at anchor month,011716,gasto_basico
+BOGOTÁ D.C.,HARINA DE TRIGO,1110202,No unique anchor date index,011105,producto
+BOGOTÁ D.C.,HARINA DE TRIGO,1110203,Could not assign a single IPC subclase,NA,NA
+BOGOTÁ D.C.,HARINA PRECOCIDA,1110201,No unique anchor date index,011106,producto
+BOGOTÁ D.C.,LECHUGA,1310404,IPC missing at anchor month,011716,gasto_basico
+BOGOTÁ D.C.,MANGOS,1410510,Could not assign a single IPC subclase,NA,NA
+BOGOTÁ D.C.,MANTEQUILLA,1720304,Could not assign a single IPC subclase,NA,NA
+BOGOTÁ D.C.,REPOLLO,1310403,IPC missing at anchor month,011716,gasto_basico
+CALI,AHUYAMA,1310408,IPC missing at anchor month,011716,gasto_basico
+CALI,AJO,1310405,IPC missing at anchor month,011716,gasto_basico
+CALI,FECULA DE MAÍZ,1110202,No unique anchor date index,011105,producto
+CALI,HABICHUELAS FRESCAS,1310401,IPC missing at anchor month,011716,gasto_basico
+CALI,HARINA DE TRIGO,1110202,No unique anchor date index,011105,producto
+CALI,HARINA DE TRIGO,1110203,Could not assign a single IPC subclase,NA,NA
+CALI,HARINA PRECOCIDA,1110201,No unique anchor date index,011106,producto
+CALI,LECHUGA,1310404,IPC missing at anchor month,011716,gasto_basico
+CALI,MANGOS,1410510,Could not assign a single IPC subclase,NA,NA
+CALI,MANTEQUILLA,1720304,Could not assign a single IPC subclase,NA,NA
+CALI,REPOLLO,1310403,IPC missing at anchor month,011716,gasto_basico
+MEDELLÍN,FECULA DE MAÍZ,1110202,No unique anchor date index,011105,producto
+MEDELLÍN,FECULA DE MAÍZ,1110205,No unique anchor date index,011106,producto
+MEDELLÍN,HABICHUELAS FRESCAS,1310401,IPC missing at anchor month,011716,gasto_basico
+MEDELLÍN,HARINA DE TRIGO,1110202,No unique anchor date index,011105,producto
+MEDELLÍN,HARINA DE TRIGO,1110203,Could not assign a single IPC subclase,NA,NA
+MEDELLÍN,HARINA PRECOCIDA,1110201,No unique anchor date index,011106,producto
+MEDELLÍN,LECHUGA,1310404,IPC missing at anchor month,011716,gasto_basico
+MEDELLÍN,MANGOS,1410510,Could not assign a single IPC subclase,NA,NA
+MEDELLÍN,MANTEQUILLA,1720304,Could not assign a single IPC subclase,NA,NA
+MEDELLÍN,REPOLLO,1310403,IPC missing at anchor month,011716,gasto_basico

@@ -1,5 +1,5 @@
 #######################################################################
-## FIGURA 2 y FIGURA 3 (NOMINAL) - Monthly + Quarterly
+## FIGURA 2 y FIGURA 3 (REAL) - Monthly + Quarterly
 ## CoCA / CoNA / CoRD - hogar representativo
 #######################################################################
 
@@ -21,13 +21,13 @@ base_dir <- "C:\\Users\\danie\\OneDrive\\Escritorio\\Least-cost-diets-and-afford
 setwd(base_dir)
 
 out_dir <- file.path(base_dir, "working-papers/working-paper-ipc/output")
-afford_cost_dir <- file.path(out_dir, "affordability")
-least_cost_dir <- file.path(out_dir, "least_cost_metrics")
-fig_dir <- file.path(out_dir, "figures_paper")
+afford_cost_dir <- file.path(out_dir, "affordability/real")
+least_cost_dir <- file.path(out_dir, "least_cost_metrics/real")
+fig_dir <- file.path(out_dir, "figures_paper/real")
 dir.create(fig_dir, recursive = TRUE, showWarnings = FALSE)
 
 #----------------------------------------------------------------------
-# Input paths (NOMINALES)
+# Input paths (REAL)
 #----------------------------------------------------------------------
 paths <- list(
   month = list(
@@ -385,7 +385,6 @@ plot_fig2_month <- function(df, out_file) {
     ) +
     labs(
       title = "CoCA, CoNA and CoRD evolution by demographic group (representative household)",
-      subtitle = "Nominal values",
       x = NULL,
       y = "Daily cost per person (COP)"
     ) +
@@ -419,7 +418,6 @@ plot_fig2_quarter <- function(df, out_file) {
     scale_x_discrete(breaks = brks, labels = brks) +
     labs(
       title = "CoCA, CoNA and CoRD evolution by demographic group (representative household)",
-      subtitle = "Nominal values",
       x = NULL,
       y = "Daily cost per person (COP)"
     ) +
@@ -468,7 +466,7 @@ plot_fig3_month <- function(df, out_file) {
     ) +
     labs(
       title = "CoCA, CoNA and CoRD evolution (representative household)",
-      subtitle = "Per-capita cost per day — Nominal values",
+      subtitle = "Per-capita cost per day",
       x = NULL,
       y = "Per-capita daily cost (COP)"
     ) +
@@ -529,7 +527,7 @@ plot_fig3_quarter <- function(df, out_file) {
     scale_x_discrete(breaks = brks, labels = brks) +
     labs(
       title = "CoCA, CoNA and CoRD evolution (representative household)",
-      subtitle = "Per-capita cost per day — Nominal values",
+      subtitle = "Per-capita cost per day",
       x = NULL,
       y = "Per-capita daily cost (COP)"
     ) +
@@ -548,7 +546,7 @@ plot_fig3_quarter <- function(df, out_file) {
 }
 
 #======================================================================
-# RUN: MONTHLY (NOMINAL)
+# RUN: MONTHLY (REAL)
 #======================================================================
 df_m <- bind_all_models("month") %>%
   dplyr::mutate(fecha = floor_date(coerce_to_date(fecha), "month"))
@@ -557,11 +555,11 @@ message("Rows in df_m: ", nrow(df_m))
 print(df_m %>% dplyr::count(model, ciudad))
 print(range(df_m$fecha, na.rm = TRUE))
 
-plot_fig2_month(df_m, "Fig2_demogroups_month_nominal.png")
-plot_fig3_month(df_m, "Fig3_household_month_nominal_percap_day.png")
+plot_fig2_month(df_m, "Fig2_demogroups_month_real.png")
+plot_fig3_month(df_m, "Fig3_household_month_real_percap_day.png")
 
 #======================================================================
-# RUN: QUARTERLY (NOMINAL)
+# RUN: QUARTERLY (REAL)
 #======================================================================
 df_q <- bind_all_models("quarter")
 
@@ -569,11 +567,11 @@ message("Rows in df_q: ", nrow(df_q))
 print(df_q %>% dplyr::count(model, ciudad))
 print(range(df_q$fecha, na.rm = TRUE))
 
-plot_fig2_quarter(df_q, "Fig2_demogroups_quarter_nominal.png")
-plot_fig3_quarter(df_q, "Fig3_household_quarter_nominal_percap_day.png")
+plot_fig2_quarter(df_q, "Fig2_demogroups_quarter_real.png")
+plot_fig3_quarter(df_q, "Fig3_household_quarter_real_percap_day.png")
 
 #######################################################################
-## Cost_1000kcal (NOMINAL) - Monthly + Quarterly
+## Cost_1000kcal (REAL) - Monthly + Quarterly
 ## CoCA / CoNA / CoRD - representative household
 #######################################################################
 
@@ -715,7 +713,6 @@ plot_kcal_month <- function(df, out_file) {
     x_scale_month_2y +
     labs(
       title = "CoCA, CoNA and CoRD evolution by city",
-      subtitle = "Cost per 1,000 kcal — Nominal values",
       x = NULL,
       y = "Cost per 1,000 kcal (COP)"
     ) +
@@ -773,7 +770,6 @@ plot_kcal_quarter <- function(df, out_file) {
     scale_x_discrete(breaks = brks) +
     labs(
       title = "CoCA, CoNA and CoRD evolution by city",
-      subtitle = "Cost per 1,000 kcal — Nominal values",
       x = NULL,
       y = "Cost per 1,000 kcal (COP)"
     ) +
@@ -793,8 +789,8 @@ message("Rows in df_kcal_q: ", nrow(df_kcal_q))
 print(df_kcal_q %>% dplyr::count(model, ciudad))
 print(range(df_kcal_q$fecha, na.rm = TRUE))
 
-plot_kcal_month(df_kcal_m, "Kcal1000_city_month_nominal.png")
-plot_kcal_quarter(df_kcal_q, "Kcal1000_city_quarter_nominal.png")
+plot_kcal_month(df_kcal_m, "Kcal1000_city_month_real.png")
+plot_kcal_quarter(df_kcal_q, "Kcal1000_city_quarter_real.png")
 
 #######################################################################
 ## DONE

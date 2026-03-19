@@ -122,7 +122,7 @@ plot_income_m <- ggplot(
   )
 
 ggsave(
-  file.path(income_dir, "income_ridgeline_plot_monthly.png"),
+  file.path(income_dir, "income_ridgeline_plot_monthly_r.png"),
   plot = plot_income_m,
   width = 14,
   height = 10,
@@ -218,7 +218,7 @@ plot_income_q <- ggplot(
   )
 
 ggsave(
-  file.path(income_dir, "income_ridgeline_plot_quarterly.png"),
+  file.path(income_dir, "income_ridgeline_plot_quarterly_r.png"),
   plot = plot_income_q,
   width = 14,
   height = 8,

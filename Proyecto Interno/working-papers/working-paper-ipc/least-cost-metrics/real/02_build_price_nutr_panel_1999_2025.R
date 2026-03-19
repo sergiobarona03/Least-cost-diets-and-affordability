@@ -48,6 +48,15 @@ norm_city <- function(x) {
   )
 }
 
+norm_articulo <- function(x) {
+  x %>%
+    as.character() %>%
+    iconv(from = "", to = "ASCII//TRANSLIT") %>%  
+    toupper() %>%
+    trimws() %>%
+    stringr::str_replace_all("\\s+", " ")         
+}
+
 # ------------------------------------------------------------
 # 1) Load extended REAL prices panel
 # ------------------------------------------------------------
@@ -56,9 +65,9 @@ prices_ext <- readRDS(in_prices_ext)
 stopifnot(all(c("ciudad", "articulo", "fecha", "precio_final") %in% names(prices_ext)))
 
 prices_ext <- prices_ext %>%
-  dplyr::mutate(
+  mutate(
     fecha = as.Date(fecha),
-    articulo = as.character(articulo),
+    articulo = norm_articulo(articulo),
     ciudad = norm_city(ciudad)
   ) %>%
   dplyr::filter(ciudad %in% norm_city(cities_use))
@@ -115,17 +124,23 @@ message("Rows with real precio_500g available (%): ", round(diag_price$pct_real,
 # ------------------------------------------------------------
 # 4) Load tcac master
 # ------------------------------------------------------------
-tcac_master <- readRDS(file.path(tmp_dir, "tcac_master.rds"))
+tcac_master <- readRDS(file.path(tmp_dir, "tcac_master.rds")) %>%
+  mutate(
+    articulo = norm_articulo(articulo),
+    codigo_articulo = suppressWarnings(as.numeric(codigo_articulo))
+  )
 
+# Si tcac_master todavía trae grupos_gabas/subgrupos_gabas, normalizar nombres
 if (all(c("grupos_gabas", "subgrupos_gabas") %in% names(tcac_master)) &&
     !all(c("Group", "Subgroup") %in% names(tcac_master))) {
   tcac_master <- tcac_master %>%
-    dplyr::rename(
+    rename(
       Group = grupos_gabas,
       Subgroup = subgrupos_gabas
     )
 }
 
+# Sanity: ensure expected columns exist
 need_tcac_cols <- c(
   "codigo_articulo", "articulo",
   "parte_comestible_percent",

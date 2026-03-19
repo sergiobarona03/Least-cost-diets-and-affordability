@@ -1,6 +1,6 @@
 #######################################################################
 ## FIGURA 5 (MENSUAL + TRIMESTRAL) - HEATMAPS 
-## Incidencia de pobreza de asequibilidad por decil (CoCA / CoNA)
+## Incidencia de pobreza de asequibilidad por decil (CoCA / CoNA / CoRD)
 #######################################################################
 #----------------------------------------------------------------------
 # Packages
@@ -20,7 +20,7 @@ base_dir <- "C:\\Users\\danie\\OneDrive\\Escritorio\\Least-cost-diets-and-afford
 setwd(base_dir)
 
 out_dir <- file.path(base_dir, "working-papers/working-paper-ipc/output")
-afford_metrics_dir <- file.path(out_dir, "affordability_metrics")
+afford_metrics_dir <- file.path(out_dir, "affordability_metrics/real")
 
 #----------------------------------------------------------------------
 # Helpers

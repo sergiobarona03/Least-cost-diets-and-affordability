@@ -15,9 +15,9 @@ library(stringr)
 #----------------------------------------------------------------------
 # RUTAS 
 #----------------------------------------------------------------------
-poverty_month_path <- "C:/Users/danie/OneDrive/Escritorio/Least-cost-diets-and-affordability/Proyecto Interno/working-papers/working-paper-ipc/output/poverty_rates/poverty_rates_city_month.rds"
+poverty_month_path <- "C:/Users/danie/OneDrive/Escritorio/Least-cost-diets-and-affordability/Proyecto Interno/working-papers/working-paper-ipc/output/poverty_rates/real/poverty_rates_city_month.rds"
 
-poverty_quarter_path <- "C:/Users/danie/OneDrive/Escritorio/Least-cost-diets-and-affordability/Proyecto Interno/working-papers/working-paper-ipc/output/poverty_rates/poverty_rates_city_cuartiles.rds"
+poverty_quarter_path <- "C:/Users/danie/OneDrive/Escritorio/Least-cost-diets-and-affordability/Proyecto Interno/working-papers/working-paper-ipc/output/poverty_rates/real/poverty_rates_city_cuartiles.rds"
 
 # Carpeta de salida (misma carpeta poverty_rates)
 output_dir <- dirname(poverty_month_path)

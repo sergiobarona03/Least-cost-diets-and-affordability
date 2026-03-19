@@ -21,10 +21,10 @@ setwd(base_dir)
 
 out_dir <- "working-papers/working-paper-ipc/output"
 
-poverty_dir  <- file.path(out_dir, "poverty_rates")
-afford_dir   <- file.path(out_dir, "affordability_metrics")
+poverty_dir  <- file.path(out_dir, "poverty_rates/real")
+afford_dir   <- file.path(out_dir, "affordability_metrics/real")
 
-comparison_dir <- file.path(out_dir, "comparison_results")
+comparison_dir <- file.path(out_dir, "comparison_results/real")
 dir.create(comparison_dir, recursive = TRUE, showWarnings = FALSE)
 
 #======================================================================

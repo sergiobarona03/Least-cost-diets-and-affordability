@@ -21,9 +21,9 @@ source("working-papers/working-paper-ipc/affordability-indicators/aux_functions/
 
 out_dir <- file.path(base_dir, "working-papers/working-paper-ipc/output")
 
-income_dir         <- file.path(out_dir, "incomecol")
-afford_cost_dir    <- file.path(out_dir, "affordability")
-afford_metrics_dir <- file.path(out_dir, "affordability_metrics")
+income_dir          <- file.path(out_dir, "incomecol")
+afford_cost_dir     <- file.path(out_dir, "affordability/real")
+afford_metrics_dir  <- file.path(out_dir, "affordability_metrics/real")
 dir.create(afford_metrics_dir, recursive = TRUE, showWarnings = FALSE)
 
 #----------------------------------------------------------------------
@@ -128,6 +128,15 @@ if (!("trimestre" %in% names(cord_df))) cord_df <- cord_df %>% mutate(trimestre 
 coca_df$trimestre <- as.character(coca_df$trimestre)
 cona_df$trimestre <- as.character(cona_df$trimestre)
 cord_df$trimestre <- as.character(cord_df$trimestre)
+
+coca_df$ciudad[coca_df$ciudad == "MEDELLIN"] = "MEDELLÍN"
+coca_df$ciudad[coca_df$ciudad == "BOGOTA"] = "BOGOTÁ D.C."
+
+cona_df$ciudad[cona_df$ciudad == "MEDELLIN"] = "MEDELLÍN"
+cona_df$ciudad[cona_df$ciudad == "BOGOTA"] = "BOGOTÁ D.C."
+
+cord_df$ciudad[cord_df$ciudad == "MEDELLIN"] = "MEDELLÍN"
+cord_df$ciudad[cord_df$ciudad == "BOGOTA"] = "BOGOTÁ D.C."
 
 #----------------------------------------------------------------------
 # 2.1) Compatibilidad con Afford_expansion(): necesita columna 'per_capita'

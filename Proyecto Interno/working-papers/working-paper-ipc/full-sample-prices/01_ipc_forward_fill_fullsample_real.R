@@ -49,32 +49,24 @@ safe_name <- function(x) {
   x
 }
 
+normalize_city <- function(x) {
+  dplyr::case_when(
+    x == "BOGOTÁ, D.C." ~ "BOGOTÁ D.C.",
+    x == "BOGOTA, D.C." ~ "BOGOTÁ D.C.",
+    x == "MEDELLIN" ~ "MEDELLÍN",
+    TRUE ~ x
+  )
+}
+
 meses_esp <- c("Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic")
 
-make_date <- function(ano, mes_num) {
-  as.Date(sprintf("%04d-%02d-01", as.integer(ano), as.integer(mes_num)))
-}
+make_date <- function(ano, mes_num) as.Date(sprintf("%04d-%02d-01", as.integer(ano), as.integer(mes_num)))
 
 mode1 <- function(x) {
   x <- x[!is.na(x)]
   if (length(x) == 0) return(NA_character_)
   ux <- unique(x)
   ux[which.max(tabulate(match(x, ux)))]
-}
-
-normalize_city <- function(x) {
-  x <- as.character(x)
-  x <- trimws(x)
-  x <- iconv(x, from = "", to = "ASCII//TRANSLIT")
-  x <- toupper(x)
-  
-  dplyr::case_when(
-    str_detect(x, "BOGOTA") ~ "BOGOTA D.C.",
-    str_detect(x, "MEDELLIN") ~ "MEDELLIN",
-    str_detect(x, "CALI") ~ "CALI",
-    str_detect(x, "CARTAGENA") ~ "CARTAGENA",
-    TRUE ~ x
-  )
 }
 
 # -----------------------------
@@ -85,15 +77,14 @@ normalize_city <- function(x) {
 dane <- read_excel(in_prices)
 
 dane <- dane %>%
-  dplyr::mutate(
-    fecha = make_date(ano, mes_num),
-    cod_subclase = paste0("0", substr(as.character(codigo_articulo), 1, 6), "0"),
-    nombre_ciudad = normalize_city(nombre_ciudad),
-    articulo = as.character(articulo),
+  mutate(
     codigo_articulo = as.character(codigo_articulo),
+    fecha = make_date(ano, mes_num),
+    cod_subclase = paste0("0", substr(codigo_articulo, 1, 6), "0"),
+    nombre_ciudad = normalize_city(nombre_ciudad),
     precio_500g_real_base2018_12 = suppressWarnings(as.numeric(precio_500g_real_base2018_12))
   ) %>%
-  dplyr::filter(!is.na(fecha))
+  filter(!is.na(fecha))
 
 # 3.2 IPC (index levels) — STACK IPC.xls + IPC_2.xls
 ipc_raw1 <- read_excel(in_ipc)  %>% clean_names()
@@ -102,7 +93,12 @@ ipc_raw2 <- read_excel(in_ipc2) %>% clean_names()
 ipc_raw <- bind_rows(ipc_raw1, ipc_raw2)
 
 ipc <- ipc_raw %>%
-  dplyr::mutate(
+  mutate(
+    ciudad = case_when(
+      ciudad == "CARTAGENA DE INDIAS" ~ "CARTAGENA",
+      ciudad == "BOGOTÁ, D.C." ~ "BOGOTÁ D.C.",
+      TRUE ~ ciudad
+    ),
     ciudad = normalize_city(ciudad),
     cod_subclase = substr(as.character(subclase), 1, 8),
     mes_num = match(mes, meses_esp),
@@ -110,27 +106,27 @@ ipc <- ipc_raw %>%
     ipc = suppressWarnings(as.numeric(numero_indice)),
     fecha = make_date(ano, mes_num)
   ) %>%
-  dplyr::select(ciudad, cod_subclase, fecha, ano, mes_num, ipc) %>%
-  dplyr::filter(!is.na(fecha), !is.na(ipc), !is.na(cod_subclase), !is.na(ciudad)) %>%
-  dplyr::arrange(ciudad, cod_subclase, fecha) %>%
-  dplyr::group_by(ciudad, cod_subclase, fecha) %>%
-  dplyr::slice_tail(n = 1) %>%
-  dplyr::ungroup() %>%
-  dplyr::arrange(ciudad, cod_subclase, fecha)
+  select(ciudad, cod_subclase, fecha, ano, mes_num, ipc) %>%
+  filter(!is.na(fecha), !is.na(ipc), !is.na(cod_subclase), !is.na(ciudad)) %>%
+  arrange(ciudad, cod_subclase, fecha) %>%
+  group_by(ciudad, cod_subclase, fecha) %>%
+  slice_tail(n = 1) %>%
+  ungroup() %>%
+  arrange(ciudad, cod_subclase, fecha)
 
 # 3.3 Correlativas
 corr_subclase <- read_excel(in_corr1) %>%
   fill(subclase, ipc, .direction = "down") %>%
-  dplyr::mutate(cod_subclase = paste0("0", gasto_basico, "00")) %>%
-  dplyr::select(cod_subclase, subclase) %>%
-  dplyr::mutate(
+  mutate(cod_subclase = paste0("0", gasto_basico, "00")) %>%
+  select(cod_subclase, subclase) %>%
+  mutate(
     subclase = as.character(subclase),
     cod_subclase = as.character(cod_subclase)
   )
 
 corr_producto <- read_excel(in_corr2) %>%
-  dplyr::rename(codigo_articulo = cod_dane, subclase = cod_ipc) %>%
-  dplyr::mutate(
+  rename(codigo_articulo = cod_dane, subclase = cod_ipc) %>%
+  mutate(
     codigo_articulo = as.character(codigo_articulo),
     subclase = as.character(subclase)
   )
@@ -138,35 +134,29 @@ corr_producto <- read_excel(in_corr2) %>%
 # -----------------------------
 # 4. Settings: Cities and horizon
 # -----------------------------
-cities_use <- c("CALI", "BOGOTA D.C.", "MEDELLIN")
+cities_use <- c("CALI", "BOGOTÁ D.C.", "MEDELLÍN")
 
 dane_use <- dane %>%
-  dplyr::filter(nombre_ciudad %in% cities_use) %>%
-  dplyr::arrange(nombre_ciudad, articulo, fecha)
+  filter(nombre_ciudad %in% cities_use) %>%
+  arrange(nombre_ciudad, articulo, codigo_articulo, fecha)
 
 ipc_last_date_overall <- max(ipc$fecha, na.rm = TRUE)
 message("IPC last date in stacked file: ", ipc_last_date_overall)
-
-message("Unique DANE cities after normalization:")
-print(sort(unique(dane$nombre_ciudad)))
-
-message("Unique IPC cities after normalization:")
-print(sort(unique(ipc$ciudad)))
 
 # -----------------------------
 # 5. Core functions
 # -----------------------------
 assign_subclase_for_series <- function(df_series, corr_subclase, corr_producto) {
   tmp1 <- df_series %>%
-    dplyr::left_join(corr_subclase, by = "cod_subclase") %>%
-    dplyr::mutate(subclase = as.character(subclase))
+    left_join(corr_subclase, by = "cod_subclase") %>%
+    mutate(subclase = as.character(subclase))
   
   sub1 <- mode1(tmp1$subclase)
   
   if (is.na(sub1) || length(unique(na.omit(tmp1$subclase))) > 1) {
     tmp2 <- df_series %>%
-      dplyr::left_join(corr_producto, by = "codigo_articulo") %>%
-      dplyr::mutate(subclase = as.character(subclase))
+      left_join(corr_producto, by = "codigo_articulo") %>%
+      mutate(subclase = as.character(subclase))
     sub2 <- mode1(tmp2$subclase)
     return(list(subclase = sub2, method = "producto"))
   }
@@ -179,9 +169,9 @@ build_ipc_series <- function(ipc, city_name, subclase_ipc) {
   subclase_ipc_code <- substr(subclase_ipc_full, 1, 8)
   
   ipc %>%
-    dplyr::filter(ciudad == city_name, cod_subclase == subclase_ipc_code) %>%
-    dplyr::select(fecha, ipc) %>%
-    dplyr::arrange(fecha)
+    filter(ciudad == city_name, cod_subclase == subclase_ipc_code) %>%
+    select(fecha, ipc) %>%
+    arrange(fecha)
 }
 
 forward_fill_with_ipc <- function(df_series, df_ipc) {
@@ -189,9 +179,9 @@ forward_fill_with_ipc <- function(df_series, df_ipc) {
   last_obs_date <- max(df_series$fecha[!is.na(df_series$precio_500g_real_base2018_12)], na.rm = TRUE)
   
   last_obs_price <- df_series %>%
-    dplyr::filter(fecha == last_obs_date) %>%
-    dplyr::slice_tail(n = 1) %>%
-    dplyr::pull(precio_500g_real_base2018_12)
+    filter(fecha == last_obs_date) %>%
+    slice_tail(n = 1) %>%
+    pull(precio_500g_real_base2018_12)
   
   d0 <- min(df_series$fecha, na.rm = TRUE)
   d1 <- max(df_ipc$fecha, na.rm = TRUE)
@@ -199,18 +189,15 @@ forward_fill_with_ipc <- function(df_series, df_ipc) {
   full_dates <- tibble(fecha = seq.Date(from = d0, to = d1, by = "month"))
   
   out <- full_dates %>%
-    dplyr::left_join(
-      df_series %>% dplyr::select(fecha, precio_500g_real_base2018_12),
-      by = "fecha"
-    ) %>%
-    dplyr::left_join(df_ipc, by = "fecha") %>%
-    dplyr::arrange(fecha) %>%
-    dplyr::mutate(
+    left_join(df_series %>% select(fecha, precio_500g_real_base2018_12), by = "fecha") %>%
+    left_join(df_ipc, by = "fecha") %>%
+    arrange(fecha) %>%
+    mutate(
       precio_obs = precio_500g_real_base2018_12,
       precio_hat = NA_real_,
-      status = dplyr::if_else(!is.na(precio_obs), "observed", "imputed")
+      status = if_else(!is.na(precio_obs), "observed", "imputed")
     ) %>%
-    dplyr::select(fecha, precio_500g_real_base2018_12, precio_obs, ipc, precio_hat, status)
+    select(fecha, precio_obs, ipc, precio_hat, status)
   
   anchor_idx <- which(out$fecha == last_obs_date)
   
@@ -238,9 +225,7 @@ forward_fill_with_ipc <- function(df_series, df_ipc) {
   }
   
   out <- out %>%
-    dplyr::mutate(
-      precio_hat = dplyr::if_else(!is.na(precio_obs), precio_obs, precio_hat)
-    )
+    mutate(precio_hat = if_else(!is.na(precio_obs), precio_obs, precio_hat))
   
   issue <- if (gap_found) paste0("IPC gap found starting at ", gap_date) else NA_character_
   
@@ -248,11 +233,11 @@ forward_fill_with_ipc <- function(df_series, df_ipc) {
 }
 
 # -----------------------------
-# 6. Run over all city × article
+# 6. Run over all city × article × codigo_articulo
 # -----------------------------
 series_keys <- dane_use %>%
-  dplyr::distinct(nombre_ciudad, articulo) %>%
-  dplyr::arrange(nombre_ciudad, articulo)
+  distinct(nombre_ciudad, articulo, codigo_articulo) %>%
+  arrange(nombre_ciudad, articulo, codigo_articulo)
 
 fail_log <- list()
 map_log  <- list()
@@ -262,13 +247,18 @@ for (i in seq_len(nrow(series_keys))) {
   
   city_name <- series_keys$nombre_ciudad[i]
   food_name <- series_keys$articulo[i]
+  code_name <- series_keys$codigo_articulo[i]
   
-  message("Processing: ", city_name, " - ", food_name)
+  message("Processing: ", city_name, " - ", food_name, " - ", code_name)
   
   df_series <- dane_use %>%
-    dplyr::filter(nombre_ciudad == city_name, articulo == food_name) %>%
-    dplyr::arrange(fecha) %>%
-    dplyr::mutate(
+    filter(
+      nombre_ciudad == city_name,
+      articulo == food_name,
+      codigo_articulo == code_name
+    ) %>%
+    arrange(fecha) %>%
+    mutate(
       codigo_articulo = as.character(codigo_articulo),
       cod_subclase = as.character(cod_subclase)
     )
@@ -277,7 +267,8 @@ for (i in seq_len(nrow(series_keys))) {
     fail_log[[length(fail_log) + 1]] <- tibble(
       ciudad = city_name,
       articulo = food_name,
-      motivo = "No observed real prices in DANE series"
+      codigo_articulo = code_name,
+      motivo = "No observed prices in DANE series"
     )
     next
   }
@@ -290,6 +281,7 @@ for (i in seq_len(nrow(series_keys))) {
     fail_log[[length(fail_log) + 1]] <- tibble(
       ciudad = city_name,
       articulo = food_name,
+      codigo_articulo = code_name,
       motivo = "Could not assign a single IPC subclase"
     )
     next
@@ -301,6 +293,7 @@ for (i in seq_len(nrow(series_keys))) {
     fail_log[[length(fail_log) + 1]] <- tibble(
       ciudad = city_name,
       articulo = food_name,
+      codigo_articulo = code_name,
       motivo = "No IPC series for city+subclase",
       subclase = subclase_ipc,
       method = method_used
@@ -309,7 +302,7 @@ for (i in seq_len(nrow(series_keys))) {
   }
   
   ff <- forward_fill_with_ipc(
-    df_series %>% dplyr::select(fecha, precio_500g_real_base2018_12),
+    df_series %>% select(fecha, precio_500g_real_base2018_12),
     df_ipc
   )
   
@@ -317,6 +310,7 @@ for (i in seq_len(nrow(series_keys))) {
     fail_log[[length(fail_log) + 1]] <- tibble(
       ciudad = city_name,
       articulo = food_name,
+      codigo_articulo = code_name,
       motivo = ff$issue,
       subclase = subclase_ipc,
       method = method_used
@@ -324,12 +318,10 @@ for (i in seq_len(nrow(series_keys))) {
     next
   }
   
-  codigo_articulo_u <- mode1(df_series$codigo_articulo)
-  
   map_log[[length(map_log) + 1]] <- tibble(
     ciudad = city_name,
     articulo = food_name,
-    codigo_articulo = codigo_articulo_u,
+    codigo_articulo = code_name,
     subclase_ipc = subclase_ipc,
     method = method_used,
     ipc_last_date = max(df_ipc$fecha, na.rm = TRUE),
@@ -337,46 +329,43 @@ for (i in seq_len(nrow(series_keys))) {
   )
   
   df_out <- ff$data %>%
-    dplyr::mutate(
+    mutate(
       ciudad = city_name,
       articulo = food_name,
-      codigo_articulo = codigo_articulo_u,
+      codigo_articulo = code_name,
       subclase_ipc = subclase_ipc,
       method = method_used,
-      precio_final = dplyr::if_else(!is.na(precio_obs), precio_obs, precio_hat)
+      precio_final = if_else(!is.na(precio_obs), precio_obs, precio_hat)
     ) %>%
-    dplyr::select(
+    select(
       ciudad, articulo, codigo_articulo, subclase_ipc, method, fecha,
-      precio_500g_real_base2018_12,
       precio_obs, precio_hat, precio_final, ipc, status
     )
   
   all_series_out[[length(all_series_out) + 1]] <- df_out
   
   p <- ggplot(df_out, aes(x = fecha)) +
-    geom_line(aes(y = precio_final, color = "Precio final real"), linewidth = 0.4) +
+    geom_line(aes(y = precio_final, color = "Precio final"), linewidth = 0.4) +
     geom_point(
-      data = df_out %>% dplyr::filter(!is.na(precio_obs)),
-      aes(y = precio_obs, color = "Observado real"),
-      size = 0.6,
-      alpha = 0.7
+      data = df_out %>% filter(!is.na(precio_obs)),
+      aes(y = precio_obs, color = "Observado"),
+      size = 0.6, alpha = 0.7
     ) +
     labs(
       title = paste0(city_name, " — ", food_name),
       subtitle = paste0(
-        "Subclase IPC: ", subclase_ipc, " (", method_used, ")",
+        "Código: ", code_name,
+        " | Subclase IPC: ", subclase_ipc, " (", method_used, ")",
         if (!is.na(ff$issue)) paste0(" | ", ff$issue) else ""
       ),
-      x = NULL,
-      y = "Precio real (500g)",
-      color = ""
+      x = NULL, y = "Precio (500g)", color = ""
     ) +
     theme_bw(base_size = 10) +
     theme(legend.position = "bottom")
   
   out_png <- file.path(
     plot_dir,
-    paste0(safe_name(city_name), "__", safe_name(food_name), ".png")
+    paste0(safe_name(city_name), "__", safe_name(food_name), "__", safe_name(code_name), ".png")
   )
   ggsave(out_png, p, width = 10, height = 4, dpi = 200)
 }
@@ -407,10 +396,6 @@ write_xlsx(
 
 message("DONE. Outputs in: ", out_dir)
 message("Rows in extended panel: ", nrow(prices_extended))
-message("Unique city-article series produced: ", n_distinct(prices_extended$ciudad, prices_extended$articulo))
+message("Unique city-article-code series produced: ",
+        n_distinct(prices_extended$ciudad, prices_extended$articulo, prices_extended$codigo_articulo))
 message("IPC last date (stacked): ", ipc_last_date_overall)
-
-if (nrow(prices_extended) > 0) {
-  message("Non-missing observed base real prices in output: ",
-          sum(!is.na(prices_extended$precio_500g_real_base2018_12)))
-}
