@@ -1,9 +1,11 @@
 ########################################################
-## validate_cord_vs_cona_from_comp.R
+## validate_comp_energy_and_nutrients.R
 ## Build nutrient contributions from CoNA and CoRD
-## using food composition (TCAC), then compare CoRD
-## against CoNA requirements/contributions
+## using food composition (TCAC), then validate:
+##   (1) energy by demographic group against EER_LL and UL
+##   (2) each nutrient against lower/upper requirement bounds
 ########################################################
+
 
 suppressPackageStartupMessages({
   library(tidyverse)
@@ -11,18 +13,19 @@ suppressPackageStartupMessages({
   library(writexl)
   library(janitor)
   library(lubridate)
+  library(FoodpriceR)
 })
 
 # ------------------------------------------------------------
 # 0) Paths
 # ------------------------------------------------------------
-base_dir <- "C:\\Users\\Portatil\\Desktop\\Least-cost-diets-and-affordability\\Proyecto Interno\\working-papers/working-paper-ipc/output/least_cost_metrics"
+base_dir <- "C:\\Users\\danie\\OneDrive\\Escritorio\\Least-cost-diets-and-affordability\\Proyecto Interno\\working-papers/working-paper-ipc/output/least_cost_metrics"
 
 in_cona <- file.path(base_dir, "cona_comp_fullsample.rds")
 in_cord <- file.path(base_dir, "cord_comp_fullsample.rds")
-in_tcac <- "C:\\Users\\Portatil\\Desktop\\Least-cost-diets-and-affordability\\Proyecto Interno\\working-papers/working-paper-ipc/output/least_cost_metrics/tmp/tcac_master.rds"
+in_tcac <- file.path(base_dir, "tmp", "tcac_master.rds")
 
-out_dir <- file.path(base_dir, "validation_cord_vs_cona_from_comp")
+out_dir <- file.path(base_dir, "validation_comp_energy_and_nutrients")
 dir.create(out_dir, recursive = TRUE, showWarnings = FALSE)
 
 # ------------------------------------------------------------
@@ -64,14 +67,67 @@ safe_mean <- function(x) {
   mean(x, na.rm = TRUE)
 }
 
-first_non_na <- function(x) {
-  x <- x[!is.na(x) & x != ""]
-  if (length(x) == 0) return(NA_character_)
-  x[1]
+load_foodpricer_obj <- function(obj_name) {
+  if (exists(obj_name, envir = .GlobalEnv)) return(invisible(TRUE))
+  ok <- tryCatch({
+    data(list = obj_name, package = "FoodpriceR", envir = .GlobalEnv)
+    TRUE
+  }, error = function(e) FALSE)
+  if (!ok) warning("Could not load FoodpriceR object: ", obj_name)
+  invisible(ok)
 }
 
+invisible(load_foodpricer_obj("EER"))
+invisible(load_foodpricer_obj("EER_LL"))
+invisible(load_foodpricer_obj("UL"))
+
 # ------------------------------------------------------------
-# 2) Load
+# 2) Nutrient names
+# ------------------------------------------------------------
+tcac_nutrients <- c(
+  "energia_kcal",
+  "proteina_g",
+  "lipidos_g",
+  "carbohidratos_totales_g",
+  "vitamina_c_mg",
+  "folatos_mcg",
+  "vitamina_a_er",
+  "tiamina_mg",
+  "riboflavina_mg",
+  "niacina_mg",
+  "vitamina_b12_mcg",
+  "magnesio_mg",
+  "fosforo_mg",
+  "sodio_mg",
+  "calcio_mg",
+  "hierro_mg",
+  "zinc_mg"
+)
+
+req_name_map <- c(
+  energia_kcal            = "Energy",
+  proteina_g              = "Protein",
+  lipidos_g               = "Lipids",
+  carbohidratos_totales_g = "Carbohydrates",
+  vitamina_c_mg           = "VitaminC",
+  folatos_mcg             = "Folate",
+  vitamina_a_er           = "VitaminA",
+  tiamina_mg              = "Thiamine",
+  riboflavina_mg          = "Riboflavin",
+  niacina_mg              = "Niacin",
+  vitamina_b12_mcg        = "VitaminB12",
+  magnesio_mg             = "Magnesium",
+  fosforo_mg              = "Phosphorus",
+  sodio_mg                = "Sodium",
+  calcio_mg               = "Calcium",
+  hierro_mg               = "Iron",
+  zinc_mg                 = "Zinc"
+)
+
+req_to_tcac <- setNames(names(req_name_map), req_name_map)
+
+# ------------------------------------------------------------
+# 3) Load data
 # ------------------------------------------------------------
 cona <- readRDS(in_cona)
 cord <- readRDS(in_cord)
@@ -82,7 +138,7 @@ names(cord) <- norm_names(names(cord))
 names(tcac) <- norm_names(names(tcac))
 
 # ------------------------------------------------------------
-# 3) Standardize TCAC
+# 4) Standardize TCAC
 # ------------------------------------------------------------
 if ("articulo" %in% names(tcac) && !("food" %in% names(tcac))) {
   tcac <- tcac %>% dplyr::rename(food = articulo)
@@ -98,37 +154,17 @@ if (all(c("grupos_gabas", "subgrupos_gabas") %in% names(tcac)) &&
 }
 
 tcac <- tcac %>%
-  dplyr::mutate(
-    food = norm_food(food)
-  )
+  dplyr::mutate(food = norm_food(food))
 
-candidate_nutrients <- c(
-  "energia_kcal",
-  "proteina_g", "protein_g",
-  "grasa_g", "fat_g",
-  "carbohidratos_g", "carbohydrate_g",
-  "hierro_mg", "iron_mg",
-  "zinc_mg",
-  "calcio_mg", "calcium_mg",
-  "vitamina_a_rae_ug", "vitamin_a_ug",
-  "folato_ug", "folate_ug",
-  "vitamina_b12_ug", "b12_ug",
-  "vitamina_c_mg",
-  "sodio_mg", "potasio_mg"
-)
-
-nutrient_cols <- intersect(candidate_nutrients, names(tcac))
+nutrient_cols <- intersect(tcac_nutrients, names(tcac))
 
 if (!("gramos_g_1_intercambio_1_intercambio" %in% names(tcac))) {
-  warning("TCAC does not contain gramos_g_1_intercambio_1_intercambio. CoRD may fail if it uses servings.")
+  warning("TCAC does not contain gramos_g_1_intercambio_1_intercambio.")
 }
 
 if (length(nutrient_cols) == 0) {
-  stop("No nutrient columns found in tcac_master. Inspect names(tcac).")
+  stop("No nutrient columns found in tcac_master.")
 }
-
-message("Nutrient columns found in TCAC:")
-print(nutrient_cols)
 
 tcac_food <- tcac %>%
   dplyr::group_by(food) %>%
@@ -140,109 +176,70 @@ tcac_food <- tcac %>%
   )
 
 # ------------------------------------------------------------
-# 4) Standardize CoNA
+# 5) Standardize CoNA / CoRD
 # ------------------------------------------------------------
 if (!all(c("food", "quantity") %in% names(cona))) {
-  stop("CoNA must contain at least columns 'Food' and 'quantity' (after name cleaning: food, quantity).")
+  stop("CoNA must contain at least 'food' and 'quantity'.")
+}
+if (!all(c("food", "number_serving") %in% names(cord))) {
+  stop("CoRD must contain at least 'food' and 'number_serving'.")
 }
 
 cona_std <- cona %>%
-  dplyr::mutate(
+  mutate(
     food = norm_food(food),
     quantity = suppressWarnings(as.numeric(quantity))
   )
 
-# ------------------------------------------------------------
-# 5) Standardize CoRD
-# ------------------------------------------------------------
-if (!all(c("food", "number_serving") %in% names(cord))) {
-  stop("CoRD must contain at least columns 'Food' and 'Number_Serving' (after name cleaning: food, number_serving).")
-}
-
 cord_std <- cord %>%
-  dplyr::mutate(
+  mutate(
     food = norm_food(food),
     number_serving = suppressWarnings(as.numeric(number_serving))
   )
 
 # ------------------------------------------------------------
-# 6) Join TCAC to CoNA and compute nutrient contributions
+# 6) Filter 2018+
+# ------------------------------------------------------------
+cona_std <- cona_std %>%
+  mutate(fecha = as.Date(fecha)) %>%
+  filter(fecha >= as.Date("2018-01-01"))
+
+cord_std <- cord_std %>%
+  mutate(fecha = as.Date(fecha)) %>%
+  filter(fecha >= as.Date("2018-01-01"))
+
+# ------------------------------------------------------------
+# 7) Join TCAC and compute contributions
 # ------------------------------------------------------------
 cona_eval <- cona_std %>%
   dplyr::left_join(tcac_food, by = "food") %>%
-  mutate(
-    gramos_consumidos = quantity
-  )
+  dplyr::mutate(gramos_consumidos = quantity)
 
 for (v in nutrient_cols) {
   cona_eval[[paste0(v, "_contrib")]] <- cona_eval$gramos_consumidos / 100 * cona_eval[[v]]
 }
 
-# ------------------------------------------------------------
-# 7) Join TCAC to CoRD and compute nutrient contributions
-# ------------------------------------------------------------
 cord_eval <- cord_std %>%
   dplyr::left_join(tcac_food, by = "food") %>%
-  mutate(
-    gramos_consumidos = number_serving * gramos_g_1_intercambio_1_intercambio
-  )
+  dplyr::mutate(gramos_consumidos = number_serving * gramos_g_1_intercambio_1_intercambio)
 
 for (v in nutrient_cols) {
   cord_eval[[paste0(v, "_contrib")]] <- cord_eval$gramos_consumidos / 100 * cord_eval[[v]]
 }
 
 # ------------------------------------------------------------
-# 8) Diagnostics on merge
+# 8) Grouping keys
 # ------------------------------------------------------------
-diag_cona_merge <- cona_eval %>%
-  dplyr::summarise(
-    n = n(),
-    pct_food_match = 100 * mean(!is.na(gramos_consumidos) & rowSums(!is.na(across(all_of(nutrient_cols)))) > 0),
-    pct_missing_quantity = 100 * mean(is.na(quantity))
-  )
-
-diag_cord_merge <- cord_eval %>%
-  dplyr::summarise(
-    n = n(),
-    pct_food_match = 100 * mean(!is.na(gramos_consumidos) & rowSums(!is.na(across(all_of(nutrient_cols)))) > 0),
-    pct_missing_servings = 100 * mean(is.na(number_serving)),
-    pct_missing_serving_grams = 100 * mean(is.na(gramos_g_1_intercambio_1_intercambio))
-  )
-
-message("CoNA food-nutrition match (%): ", round(diag_cona_merge$pct_food_match, 2))
-message("CoRD food-nutrition match (%): ", round(diag_cord_merge$pct_food_match, 2))
-message("CoRD missing serving grams (%): ", round(diag_cord_merge$pct_missing_serving_grams, 2))
-
-# ------------------------------------------------------------
-# 9) Identify grouping columns
-# ------------------------------------------------------------
-possible_keys <- c("demo_group", "sex", "ciudad", "fecha", "escenario")
+possible_keys <- c("demo_group", "sex", "age", "ciudad", "fecha", "escenario")
 keys_cona <- intersect(possible_keys, names(cona_eval))
 keys_cord <- intersect(possible_keys, names(cord_eval))
 common_keys <- intersect(keys_cona, keys_cord)
+common_keys <- setdiff(common_keys, "escenario")
 
 if (length(common_keys) == 0) {
   stop("No common grouping keys found between CoNA and CoRD.")
 }
 
-message("Common keys detected before adjustment:")
-print(common_keys)
-
-# ------------------------------------------------------------
-# 9.1) Exclude escenario from join keys
-# ------------------------------------------------------------
-common_keys <- setdiff(common_keys, "escenario")
-
-if (length(common_keys) == 0) {
-  stop("After removing 'escenario', no common grouping keys remain.")
-}
-
-message("Common keys used for comparison:")
-print(common_keys)
-
-# ------------------------------------------------------------
-# 9.2) Harmonize key types and normalize city
-# ------------------------------------------------------------
 if ("ciudad" %in% names(cona_eval)) cona_eval$ciudad <- norm_city(cona_eval$ciudad)
 if ("ciudad" %in% names(cord_eval)) cord_eval$ciudad <- norm_city(cord_eval$ciudad)
 
@@ -260,130 +257,223 @@ cona_contrib_cols <- paste0(nutrient_cols, "_contrib")
 cord_contrib_cols <- paste0(nutrient_cols, "_contrib")
 
 # ------------------------------------------------------------
-# 10) Aggregate nutrient contributions
+# 9) Aggregate by demographic group
 # ------------------------------------------------------------
 cona_tot <- cona_eval %>%
   dplyr::group_by(across(all_of(common_keys))) %>%
-  dplyr::summarise(
-    across(all_of(cona_contrib_cols), safe_sum),
-    .groups = "drop"
-  )
+  dplyr::summarise(across(all_of(cona_contrib_cols), safe_sum), .groups = "drop")
 
 cord_tot <- cord_eval %>%
   dplyr::group_by(across(all_of(common_keys))) %>%
-  dplyr::summarise(
-    across(all_of(cord_contrib_cols), safe_sum),
-    .groups = "drop"
-  )
+  dplyr::summarise(across(all_of(cord_contrib_cols), safe_sum), .groups = "drop")
 
 # ------------------------------------------------------------
-# 11) Long format and compare
+# 10) Separate aportado bases
 # ------------------------------------------------------------
-cona_long <- cona_tot %>%
+aportado_cona <- cona_tot %>%
   pivot_longer(
     cols = all_of(cona_contrib_cols),
     names_to = "nutriente",
     values_to = "aportado_cona"
   ) %>%
-  mutate(nutriente = gsub("_contrib$", "", nutriente))
+  dplyr::mutate(nutriente = gsub("_contrib$", "", nutriente)) %>%
+  dplyr::arrange(across(all_of(common_keys)), nutriente)
 
-cord_long <- cord_tot %>%
+aportado_cord <- cord_tot %>%
   pivot_longer(
     cols = all_of(cord_contrib_cols),
     names_to = "nutriente",
     values_to = "aportado_cord"
   ) %>%
-  mutate(nutriente = gsub("_contrib$", "", nutriente))
+  dplyr::mutate(nutriente = gsub("_contrib$", "", nutriente)) %>%
+  dplyr::arrange(across(all_of(common_keys)), nutriente)
 
-validation <- cord_long %>%
-  left_join(cona_long, by = c(common_keys, "nutriente")) %>%
+# ------------------------------------------------------------
+# 11) Requirements long
+# ------------------------------------------------------------
+build_req_long <- function(obj, value_name) {
+  req_tbl <- as_tibble(obj)
+  names(req_tbl) <- norm_names(names(req_tbl))
+  
+  if (!all(c("age", "sex") %in% names(req_tbl))) {
+    stop("Requirement object must contain Age and Sex.")
+  }
+  
+  req_tbl %>%
+    pivot_longer(
+      cols = -c(age, sex),
+      names_to = "req_nutrient",
+      values_to = value_name
+    ) %>%
+    mutate(
+      req_nutrient_raw = case_when(
+        req_nutrient == "energy" ~ "Energy",
+        req_nutrient == "protein" ~ "Protein",
+        req_nutrient == "lipids" ~ "Lipids",
+        req_nutrient == "carbohydrates" ~ "Carbohydrates",
+        req_nutrient == "vitaminc" ~ "VitaminC",
+        req_nutrient == "folate" ~ "Folate",
+        req_nutrient == "vitamina" ~ "VitaminA",
+        req_nutrient == "thiamine" ~ "Thiamine",
+        req_nutrient == "riboflavin" ~ "Riboflavin",
+        req_nutrient == "niacin" ~ "Niacin",
+        req_nutrient == "vitaminb12" ~ "VitaminB12",
+        req_nutrient == "magnesium" ~ "Magnesium",
+        req_nutrient == "phosphorus" ~ "Phosphorus",
+        req_nutrient == "sodium" ~ "Sodium",
+        req_nutrient == "calcium" ~ "Calcium",
+        req_nutrient == "iron" ~ "Iron",
+        req_nutrient == "zinc" ~ "Zinc",
+        TRUE ~ NA_character_
+      ),
+      nutriente = unname(req_to_tcac[req_nutrient_raw]),
+      age = as.character(age),
+      sex = as.character(sex)
+    ) %>%
+    dplyr::filter(!is.na(nutriente)) %>%
+    dplyr::select(age, sex, nutriente, all_of(value_name))
+}
+
+req_eer    <- build_req_long(get("EER",    envir = .GlobalEnv), "eer")
+req_eer_ll <- build_req_long(get("EER_LL", envir = .GlobalEnv), "eer_ll")
+req_ul     <- build_req_long(get("UL",     envir = .GlobalEnv), "ul")
+
+req_bounds <- req_eer %>%
+  full_join(req_eer_ll, by = c("age", "sex", "nutriente")) %>%
+  full_join(req_ul, by = c("age", "sex", "nutriente"))
+
+# ------------------------------------------------------------
+# 12) Validación por nutriente
+# ------------------------------------------------------------
+join_keys_req <- intersect(c("age", "sex"), common_keys)
+
+validacion_nutriente <- full_join(
+  aportado_cona,
+  aportado_cord,
+  by = c(common_keys, "nutriente")
+) %>%
+  dplyr::filter(nutriente != "energia_kcal") %>%
+  left_join(
+    req_bounds %>% filter(nutriente != "energia_kcal"),
+    by = c(join_keys_req, "nutriente")
+  ) %>%
   dplyr::mutate(
-    ratio_cord_vs_cona = aportado_cord / aportado_cona,
-    gap_abs = aportado_cord - aportado_cona,
-    cumple = case_when(
-      is.na(aportado_cord) | is.na(aportado_cona) ~ NA,
-      aportado_cord >= aportado_cona ~ TRUE,
-      TRUE ~ FALSE
+    eer = suppressWarnings(as.numeric(eer)),
+    eer_ll = suppressWarnings(as.numeric(eer_ll)),
+    ul = suppressWarnings(as.numeric(ul)),
+    cumple_cona = case_when(
+      is.na(aportado_cona) ~ NA_integer_,
+      !is.na(eer_ll) & !is.na(ul) ~ if_else(aportado_cona >= eer_ll & aportado_cona <= ul, 1L, 0L),
+      !is.na(eer_ll) &  is.na(ul) ~ if_else(aportado_cona >= eer_ll, 1L, 0L),
+      is.na(eer_ll) & !is.na(ul)  ~ if_else(aportado_cona <= ul, 1L, 0L),
+      TRUE ~ NA_integer_
+    ),
+    cumple_cord = case_when(
+      is.na(aportado_cord) ~ NA_integer_,
+      !is.na(eer_ll) & !is.na(ul) ~ if_else(aportado_cord >= eer_ll & aportado_cord <= ul, 1L, 0L),
+      !is.na(eer_ll) &  is.na(ul) ~ if_else(aportado_cord >= eer_ll, 1L, 0L),
+      is.na(eer_ll) & !is.na(ul)  ~ if_else(aportado_cord <= ul, 1L, 0L),
+      TRUE ~ NA_integer_
     )
   ) %>%
   dplyr::arrange(across(all_of(common_keys)), nutriente)
 
 # ------------------------------------------------------------
-# 12) Diagnostics after join
+# 13) Validación energía por grupo
+#     Regla pedida:
+#     si el requerimiento (EER) cae dentro de [EER_LL, UL] => 1
 # ------------------------------------------------------------
-diag_join <- validation %>%
-  dplyr::summarise(
-    n = n(),
-    n_match = sum(!is.na(aportado_cord) & !is.na(aportado_cona)),
-    pct_match = 100 * mean(!is.na(aportado_cord) & !is.na(aportado_cona))
+energia_req <- req_bounds %>%
+  dplyr::filter(nutriente == "energia_kcal") %>%
+  transmute(
+    age,
+    sex,
+    requerimiento_energia = as.numeric(eer),
+    eer_ll = as.numeric(eer_ll),
+    ul = as.numeric(ul)
   )
 
-message("Validation rows: ", diag_join$n)
-message("Rows with CoRD and CoNA matched (%): ", round(diag_join$pct_match, 2))
-
-# ------------------------------------------------------------
-# 13) Summaries
-# ------------------------------------------------------------
-summary_nutrient <- validation %>%
-  dplyr::group_by(nutriente) %>%
-  dplyr::summarise(
-    n = n(),
-    n_nonmissing = sum(!is.na(aportado_cord) & !is.na(aportado_cona)),
-    pct_nonmissing = 100 * mean(!is.na(aportado_cord) & !is.na(aportado_cona)),
-    mean_aportado_cord = safe_mean(aportado_cord),
-    mean_aportado_cona = safe_mean(aportado_cona),
-    mean_ratio = safe_mean(ratio_cord_vs_cona),
-    pct_cumple = 100 * mean(cumple, na.rm = TRUE),
-    .groups = "drop"
+validacion_energia_por_grupo <- full_join(
+  aportado_cona %>% filter(nutriente == "energia_kcal"),
+  aportado_cord %>% filter(nutriente == "energia_kcal"),
+  by = c(common_keys, "nutriente")
+) %>%
+  left_join(
+    energia_req,
+    by = join_keys_req
   ) %>%
-  dplyr::arrange(pct_cumple, mean_ratio)
+  dplyr::mutate(
+    cumple_intervalo = case_when(
+      is.na(requerimiento_energia) | is.na(eer_ll) | is.na(ul) ~ NA_integer_,
+      requerimiento_energia >= eer_ll & requerimiento_energia <= ul ~ 1L,
+      TRUE ~ 0L
+    )
+  ) %>%
+  dplyr::arrange(across(all_of(common_keys)))
 
-summary_keys_nutrient <- validation %>%
-  dplyr::group_by(across(all_of(common_keys)), nutriente) %>%
+# ------------------------------------------------------------
+# 14) Validación energía total dieta
+#     Conteo total de 1 y porcentaje por dieta
+# ------------------------------------------------------------
+validacion_energia_total_dieta <- validacion_energia_por_grupo %>%
+  transmute(
+    across(all_of(common_keys)),
+    cumple_intervalo
+  ) %>%
   dplyr::summarise(
-    aportado_cord = safe_mean(aportado_cord),
-    aportado_cona = safe_mean(aportado_cona),
-    ratio_cord_vs_cona = safe_mean(ratio_cord_vs_cona),
-    cumple = ifelse(all(is.na(cumple)), NA, all(cumple, na.rm = TRUE)),
-    .groups = "drop"
+    n_grupos_evaluados = sum(!is.na(cumple_intervalo)),
+    n_grupos_cumplen = sum(cumple_intervalo, na.rm = TRUE),
+    pct_cumplimiento = if_else(
+      n_grupos_evaluados > 0,
+      100 * n_grupos_cumplen / n_grupos_evaluados,
+      NA_real_
+    )
   )
 
-summary_bundle <- validation %>%
-  dplyr::group_by(across(all_of(common_keys))) %>%
+# ------------------------------------------------------------
+# 15) Resumen adicional energía por grupo
+# ------------------------------------------------------------
+validacion_energia_por_grupo_resumen <- validacion_energia_por_grupo %>%
+  dplyr::group_by(across(all_of(setdiff(common_keys, "fecha")))) %>%
   dplyr::summarise(
-    n_nutrientes = sum(!is.na(cumple)),
-    n_cumple = sum(cumple, na.rm = TRUE),
-    pct_cumple = ifelse(n_nutrientes > 0, 100 * n_cumple / n_nutrientes, NA_real_),
+    n_obs = sum(!is.na(cumple_intervalo)),
+    n_cumple = sum(cumple_intervalo, na.rm = TRUE),
+    pct_cumplimiento = if_else(n_obs > 0, 100 * n_cumple / n_obs, NA_real_),
     .groups = "drop"
   )
 
 # ------------------------------------------------------------
-# 14) Save outputs
+# 16) Save outputs
 # ------------------------------------------------------------
-write_csv(cona_eval, file.path(out_dir, "cona_eval_with_nutrients.csv"))
-write_csv(cord_eval, file.path(out_dir, "cord_eval_with_nutrients.csv"))
-write_csv(validation, file.path(out_dir, "cord_vs_cona_validation_long.csv"))
-write_csv(summary_nutrient, file.path(out_dir, "cord_vs_cona_summary_by_nutrient.csv"))
-write_csv(summary_keys_nutrient, file.path(out_dir, "cord_vs_cona_summary_by_keys_nutrient.csv"))
-write_csv(summary_bundle, file.path(out_dir, "cord_vs_cona_summary_bundle.csv"))
+saveRDS(aportado_cona, file.path(out_dir, "aportado_cona.rds"))
+saveRDS(aportado_cord, file.path(out_dir, "aportado_cord.rds"))
+saveRDS(validacion_nutriente, file.path(out_dir, "validacion_nutriente.rds"))
+saveRDS(validacion_energia_total_dieta, file.path(out_dir, "validacion_energia_total_dieta.rds"))
+saveRDS(validacion_energia_por_grupo, file.path(out_dir, "validacion_energia_por_grupo.rds"))
+saveRDS(validacion_energia_por_grupo_resumen, file.path(out_dir, "validacion_energia_por_grupo_resumen.rds"))
 
-saveRDS(cona_eval, file.path(out_dir, "cona_eval_with_nutrients.rds"))
-saveRDS(cord_eval, file.path(out_dir, "cord_eval_with_nutrients.rds"))
-saveRDS(validation, file.path(out_dir, "cord_vs_cona_validation_long.rds"))
-saveRDS(summary_nutrient, file.path(out_dir, "cord_vs_cona_summary_by_nutrient.rds"))
-saveRDS(summary_keys_nutrient, file.path(out_dir, "cord_vs_cona_summary_by_keys_nutrient.rds"))
-saveRDS(summary_bundle, file.path(out_dir, "cord_vs_cona_summary_bundle.rds"))
+# ------------------------------------------------------------
+# Save each dataset as its own Excel file
+# ------------------------------------------------------------
 
-write_xlsx(
-  list(
-    cona_eval_with_nutrients = cona_eval,
-    cord_eval_with_nutrients = cord_eval,
-    validation_long = validation,
-    summary_nutrient = summary_nutrient,
-    summary_keys_nutrient = summary_keys_nutrient,
-    summary_bundle = summary_bundle
-  ),
-  file.path(out_dir, "cord_vs_cona_validation_outputs.xlsx")
+write_xlsx(aportado_cona,
+           file.path(out_dir, "aportado_cona.xlsx"))
+
+write_xlsx(aportado_cord,
+           file.path(out_dir, "aportado_cord.xlsx"))
+
+write_csv(
+  validacion_nutriente,
+  file.path(out_dir, "validacion_nutriente.csv")
 )
+
+write_xlsx(validacion_energia_total_dieta,
+           file.path(out_dir, "validacion_energia_total_dieta.xlsx"))
+
+write_xlsx(validacion_energia_por_grupo,
+           file.path(out_dir, "validacion_energia_por_grupo.xlsx"))
+
+write_xlsx(validacion_energia_por_grupo_resumen,
+           file.path(out_dir, "validacion_energia_por_grupo_resumen.xlsx"))
 
 message("Done. Outputs saved in: ", out_dir)

@@ -51,33 +51,39 @@ muni     <- st_transform(muni, 4326)
 world    <- st_transform(world, 4326)
 
 # =========================================================
-# 4. Clean codes
+# 4. Helpers
 # =========================================================
 std_code <- function(x) {
   x <- as.character(x)
   x <- str_trim(x)
   x <- str_remove(x, "\\.0$")
-  x <- str_pad(x, width = 5, side = "left", pad = "0")
-  x
+  str_pad(x, width = 5, side = "left", pad = "0")
 }
 
+safe_wmean <- function(x, w) {
+  ok <- is.finite(x) & is.finite(w) & !is.na(x) & !is.na(w) & (w > 0)
+  if (!any(ok)) return(NA_real_)
+  weighted.mean(x[ok], w[ok], na.rm = TRUE)
+}
+
+# =========================================================
+# 5. Clean inputs
+# =========================================================
 muni <- muni %>%
-  mutate(
-    MPIO_CDPMP = std_code(MPIO_CDPMP)
-  )
+  mutate(MPIO_CDPMP = std_code(MPIO_CDPMP))
 
 dist <- dist_raw %>%
   mutate(
     from     = std_code(from),
     to       = std_code(to),
-    year     = as.integer(year),
-    quantity = as.numeric(quantity),
-    Dist_km  = as.numeric(Dist_km),
-    group    = str_to_title(group)
+    year     = suppressWarnings(as.integer(year)),
+    quantity = suppressWarnings(as.numeric(quantity)),
+    Dist_km  = suppressWarnings(as.numeric(Dist_km)),
+    group    = str_to_title(as.character(group))
   )
 
 # =========================================================
-# 5. Background layer: Latin America & Caribbean
+# 6. Background layer
 # =========================================================
 if (!"region_wb" %in% names(world)) {
   stop("No existe la columna 'region_wb' en el shapefile world.")
@@ -87,16 +93,15 @@ latin_america <- world %>%
   filter(region_wb == "Latin America & Caribbean")
 
 # =========================================================
-# 6. Municipality coordinates
-# Prefer LONGITUD/LATITUD if available; otherwise point_on_surface
+# 7. Municipality coordinates
 # =========================================================
 if (all(c("LONGITUD", "LATITUD") %in% names(muni))) {
   mun_xy <- muni %>%
     st_drop_geometry() %>%
     transmute(
       mun_code = MPIO_CDPMP,
-      x = as.numeric(LONGITUD),
-      y = as.numeric(LATITUD)
+      x = suppressWarnings(as.numeric(LONGITUD)),
+      y = suppressWarnings(as.numeric(LATITUD))
     )
 } else {
   muni_pts <- muni %>%
@@ -114,8 +119,11 @@ if (all(c("LONGITUD", "LATITUD") %in% names(muni))) {
     )
 }
 
+mun_xy <- mun_xy %>%
+  filter(is.finite(x), is.finite(y), !is.na(mun_code))
+
 # =========================================================
-# 7. Destination cities
+# 8. Destination cities
 # =========================================================
 cities_keep <- c("05001", "11001", "76001")
 
@@ -126,55 +134,64 @@ city_labels <- c(
 )
 
 # =========================================================
-# 8. Aggregate flows
+# 9. Aggregate flows
 # =========================================================
 flow0 <- dist %>%
-  filter(to %in% cities_keep, from != to) %>%
-  group_by(to, from) %>%
-  summarise(
-    qty_total = sum(quantity, na.rm = TRUE),
-    dist_mean = weighted.mean(Dist_km, w = quantity, na.rm = TRUE),
+  dplyr::filter(to %in% cities_keep, from != to) %>%
+  dplyr::group_by(to, from) %>%
+  dplyr::summarise(
+    qty_total = sum(quantity[is.finite(quantity)], na.rm = TRUE),
+    dist_mean = safe_wmean(Dist_km, quantity),
     .groups = "drop"
   ) %>%
-  mutate(
-    tkm = qty_total * dist_mean
+  dplyr::mutate(tkm = qty_total * dist_mean) %>%
+  dplyr::filter(
+    is.finite(qty_total), qty_total > 0,
+    is.finite(dist_mean), dist_mean > 0,
+    is.finite(tkm), tkm > 0
   )
 
 # =========================================================
-# 9. Join coordinates
+# 10. Join coordinates
 # =========================================================
 flow1 <- flow0 %>%
-  left_join(
-    mun_xy %>% rename(from = mun_code, x_from = x, y_from = y),
+  dplyr::left_join(
+    mun_xy %>% dplyr::rename(from = mun_code, x_from = x, y_from = y),
     by = "from"
   ) %>%
-  left_join(
-    mun_xy %>% rename(to = mun_code, x_to = x, y_to = y),
+  dplyr::left_join(
+    mun_xy %>% dplyr::rename(to = mun_code, x_to = x, y_to = y),
     by = "to"
   ) %>%
-  filter(
-    !is.na(x_from), !is.na(y_from),
-    !is.na(x_to), !is.na(y_to)
-  ) %>%
-  mutate(
-    city = recode(to, !!!city_labels)
+  dplyr::mutate(city = recode(to, !!!city_labels)) %>%
+  dplyr::filter(
+    is.finite(x_from), is.finite(y_from),
+    is.finite(x_to),   is.finite(y_to),
+    !is.na(city)
   )
 
-# =========================================================
-# 10. Top flows
-# =========================================================
 top_n <- 35
 
 flow_top <- flow1 %>%
-  arrange(city, desc(tkm)) %>%
-  group_by(city) %>%
+  dplyr::arrange(city, desc(tkm)) %>%
+  dplyr::group_by(city) %>%
   slice_head(n = top_n) %>%
   ungroup()
+
+if (nrow(flow_top) == 0) {
+  stop("No quedaron flujos válidos después de limpiar datos.")
+}
 
 # =========================================================
 # 11. Convert flows to sf lines
 # =========================================================
 make_lines_sf <- function(df) {
+  df <- df %>%
+    filter(
+      is.finite(x_from), is.finite(y_from),
+      is.finite(x_to),   is.finite(y_to)
+    )
+  
   geoms <- purrr::map(
     seq_len(nrow(df)),
     function(i) {
@@ -188,6 +205,7 @@ make_lines_sf <- function(df) {
       )
     }
   )
+  
   st_sf(df, geometry = st_sfc(geoms, crs = 4326))
 }
 
@@ -195,10 +213,12 @@ lines_top <- make_lines_sf(flow_top)
 
 dest_pts <- flow_top %>%
   distinct(city, to, x_to, y_to) %>%
+  filter(is.finite(x_to), is.finite(y_to)) %>%
   st_as_sf(coords = c("x_to", "y_to"), crs = 4326)
 
 orig_pts <- flow_top %>%
   distinct(city, from, x_from, y_from) %>%
+  filter(is.finite(x_from), is.finite(y_from)) %>%
   st_as_sf(coords = c("x_from", "y_from"), crs = 4326)
 
 # =========================================================
@@ -206,36 +226,25 @@ orig_pts <- flow_top %>%
 # =========================================================
 bb_col <- st_bbox(colombia)
 
-xpad <- (bb_col["xmax"] - bb_col["xmin"]) * 0.08
-ypad <- (bb_col["ymax"] - bb_col["ymin"]) * 0.08
+xpad <- (unname(bb_col["xmax"]) - unname(bb_col["xmin"])) * 0.08
+ypad <- (unname(bb_col["ymax"]) - unname(bb_col["ymin"])) * 0.08
 
 bbox_col_zoom <- c(
-  xmin = bb_col["xmin"] - xpad,
-  xmax = bb_col["xmax"] + xpad,
-  ymin = bb_col["ymin"] - ypad,
-  ymax = bb_col["ymax"] + ypad
+  xmin = unname(bb_col["xmin"]) - xpad,
+  xmax = unname(bb_col["xmax"]) + xpad,
+  ymin = unname(bb_col["ymin"]) - ypad,
+  ymax = unname(bb_col["ymax"]) + ypad
 )
 
-# recorte del fondo regional con ese mismo encuadre ampliado
-bbox_bg <- st_bbox(c(
-  xmin = bbox_col_zoom["xmin"] - 2.0,
-  xmax = bbox_col_zoom["xmax"] + 2.0,
-  ymin = bbox_col_zoom["ymin"] - 1.5,
-  ymax = bbox_col_zoom["ymax"] + 1.5
-), crs = st_crs(world))
-
-latin_america_bg <- st_crop(latin_america, bbox_bg)
+# No recortar el fondo: coord_sf ya hace el encuadre visual
+latin_america_bg <- latin_america
 
 # =========================================================
 # 13. Legend breaks
 # =========================================================
-rng_tkm <- range(flow_top$tkm, na.rm = TRUE)
-col_breaks <- pretty(rng_tkm, n = 3)
-col_breaks <- col_breaks[col_breaks > 0]
-
-if (length(col_breaks) < 2) {
-  col_breaks <- c(min(flow_top$tkm, na.rm = TRUE), max(flow_top$tkm, na.rm = TRUE))
-}
+# más simple y estable
+col_breaks <- scales::breaks_pretty(n = 3)(range(flow_top$tkm, finite = TRUE))
+col_breaks <- col_breaks[is.finite(col_breaks) & col_breaks > 0]
 
 # =========================================================
 # 14. Theme
@@ -281,7 +290,6 @@ plot_city <- function(city_name, show_legend = FALSE) {
       color = "grey35",
       linewidth = 0.48
     ) +
-    
     geom_sf(
       data = lines_city,
       aes(color = tkm),
@@ -289,7 +297,6 @@ plot_city <- function(city_name, show_legend = FALSE) {
       alpha = 0.90,
       show.legend = show_legend
     ) +
-    
     geom_sf(
       data = orig_city,
       color = "#2E6F8E",
@@ -297,7 +304,6 @@ plot_city <- function(city_name, show_legend = FALSE) {
       alpha = 0.95,
       show.legend = FALSE
     ) +
-    
     geom_sf(
       data = dest_city,
       shape = 21,
@@ -307,21 +313,18 @@ plot_city <- function(city_name, show_legend = FALSE) {
       color = "#0B3954",
       show.legend = FALSE
     ) +
-    
     coord_sf(
       xlim = c(bbox_col_zoom["xmin"], bbox_col_zoom["xmax"]),
       ylim = c(bbox_col_zoom["ymin"], bbox_col_zoom["ymax"]),
       expand = FALSE,
       clip = "on"
     ) +
-    
     annotation_scale(
       location = "bl",
       width_hint = 0.15,
       text_cex = 0.72,
       line_width = 0.40
     ) +
-    
     annotation_north_arrow(
       location = "tr",
       which_north = "true",
@@ -331,7 +334,6 @@ plot_city <- function(city_name, show_legend = FALSE) {
       width  = unit(0.85, "cm"),
       style = north_arrow_fancy_orienteering
     ) +
-    
     scale_color_gradientn(
       colors = c("#DCEAF2", "#9CC3D5", "#4A90A4", "#1F5D75", "#0B3954"),
       name   = "Flow intensity\n(ton-km)",
@@ -344,7 +346,6 @@ plot_city <- function(city_name, show_legend = FALSE) {
         barheight = unit(0.60, "cm")
       )
     ) +
-    
     labs(title = city_name) +
     theme_paper_map() +
     theme(
