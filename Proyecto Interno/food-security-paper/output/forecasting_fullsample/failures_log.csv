@@ -1,0 +1,29 @@
+ciudad,articulo,motivo,subclase,method
+BOGOTÁ D.C.,AGUA  MINERAL,No observed prices in DANE series,NA,NA
+BOGOTÁ D.C.,CAMARONES O VARIEDAD DISPONIBL,IPC missing at anchor month,011303,gasto_basico
+BOGOTÁ D.C.,CEBADA,No se logró asignar una única clase del IPC,NA,NA
+BOGOTÁ D.C.,CUCHUCO  DE MAÍZ,No se logró asignar una única clase del IPC,NA,NA
+BOGOTÁ D.C.,CUCHUCO  DE TRIGO,IPC missing at anchor month,011106,producto
+BOGOTÁ D.C.,MANGOS,No se logró asignar una única clase del IPC,NA,NA
+BOGOTÁ D.C.,MANTEQUILLA,No se logró asignar una única clase del IPC,NA,NA
+BOGOTÁ D.C.,MELOCOTONES O VARIEDAD DISPONI,No se logró asignar una única clase del IPC,NA,NA
+BOGOTÁ D.C.,MELOCOTONES O VARIEDAD DISPONIBLE,No se logró asignar una única clase del IPC,NA,NA
+CALI,AGUA  MINERAL,No observed prices in DANE series,NA,NA
+CALI,CAMARONES O VARIEDAD DISPONIBL,IPC missing at anchor month,011303,gasto_basico
+CALI,FECULA DE MAÍZ,IPC missing at anchor month,011105,producto
+CALI,MANGOS,No se logró asignar una única clase del IPC,NA,NA
+CALI,MANTEQUILLA,No se logró asignar una única clase del IPC,NA,NA
+CALI,MELOCOTONES O VARIEDAD DISPONI,No se logró asignar una única clase del IPC,NA,NA
+CALI,MELOCOTONES O VARIEDAD DISPONIBLE,No se logró asignar una única clase del IPC,NA,NA
+MEDELLÍN,AGUA  MINERAL,No observed prices in DANE series,NA,NA
+MEDELLÍN,ARROZ PARA SOPA,IPC missing at anchor month,011101,gasto_basico
+MEDELLÍN,CAMARONES O VARIEDAD DISPONIBL,IPC missing at anchor month,011303,gasto_basico
+MEDELLÍN,CEBADA,No se logró asignar una única clase del IPC,NA,NA
+MEDELLÍN,COLICERO O GUINEO,IPC missing at anchor month,011704,gasto_basico
+MEDELLÍN,MANGOS,No se logró asignar una única clase del IPC,NA,NA
+MEDELLÍN,MANTEQUILLA,No se logró asignar una única clase del IPC,NA,NA
+MEDELLÍN,MAÍZ  PETO O TRILLADO,IPC missing at anchor month,011105,producto
+MEDELLÍN,MELOCOTONES O VARIEDAD DISPONI,No se logró asignar una única clase del IPC,NA,NA
+MEDELLÍN,MELOCOTONES O VARIEDAD DISPONIBLE,No se logró asignar una única clase del IPC,NA,NA
+MEDELLÍN,TOCINO,IPC missing at anchor month,011202,gasto_basico
+MEDELLÍN,VISCERAS - HIGADO,IPC missing at anchor month,011201,gasto_basico
