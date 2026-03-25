@@ -14,7 +14,7 @@ library(lubridate)
 
 base_dir <- "C:\\Users\\Portatil\\Desktop\\Least-cost-diets-and-affordability\\Proyecto Interno"
 out_coca <- file.path(base_dir, "food-security-paper", "output", "coca")
-out_fig  <- file.path(base_dir, "food-security-paper", "output", "figures")
+out_fig  <- file.path(base_dir, "food-security-paper", "output", "coca")
 
 df.coca <- readxl::read_excel(file.path(out_coca, "230326_coca_results.xlsx")) %>%
   mutate(

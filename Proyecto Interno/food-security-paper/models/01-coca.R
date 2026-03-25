@@ -33,7 +33,8 @@ data_paper <- readRDS(file.path(input1_dir, "panel_city_month_food_1999_2025.rds
          riboflavina_mg, niacina_mg, vitamina_b12_mcg,
          magnesio_mg, fosforo_mg, sodio_mg, calcio_mg, hierro_mg, zinc_mg) %>%
   distinct() %>%
-  filter(fecha >= "2019-01-01", fecha < "2025-01-01")
+  filter(fecha >= "2019-01-01", fecha < "2025-01-01",
+         grupos_gabas == "CEREALES, RAÍCES, TUBÉRCULOS Y PLÁTANOS")
 
 ##----------------------------------------------------------
 ## Input 2: EER del hogar representativo
