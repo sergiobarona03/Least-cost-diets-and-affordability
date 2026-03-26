@@ -12,7 +12,7 @@ library(stringi)
 # Directorios base
 base_dir <- "C:/Users/danie/OneDrive/Escritorio/Least-cost-diets-and-affordability/Proyecto Interno/food-security-paper"
 
-ipc_path  <- file.path(base_dir, "figures", "IPC.xls")
+ipc_path  <- file.path(base_dir, "input", "prices","IPC.xls")
 
 coca_path <- file.path(base_dir, "output", "coca", "230326_coca_results.xlsx")
 cona_path <- file.path(base_dir, "output", "cona", "230326_cona_results.xlsx")
