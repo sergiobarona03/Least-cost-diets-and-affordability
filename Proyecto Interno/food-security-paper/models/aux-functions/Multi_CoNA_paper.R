@@ -54,11 +54,11 @@ Multi_CoNA_paper <- function(data,
   validate_columns(UL,        c("Age"),                                    "UL")
   validate_columns(IPC_shares, c("Group", "share"),                        "IPC_shares")
   
-  # IPC shares must sum to 1
+  # IPC shares debe sumar 1
   if (abs(sum(IPC_shares$share) - 1) > 1e-6)
     stop("IPC_shares$share must sum to 1.")
   
-  # lambda must be in [0, 1]
+  # Lambda debe estar entre 0 y 1
   if (any(lambda < 0) || any(lambda > 1))
     stop("lambda must be a scalar or vector with all values in [0, 1].")
   
@@ -79,10 +79,12 @@ Multi_CoNA_paper <- function(data,
   #                       ETAPA 3: PREPARACIÓN COMÚN                                       #
   #------------------------------------------------------------------------------------------#
   
+  # Unir requerimientos mínimos y máximos
   req_min_ent  <- EER_LL
   req_max_ent  <- UL %>% select(-any_of(c("Age", "Energy")))
   Req_entrantes <- cbind(req_min_ent, req_max_ent)
   
+  # Definir G, que es el número de grupos
   groups_ipc <- IPC_shares$Group
   n_groups   <- length(groups_ipc)
   
@@ -112,17 +114,21 @@ Multi_CoNA_paper <- function(data,
                              E_star, f1_star, f2_star,
                              lam) {
     
+    # Número de alimentos
     n_foods <- length(Precio)
+    
+    # Número de variables de decisión (n + 2G)
     n_vars  <- n_foods + 2 * n_groups
     
     # ---- Objetivo ponderado y normalizado:
     # (1 - lambda) * sum(p_i * x_i) / f1*  +  lambda * sum(d_g+ + d_g-) / f2*
-    #
-    # Coeficientes:
+    
+    
+    # Coeficientes asociado a cada variable
     #   x_i    -> (1 - lambda) * p_i / f1*
     #   d_g+   -> lambda / f2*
     #   d_g-   -> lambda / f2*
-    #
+    
     # Caso especial: si f2* = 0 (patrón IPC perfectamente replicable),
     # el segundo término degenera; usamos un pequeño epsilon para evitar /0
     f2_denom <- max(f2_star, 1e-10)
@@ -133,7 +139,7 @@ Multi_CoNA_paper <- function(data,
       rep(lam / f2_denom, n_groups)
     )
     
-    # ---- Restricciones nutricionales (solo involucran x_i)
+    # ---- Restricciones nutricionales
     # Extender Coef.Restriq con ceros para d_g+ y d_g-
     n_nutr_constraints <- nrow(Coef.Restriq)
     A_nutr_pad <- cbind(
@@ -142,6 +148,7 @@ Multi_CoNA_paper <- function(data,
     )
     
     # ---- Restricción de gasto total: sum(p_i * x_i) = E*
+    # Cero en d_g+ y d_g- porque no aparecen en la restricción
     A_exp <- matrix(c(Precio, rep(0, 2 * n_groups)), nrow = 1)
     
     # ---- Restricciones de desviación del patrón IPC (una por grupo):
@@ -151,15 +158,22 @@ Multi_CoNA_paper <- function(data,
     
     for (j in seq_len(n_groups)) {
       g   <- groups_ipc[j]
+      
+      # Extraer share del grupo
       s_g <- IPC_shares$share[IPC_shares$Group == g]
       
+      # Binaria para identificar los grupos
       in_group <- data$Group == g
+      
       # Expenditure coefficient for foods in group g
       A_dev[j, which(in_group)] <- Precio[in_group]
+      
       # d_g+ coefficient: -E*
       A_dev[j, n_foods + j]              <- -E_star
+      
       # d_g- coefficient: +E*
       A_dev[j, n_foods + n_groups + j]   <-  E_star
+      
       # RHS
       rhs_dev[j] <- s_g * E_star
     }
@@ -257,6 +271,8 @@ Multi_CoNA_paper <- function(data,
         
         rhs_i <- as.vector(unlist(Limitaciones[i, , drop = FALSE]))
         
+        
+        # Solución de la optimización de la primera función objetivo (f1)
         sol_standard <- lp(
           direction    = "min",
           objective.in = Precio,
@@ -271,6 +287,7 @@ Multi_CoNA_paper <- function(data,
           next
         }
         
+        # f1 óptima se fija como E óptima (para seguir la notación)
         f1_star <- sol_standard$objval
         E_star  <- f1_star   # fix total expenditure at CoNA optimum
         
