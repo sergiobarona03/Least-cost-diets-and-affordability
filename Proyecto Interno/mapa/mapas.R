@@ -85,10 +85,6 @@ dist <- dist_raw %>%
 # =========================================================
 # 6. Background layer
 # =========================================================
-if (!"region_wb" %in% names(world)) {
-  stop("No existe la columna 'region_wb' en el shapefile world.")
-}
-
 latin_america <- world %>%
   filter(region_wb == "Latin America & Caribbean")
 

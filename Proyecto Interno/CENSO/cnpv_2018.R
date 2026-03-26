@@ -1,5 +1,5 @@
 # =========================================================
-# Tamaño promedio del hogar - CNPV 2018
+# Composición demográfica más frecuente por tamaño de hogar
 # Bogotá, Medellín y Cali
 # =========================================================
 
@@ -7,94 +7,75 @@ library(readr)
 library(dplyr)
 library(stringr)
 
-#----------------------------------------------------------
-# 1. Directorio
-#----------------------------------------------------------
-
+# Directorio
 base_dir <- "C:/Users/danie/OneDrive/Escritorio/Least-cost-diets-and-affordability/Proyecto Interno/CENSO"
 
-path_bog <- file.path(base_dir, "CNPV2018_2HOG_A2_11.CSV")
-path_ant <- file.path(base_dir, "CNPV2018_2HOG_A2_05.CSV")
-path_val <- file.path(base_dir, "CNPV2018_2HOG_A2_76.CSV")
+path_per_bog <- file.path(base_dir, "CNPV2018_5PER_A2_11.CSV")
+path_per_med <- file.path(base_dir, "CNPV2018_5PER_A2_05.CSV")
+path_per_cal <- file.path(base_dir, "CNPV2018_5PER_A2_76.CSV")
 
-#----------------------------------------------------------
-# 2. Función para leer módulo hogar
-#----------------------------------------------------------
-
-read_hog <- function(path_file){
-  
+# Leer personas
+read_per <- function(path_file){
   read_csv(path_file, show_col_types = FALSE) %>%
     mutate(
       U_DPTO = str_pad(as.character(U_DPTO), 2, pad = "0"),
       U_MPIO = str_pad(as.character(U_MPIO), 3, pad = "0"),
-      HA_TOT_PER = as.numeric(HA_TOT_PER)
-    ) %>%
-    distinct(
-      U_DPTO,
-      U_MPIO,
-      COD_ENCUESTAS,
-      U_VIVIENDA,
-      H_NROHOG,
-      .keep_all = TRUE
-    ) %>%
-    filter(!is.na(HA_TOT_PER), HA_TOT_PER > 0)
-  
+      P_NROHOG = as.numeric(P_NROHOG),
+      P_SEXO = as.numeric(P_SEXO),
+      P_EDADR = as.numeric(P_EDADR)
+    )
 }
 
-#----------------------------------------------------------
-# 3. Leer bases
-#----------------------------------------------------------
+# Etiquetas edad
+edad_lab <- c(
+  "1" = "00_04", "2" = "05_09", "3" = "10_14", "4" = "15_19",
+  "5" = "20_24", "6" = "25_29", "7" = "30_34", "8" = "35_39",
+  "9" = "40_44", "10" = "45_49", "11" = "50_54", "12" = "55_59",
+  "13" = "60_64", "14" = "65_69", "15" = "70_74", "16" = "75_79",
+  "17" = "80_84", "18" = "85_89", "19" = "90_94", "20" = "95_99",
+  "21" = "100_mas"
+)
 
-bogota_hog <- read_hog(path_bog)
-antioquia_hog <- read_hog(path_ant)
-valle_hog <- read_hog(path_val)
-
-#----------------------------------------------------------
-# 4. Filtrar ciudades
-#----------------------------------------------------------
-
-# Bogotá
-bogota <- bogota_hog %>%
-  filter(U_MPIO == "001")
-
-# Medellín
-medellin <- antioquia_hog %>%
-  filter(U_MPIO == "001")
-
-# Cali
-cali <- valle_hog %>%
-  filter(U_MPIO == "001")
-
-#----------------------------------------------------------
-# 5. Calcular tamaño promedio del hogar
-#----------------------------------------------------------
-
-resumen_hogar <- bind_rows(
+# Función por ciudad
+procesar_ciudad <- function(path_file, nombre_ciudad){
   
-  bogota %>%
-    dplyr::summarise(
-      city = "Bogotá",
-      avg_household_size = mean(HA_TOT_PER, na.rm = TRUE),
-      n_households = n()
-    ),
+  per <- read_per(path_file) %>%
+    filter(U_MPIO == "001") %>%
+    mutate(
+      sexo = case_when(
+        P_SEXO == 1 ~ "H",
+        P_SEXO == 2 ~ "M",
+        TRUE ~ NA_character_
+      ),
+      edad = edad_lab[as.character(P_EDADR)],
+      grupo = paste0(sexo, "_", edad)
+    ) %>%
+    filter(!is.na(grupo))
   
-  medellin %>%
+  comp_hogar <- per %>%
+    dplyr::count(U_DPTO, U_MPIO, COD_ENCUESTAS, U_VIVIENDA, P_NROHOG, grupo) %>%
+    dplyr::arrange(U_DPTO, U_MPIO, COD_ENCUESTAS, U_VIVIENDA, P_NROHOG, grupo) %>%
+    dplyr::group_by(U_DPTO, U_MPIO, COD_ENCUESTAS, U_VIVIENDA, P_NROHOG) %>%
     dplyr::summarise(
-      city = "Medellín",
-      avg_household_size = mean(HA_TOT_PER, na.rm = TRUE),
-      n_households = n()
-    ),
-  
-  cali %>%
-    dplyr::summarise(
-      city = "Cali",
-      avg_household_size = mean(HA_TOT_PER, na.rm = TRUE),
-      n_households = n()
+      composicion = paste0(grupo, "=", n, collapse = "; "),
+      n_personas = sum(n),
+      .groups = "drop"
     )
   
-) %>%
-  dplyr::mutate(
-    avg_household_size = round(avg_household_size, 2)
-  )
+  comp_hogar %>%
+    dplyr::mutate(composicion = paste0(composicion, "; total=", n_personas)) %>%
+    dplyr::filter(n_personas == 3) %>%
+    dplyr::count(composicion, sort = TRUE) %>%
+    slice(1:10) %>%
+    dplyr::mutate(city = nombre_ciudad, n_personas = 3) %>%
+    dplyr::select(city, n_personas, composicion, hogares = n)
+}
 
-print(resumen_hogar)
+# Resultado
+resultado <- bind_rows(
+  procesar_ciudad(path_per_bog, "Bogotá"),
+  procesar_ciudad(path_per_med, "Medellín"),
+  procesar_ciudad(path_per_cal, "Cali")
+)
+
+print(resultado)
