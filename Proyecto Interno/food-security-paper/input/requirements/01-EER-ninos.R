@@ -1,5 +1,3 @@
-
-
 ########################################################
 ## Procesamiento de los requerimientos energéticos
 ## en niños y adolescentes
