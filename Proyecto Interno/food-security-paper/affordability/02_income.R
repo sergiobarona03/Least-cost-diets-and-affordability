@@ -18,14 +18,6 @@ library(janitor)
 base_dir <- "C:\\Users\\Portatil\\Desktop\\Least-cost-diets-and-affordability\\Proyecto Interno\\"
 setwd(base_dir)
 
-dir.create("working-papers/working-paper-ipc/output/incomecol",
-           recursive = TRUE, showWarnings = FALSE)
-
-dir.create("working-papers/working-paper-ipc/output/poverty_rates",
-           recursive = TRUE, showWarnings = FALSE)
-
-dir.create("working-papers/working-paper-ipc/output/deciles_income",
-           recursive = TRUE, showWarnings = FALSE)
 
 #----------------------------------------------------------------------
 # Inicializar objetos acumuladores
@@ -176,7 +168,7 @@ for(k in 2018:2024){
   #  GUARDAR BASE ANUAL
   #----------------------------------------------------------
   saveRDS(dataset_def_deciles,
-          paste0("working-papers/working-paper-ipc/output/incomecol/",
+          paste0("food-security-paper/output/income_col/",
                  "IncomeCol_", k, ".rds"))
   
   #====================================================================
@@ -210,15 +202,15 @@ deciles_final <- bind_rows(deciles_all)
 # Guardar
 #----------------------------------------------------------------------
 saveRDS(deciles_final,
-        "working-papers/working-paper-ipc/output/deciles_income/deciles_food_income.rds")
+        "food-security-paper/output/income_col/deciles_food_income.rds")
 
 write.csv(deciles_final,
-          "working-papers/working-paper-ipc/output/deciles_income/deciles_food_income.csv",
+          "food-security-paper/output/income_col/deciles_food_income.csv",
           row.names = FALSE)
 
 saveRDS(poverty_final,
-        "working-papers/working-paper-ipc/output/poverty_rates/poverty_rates_city_month.rds")
+        "food-security-paper/output/income_col/poverty_rates_city_month.rds")
 
 write.csv(poverty_final,
-          "working-papers/working-paper-ipc/output/poverty_rates/poverty_rates_city_month.csv",
+          "food-security-paper/output/income_col/poverty_rates_city_month.csv",
           row.names = FALSE)

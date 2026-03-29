@@ -98,6 +98,8 @@ hcost_full <- hcost_full %>%
          cost_day, total_household,
          per_capita, per_capita_month, per_capita_year)
 
+
+
 ##----------------------------------------------------------
 ## 4. Save
 ##----------------------------------------------------------
@@ -114,5 +116,5 @@ writexl::write_xlsx(
   file.path(out_hcost, "230326_hcost_full.xlsx")
 )
 
-  message("Done. Rows: ", nrow(hcost_full))
+message("Done. Rows: ", nrow(hcost_full))
 message("Saved to: ", out_hcost)

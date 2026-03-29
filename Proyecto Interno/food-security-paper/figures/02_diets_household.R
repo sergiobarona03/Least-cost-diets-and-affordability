@@ -148,9 +148,7 @@ fig3 <- ggplot(hh_cost,
                                            big.mark = ",",
                                            suffix   = "")) +
   labs(
-    title    = paste0("Figure 3. Real daily per capita diet cost for the representative ",
-                      "household, 2019\u20132024"),
-    subtitle = "Colombian pesos per day, deflated by national CPI (base year 2019)",
+    title    = " ",
     caption  = paste0(
       "Note: Per capita cost is the sum of daily diet costs across all three household members ",
       "(adult male, adult female, female child) divided by three.\n",
@@ -165,10 +163,10 @@ fig3 <- ggplot(hh_cost,
   theme_q1
 
 ggsave(file.path(out_fig, "fig3_real_hh_percapita_series.png"),
-       fig3, width = 10, height = 4.5, dpi = 300)
+       fig3, width = 10, height = 6, dpi = 300)
 
 ggsave(file.path(out_fig, "fig3_real_hh_percapita_series.pdf"),
-       fig3, width = 10, height = 4.5)
+       fig3, width = 10, height = 6)
 
 ##----------------------------------------------------------
 ## Figure 4: Cost premiums
@@ -221,9 +219,7 @@ fig4 <- ggplot(premiums,
                expand = c(0.01, 0)) +
   scale_y_continuous(labels = number_format(accuracy = 0.01)) +
   labs(
-    title    = paste0("Figure 4. Cost premiums of nutritionally adequate and recommended diets ",
-                      "relative to the least-cost diet, 2019\u20132024"),
-    subtitle = "Ratio of per capita household daily costs. Values above 1 indicate a cost premium",
+    title    = " ",
     caption  = paste0(
       "Note: CoNA/CoCA measures the premium of nutritional adequacy over caloric adequacy. ",
       "CoRD/CoCA measures the premium of the recommended diet over the least-cost diet.\n",
@@ -240,9 +236,9 @@ fig4 <- ggplot(premiums,
   theme_q1
 
 ggsave(file.path(out_fig, "fig4_cost_premiums.png"),
-       fig4, width = 10, height = 4.5, dpi = 300)
+       fig4, width = 10, height = 6, dpi = 300)
 
 ggsave(file.path(out_fig, "fig4_cost_premiums.pdf"),
-       fig4, width = 10, height = 4.5)
+       fig4, width = 10, height = 6)
 
 message("Figures 3\u20134 saved to: ", out_fig)

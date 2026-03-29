@@ -1,7 +1,11 @@
 ########################################################
 ## Least-cost diets — Results section
-## Figure 1: Real daily cost per member
-## Figure 2: Real cost per 1,000 kcal per member
+## Figure 1: Real daily cost per member (CoCA, CoNA, CoRD)
+## Figure 2: Real cost per 1,000 kcal — CoNA only, by member
+##           (Cost per 1,000 kcal is only meaningful for CoNA
+##            because CoCA is energy-constrained by definition
+##            and CoRD's kcal composition reflects servings,
+##            not cost-minimisation)
 ########################################################
 
 library(tidyverse)
@@ -51,21 +55,20 @@ diets_real <- bind_rows(coca_real, cona_real, cord_real) %>%
   )
 
 ##----------------------------------------------------------
-## Points every 3 months — subset for geom_point
+## Points every December — annual marker
 ##----------------------------------------------------------
 
 diets_points <- diets_real %>%
-  filter(month(fecha) %in% c(12))   # Jan, Apr, Jul, Oct
+  filter(month(fecha) == 12)
 
 ##----------------------------------------------------------
-## Aesthetics
+## Aesthetics — diet palette (Figure 1)
 ##----------------------------------------------------------
 
-# Diet palette — consistent with project color scheme
 diet_colors <- c(
-  "CoCA" = "#2C3E6B",   # dark blue
-  "CoNA" = "#C0392B",   # red
-  "CoRD" = "#27AE60"    # green
+  "CoCA" = "#2C3E6B",
+  "CoNA" = "#C0392B",
+  "CoRD" = "#27AE60"
 )
 
 diet_linetypes <- c(
@@ -74,14 +77,38 @@ diet_linetypes <- c(
   "CoRD" = "dotdash"
 )
 
-# Distinct shapes — readable in greyscale and print
 diet_shapes <- c(
-  "CoCA" = 16,   # filled circle
-  "CoNA" = 17,   # filled triangle
-  "CoRD" = 15    # filled square
+  "CoCA" = 16,
+  "CoNA" = 17,
+  "CoRD" = 15
 )
 
-# Q1 journal theme — clean, serif, minimal grid
+##----------------------------------------------------------
+## Aesthetics — member palette (Figure 2)
+##----------------------------------------------------------
+
+member_colors <- c(
+  "Adult male"   = "#2C3E6B",
+  "Adult female" = "#C0392B",
+  "Female child" = "#27AE60"
+)
+
+member_linetypes <- c(
+  "Adult male"   = "solid",
+  "Adult female" = "dashed",
+  "Female child" = "dotdash"
+)
+
+member_shapes <- c(
+  "Adult male"   = 16,
+  "Adult female" = 17,
+  "Female child" = 15
+)
+
+##----------------------------------------------------------
+## Q1 journal theme
+##----------------------------------------------------------
+
 theme_q1 <- theme_bw(base_size = 10) +
   theme(
     text             = element_text(family = "serif"),
@@ -107,12 +134,13 @@ theme_q1 <- theme_bw(base_size = 10) +
 
 ##----------------------------------------------------------
 ## Figure 1: Real daily cost per member × city
+##           Three diets, facet: city (rows) × member (columns)
 ##----------------------------------------------------------
 
 fig1 <- ggplot(diets_real,
-               aes(x     = fecha,
-                   y     = cost_day,
-                   color = diet,
+               aes(x        = fecha,
+                   y        = cost_day,
+                   color    = diet,
                    linetype = diet,
                    shape    = diet)) +
   geom_line(linewidth = 0.55, alpha = 0.9) +
@@ -127,16 +155,15 @@ fig1 <- ggplot(diets_real,
                                            big.mark = ",",
                                            suffix   = "")) +
   labs(
-    title    = paste0("Figure 1. Real daily diet cost for each member of the ",
-                      "representative household, 2019\u20132024"),
-    subtitle = "Colombian pesos per day, deflated by national CPI (base year 2019)",
-    caption  = paste0(
+    title   = " ",
+    caption = paste0(
       "Note: CoCA = Cost of Caloric Adequacy; CoNA = Cost of Nutritional Adequacy; ",
       "CoRD = Cost of the Recommended Diet.\n",
       "The representative household comprises one adult male (31\u201351 years), one adult female ",
       "(31\u201351 years), and one female child (10\u201314 years).\n",
       "Nutritional requirements follow GABAS dietary guidelines adjusted by ",
-      "city-specific estimated energy requirements (EER)."
+      "city-specific estimated energy requirements (EER). ",
+      "Costs deflated by the national CPI (base year 2019)."
     ),
     x = NULL,
     y = "Real COP / day"
@@ -144,65 +171,80 @@ fig1 <- ggplot(diets_real,
   theme_q1
 
 ggsave(file.path(out_fig, "fig1_real_daily_cost_by_member.png"),
-       fig1, width = 9, height = 7, dpi = 300)
+       fig1, width = 10, height = 6, dpi = 300)
 
 ggsave(file.path(out_fig, "fig1_real_daily_cost_by_member.pdf"),
-       fig1, width = 9, height = 7)
+       fig1, width = 10, height = 6)
 
 ##----------------------------------------------------------
-## Figure 2: Real cost per 1,000 kcal per member × city
+## Figure 2: Real cost per 1,000 kcal — CoNA only
+##
+## Rationale: Cost per 1,000 kcal is a meaningful diet-quality
+## measure only for CoNA. For CoCA the energy constraint is
+## binding by construction so Cost_1000kcal is mechanically
+## equal across all foods. For CoRD the recommended servings
+## fix the dietary structure independently of energy density,
+## so the cost-per-kcal comparison would conflate dietary
+## quality with serving-size conventions.
+##
+## Figure shows cost per 1,000 kcal for CoNA by member × city.
+## Dotted lines = period mean per member × city.
 ##----------------------------------------------------------
 
-# Period mean per diet × member × city — dotted horizontal reference
-means_1000kcal <- diets_real %>%
-  group_by(diet, member, ciudad_label) %>%
-  summarize(mean_cost = mean(Cost_1000kcal, na.rm = TRUE), .groups = "drop")
+cona_1000kcal <- diets_real %>% filter(diet == "CoNA")
 
-fig2 <- ggplot(diets_real,
+cona_points <- diets_points %>% filter(diet == "CoNA")
+
+# Period mean per member × city
+means_1000kcal <- cona_1000kcal %>%
+  group_by(member, ciudad_label) %>%
+  summarize(mean_cost = mean(Cost_1000kcal, na.rm = TRUE),
+            sd = sd(Cost_1000kcal, na.rm = TRUE))
+
+fig2 <- ggplot(cona_1000kcal,
                aes(x        = fecha,
                    y        = Cost_1000kcal,
-                   color    = diet,
-                   linetype = diet,
-                   shape    = diet)) +
-  geom_line(linewidth = 0.55, alpha = 0.9) +
-  geom_point(data = diets_points, size = 1.6, alpha = 0.9) +
+                   color    = member,
+                   linetype = member,
+                   shape    = member)) +
+  geom_line(linewidth = 0.8, alpha = 0.9) +
+  geom_point(data = cona_points, size = 1.6, alpha = 0.9) +
   geom_hline(data        = means_1000kcal,
-             aes(yintercept = mean_cost, color = diet),
+             aes(yintercept = mean_cost, color = member),
              linetype    = "dotted",
-             linewidth   = 0.6,
+             linewidth   = 0.8,
              alpha       = 0.75,
              inherit.aes = FALSE) +
-  facet_grid(ciudad_label ~ member) +
-  scale_color_manual(values    = diet_colors)    +
-  scale_linetype_manual(values = diet_linetypes) +
-  scale_shape_manual(values    = diet_shapes)    +
+  facet_wrap(~ ciudad_label, ncol = 3) +
+  scale_color_manual(values    = member_colors)    +
+  scale_linetype_manual(values = member_linetypes) +
+  scale_shape_manual(values    = member_shapes)    +
   scale_x_date(date_breaks = "1 year", date_labels = "%Y",
                expand = c(0.01, 0)) +
   scale_y_continuous(labels = comma_format(prefix   = "$",
                                            big.mark = ",",
                                            suffix   = "")) +
   labs(
-    title    = paste0("Figure 2. Real diet cost per 1,000 kcal for each member of the ",
-                      "representative household, 2019\u20132024"),
-    subtitle = "Colombian pesos per 1,000 kcal, deflated by national CPI (base year 2019)",
-    caption  = paste0(
-      "Note: Cost per 1,000 kcal is a diet-quality-adjusted cost measure that controls for ",
-      "differences in energy density across diets and household members.\n",
-      "Dotted horizontal lines indicate the 2019\u20132024 period mean for each dietary model.\n",
-      "CoCA = Cost of Caloric Adequacy; CoNA = Cost of Nutritional Adequacy; ",
-      "CoRD = Cost of the Recommended Diet.\n",
+    title   = " ",
+    caption = paste0(
+      "Note: Cost per 1,000 kcal is shown for the Cost of Nutritional Adequacy (CoNA) only. ",
+      "This measure is not reported for CoCA — where the energy constraint is binding by ",
+      "construction — or for CoRD, where the dietary structure is fixed by recommended ",
+      "servings independently of energy density.\n",
+      "Dotted horizontal lines indicate the 2019\u20132024 period mean for each household member.\n",
       "Nutritional requirements follow GABAS dietary guidelines adjusted by ",
-      "city-specific estimated energy requirements (EER)."
+      "city-specific estimated energy requirements (EER). ",
+      "Costs deflated by the national CPI (base year 2019)."
     ),
     x = NULL,
-    y = "Real COP / 1,000 kcal"
+    y = "Real COP / 1,000 kcal (CoNA)"
   ) +
   theme_q1
 
 ggsave(file.path(out_fig, "fig2_real_cost_1000kcal_by_member.png"),
-       fig2, width = 9, height = 7, dpi = 300)
+       fig2, width = 10, height = 8, dpi = 300)
 
 ggsave(file.path(out_fig, "fig2_real_cost_1000kcal_by_member.pdf"),
-       fig2, width = 9, height = 7)
+       fig2, width = 10, height = 7)
 
 message("Figures 1\u20132 saved to: ", out_fig)
