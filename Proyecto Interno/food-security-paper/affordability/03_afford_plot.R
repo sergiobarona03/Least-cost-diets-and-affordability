@@ -14,7 +14,7 @@ library(scales)
 ## Directories
 ##----------------------------------------------------------
 
-base_dir   <- "C:\\Users\\Portatil\\Desktop\\Least-cost-diets-and-affordability\\Proyecto Interno"
+base_dir   <- "C:\\Users\\sergio.barona\\Desktop\\Least-cost-diets-and-affordability\\Proyecto Interno"
 afford_dir <- file.path(base_dir, "food-security-paper", "output", "affordability_metrics")
 out_fig    <- file.path(base_dir, "food-security-paper", "output", "figures")
 
@@ -117,6 +117,9 @@ afford_heatmap <- afford_pov %>%
     rate_bin = factor(rate_bin, levels = rate_labels)
   )
 
+writexl::write_xlsx(afford_heatmap,
+                    file.path(out_fig, "fig_afford_heatmap.xlsx"))
+
 fig1 <- ggplot(afford_heatmap,
                aes(x = fecha, y = deciles, fill = rate_bin)) +
   geom_tile(color = NA) +
@@ -173,6 +176,9 @@ afford_overall <- afford_pov %>%
 
 afford_points <- afford_overall %>%
   filter(month(fecha) == 12)
+
+writexl::write_xlsx(afford_overall,
+                    file.path(out_fig, "fig_afford_overall_rate.xlsx"))
 
 fig2 <- ggplot(afford_overall,
                aes(x        = fecha,
@@ -249,6 +255,9 @@ afford_food_sel <- afford_food_long %>%
 
 food_points <- afford_food_sel %>%
   filter(month(fecha) == 12)
+
+writexl::write_xlsx(afford_food_sel,
+                    file.path(out_fig, "fig_afford_cost_exp_ratio.xlsx"))
 
 fig3 <- ggplot(afford_food_sel,
                aes(x        = fecha,

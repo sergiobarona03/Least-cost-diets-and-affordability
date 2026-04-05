@@ -1,42 +1,40 @@
 ########################################################
-## IPC-Constrained Cost of Nutritional Adequacy (CoNA-IPC)
-## Figures: Diet cost and food composition — Q1 submission
+## Section 5: Nutritionally adequate diets under
+## observed consumption patterns
+## Cost figures — validated deflated per capita costs
+##
+## Fig 1: Real per capita cost time series by alpha × city
+## Fig 2: Cost premium E_IPC(alpha) - E* by alpha × city
+## Fig 3: Monthly cost premium over time by alpha × city
+## Table A: Mean real cost and premium by alpha × city
 ########################################################
 
 library(tidyverse)
 library(readxl)
+library(lubridate)
 library(scales)
-library(patchwork)
+library(writexl)
 
 ##----------------------------------------------------------
 ## Directories
 ##----------------------------------------------------------
 
-base_dir <- "C:\\Users\\Portatil\\Desktop\\Least-cost-diets-and-affordability\\Proyecto Interno"
-out_ipc  <- file.path(base_dir, "food-security-paper", "output", "cona-ipc")
-out_fig  <- file.path(base_dir, "food-security-paper", "output", "cona-ipc")
+base_dir <- "C:\\Users\\sergio.barona\\Desktop\\Least-cost-diets-and-affordability\\Proyecto Interno\\food-security-paper"
+out_real <- file.path(base_dir, "output", "real")
+out_fig  <- file.path(base_dir, "output", "cona-ipc")
+out_tab  <- file.path(base_dir, "output", "cona-ipc")
 
 ##----------------------------------------------------------
-## Load data
+## Load validated deflated per capita costs
 ##----------------------------------------------------------
+ipc_real <- readRDS(file.path(out_real, "cona_ipc_real.rds"))
 
-path_xlsx <- file.path(out_ipc, "230326_cona_ipc_full.xlsx")
-
-df.cost <- read_excel(path_xlsx, sheet = "cost") %>%
-  mutate(fecha = as.Date(fecha), year = lubridate::year(fecha))
-
-df.comp <- read_excel(path_xlsx, sheet = "comp") %>%
-  mutate(fecha = as.Date(fecha), year = lubridate::year(fecha))
+cost_pc <- ipc_real$per_capita %>%
+  mutate(fecha = as.Date(fecha))
 
 ##----------------------------------------------------------
-## Shared aesthetics
+## Shared labels and aesthetics
 ##----------------------------------------------------------
-
-city_colors <- c(
-  "BOGOTA"   = "#2C3E6B",
-  "MEDELLIN" = "#C0392B",
-  "CALI"     = "#27AE60"
-)
 
 city_labels <- c(
   "BOGOTA"   = "Bogotá",
@@ -44,244 +42,277 @@ city_labels <- c(
   "CALI"     = "Cali"
 )
 
-member_labels <- c(
-  "0_[31,51)"  = "Adult male",
-  "1_[10, 14)" = "Female child",
-  "1_[31,51)"  = "Adult female"
+# alpha = 0 is the CoNA benchmark — shown in grey
+# alpha > 0 shown in progressive green (stricter = darker)
+alpha_levels <- c("0", "0.25", "0.5", "0.75", "1")
+
+alpha_palette <- c(
+  "0"    = "grey55",
+  "0.25" = "#A9DFBF",
+  "0.5"  = "#52BE80",
+  "0.75" = "#1E8449",
+  "1"    = "#0B5A2A"
 )
 
-member_order <- c("Adult male", "Adult female", "Female child")
-
-# Alpha palette: sequential green — darker = higher alpha (stricter IPC enforcement)
-alpha_vals   <- c(0.50, 0.75, 1.00)
-alpha_colors <- setNames(
-  colorRampPalette(c("#A9DFBF", "#1D6A39"))(length(alpha_vals)),
-  as.character(alpha_vals)
+alpha_linetypes <- c(
+  "0"    = "solid",
+  "0.25" = "dashed",
+  "0.5"  = "dashed",
+  "0.75" = "dashed",
+  "1"    = "dashed"
 )
 
-paper_theme <- theme_bw(base_size = 11) +
+alpha_shapes <- c(
+  "0"    = 16,
+  "0.25" = 17,
+  "0.5"  = 15,
+  "0.75" = 18,
+  "1"    = 8
+)
+
+alpha_labels <- c(
+  "0"    = "\u03b1 = 0 (CoNA)",
+  "0.25" = "\u03b1 = 0.25",
+  "0.5"  = "\u03b1 = 0.50",
+  "0.75" = "\u03b1 = 0.75",
+  "1"    = "\u03b1 = 1.00"
+)
+
+city_colors <- c(
+  "Bogotá"   = "#2C3E6B",
+  "Cali"     = "#27AE60",
+  "Medellín" = "#C0392B"
+)
+
+theme_q1 <- theme_bw(base_size = 10) +
   theme(
     text             = element_text(family = "serif"),
-    plot.title       = element_text(face = "bold", size = 12),
-    plot.subtitle    = element_text(size = 10, color = "grey40"),
-    plot.caption     = element_text(size = 8,  color = "grey50", hjust = 0),
+    plot.title       = element_text(face = "bold", size = 11,
+                                    margin = margin(b = 4)),
+    plot.caption     = element_text(size = 7.5, color = "grey45",
+                                    hjust = 0, margin = margin(t = 6)),
+    axis.title       = element_text(size = 9),
+    axis.text        = element_text(size = 8),
     axis.text.x      = element_text(angle = 45, hjust = 1),
     legend.position  = "bottom",
     legend.title     = element_blank(),
+    legend.text      = element_text(size = 9),
+    legend.key.width = unit(1.0, "cm"),
+    panel.grid.major = element_line(color = "grey90", linewidth = 0.3),
     panel.grid.minor = element_blank(),
-    strip.text       = element_text(face = "bold", size = 10)
+    strip.background = element_rect(fill = "grey96", color = "grey70"),
+    strip.text       = element_text(face = "bold", size = 9),
+    plot.margin      = margin(6, 8, 6, 6)
   )
 
 ##----------------------------------------------------------
-## Prepare $cost
+## Prepare
 ##----------------------------------------------------------
 
-df.cost <- df.cost %>%
+cost_pc <- cost_pc %>%
   mutate(
-    member       = factor(recode(paste0(Sex, "_", Demo_Group), !!!member_labels),
-                          levels = member_order),
     ciudad_label = recode(ciudad, !!!city_labels),
-    alpha_val    = as.character(alpha_val)
+    alpha_chr    = as.character(alpha_val),
+    alpha_fac    = factor(alpha_chr, levels = alpha_levels)
   )
 
-# Per capita cost (mean across members) by city × date × alpha
-cost_pc <- df.cost %>%
-  group_by(ciudad, ciudad_label, fecha, year, alpha_val) %>%
-  summarize(
-    cost_percap    = mean(cost_day, na.rm = TRUE),
-    cost_household = sum(cost_day,  na.rm = TRUE),
-    .groups = "drop"
-  )
+cost_pts <- cost_pc %>% filter(month(fecha) == 12)
 
 ##----------------------------------------------------------
-## Figure 1: Per capita CoNA-IPC — time series by city
-##           one line per alpha, facet by city
+## Figure 1: Real per capita cost time series
+##           Five lines (one per alpha), facet by city
+##           alpha = 0 in grey = CoNA benchmark
 ##----------------------------------------------------------
 
 fig1 <- ggplot(cost_pc,
-               aes(x = fecha, y = cost_percap,
-                   color = alpha_val, group = alpha_val)) +
-  geom_line(linewidth = 0.7) +
+               aes(x        = fecha,
+                   y        = cost_pc_real,
+                   color    = alpha_fac,
+                   linetype = alpha_fac,
+                   group    = alpha_fac)) +
+  geom_line(linewidth = 0.6, alpha = 0.9) +
+  geom_point(data = cost_pts,
+             aes(shape = alpha_fac),
+             size = 1.6, alpha = 0.9) +
   facet_wrap(~ ciudad_label, ncol = 3) +
-  scale_color_manual(values = alpha_colors,
-                     name   = expression(alpha)) +
-  scale_x_date(date_breaks = "1 year", date_labels = "%Y") +
-  scale_y_continuous(labels = comma_format(prefix = "$", suffix = " COP")) +
+  scale_color_manual(values    = alpha_palette,   labels = alpha_labels) +
+  scale_linetype_manual(values = alpha_linetypes, labels = alpha_labels) +
+  scale_shape_manual(values    = alpha_shapes,    labels = alpha_labels) +
+  scale_x_date(date_breaks = "1 year", date_labels = "%Y",
+               expand = c(0.01, 0)) +
+  scale_y_continuous(labels = comma_format(prefix = "$", big.mark = ",")) +
   labs(
-    title    = "Figure 1. Daily per capita CoNA-IPC by city and α, 2019–2024",
-    subtitle = "Daily cost per household member (COP). Darker lines correspond to stricter IPC quantity share enforcement",
-    caption  = paste0(
-      "Note: α controls the minimum quantity share each food group must represent in the optimal diet,\n",
-      "relative to its IPC share. α = 0.5 requires at least 50% of the IPC share; α = 1.0 enforces\n",
-      "the full IPC quantity structure. Per capita cost computed as the mean across household members."
+    title   = " ",
+    caption = paste0(
+      "Note: Per capita cost = mean real daily diet cost across household members ",
+      "(adult male, adult female, female child).\n",
+      "\u03b1 = 0 corresponds to the standard CoNA (no dietary pattern constraint). ",
+      "Higher \u03b1 imposes increasingly strict IPC quantity share constraints.\n",
+      "Costs deflated by the national CPI (base: December 2018)."
     ),
-    x = NULL, y = "COP / day"
+    x = NULL,
+    y = "Real COP / day (per capita)"
   ) +
-  paper_theme +
-  guides(color = guide_legend(nrow = 1, title = expression(alpha)))
+  theme_q1 +
+  guides(color    = guide_legend(nrow = 1),
+         linetype = guide_legend(nrow = 1),
+         shape    = guide_legend(nrow = 1))
 
-ggsave(file.path(out_fig, "fig1_cona_ipc_percapita_series.png"),
-       fig1, width = 12, height = 5, dpi = 300)
-
-##----------------------------------------------------------
-## Figure 2: CoNA-IPC by household member
-##           one line per alpha, facet: member × city
-##----------------------------------------------------------
-
-fig2 <- ggplot(df.cost,
-               aes(x = fecha, y = cost_day,
-                   color = alpha_val, group = alpha_val)) +
-  geom_line(linewidth = 0.6) +
-  facet_grid(member ~ ciudad_label) +
-  scale_color_manual(values = alpha_colors,
-                     name   = expression(alpha)) +
-  scale_x_date(date_breaks = "1 year", date_labels = "%Y") +
-  scale_y_continuous(labels = comma_format(prefix = "$")) +
-  labs(
-    title    = "Figure 2. Daily CoNA-IPC by household member, city, and α, 2019–2024",
-    subtitle = "Daily cost of meeting nutritional requirements per member (COP)",
-    caption  = "Note: Nutritional requirements follow GABAS guidelines adjusted by city-specific EER.",
-    x = NULL, y = "COP / day"
-  ) +
-  paper_theme +
-  theme(axis.text.x = element_text(angle = 60, hjust = 1)) +
-  guides(color = guide_legend(nrow = 1, title = expression(alpha)))
-
-ggsave(file.path(out_fig, "fig2_cona_ipc_by_member.png"),
-       fig2, width = 12, height = 9, dpi = 300)
+ggsave(file.path(out_fig, "fig_ipc_cost_series.png"),
+       fig1, width = 8, height = 6, dpi = 300)
+ggsave(file.path(out_fig, "fig_ipc_cost_series.pdf"),
+       fig1, width = 8, height = 6)
 
 ##----------------------------------------------------------
-## Figure 3: Cost of dietary realism — mean cost by alpha
-##           shows E_IPC(alpha) - E* as alpha increases
+## Figure 2: Period-mean cost premium by alpha × city
+##           x = alpha, y = premium (%) over alpha = 0
+##           One connected line per city
 ##----------------------------------------------------------
 
-cost_by_alpha <- df.cost %>%
-  group_by(alpha_val) %>%
+# Period mean by alpha × city
+cost_mean <- cost_pc %>%
+  group_by(alpha_val, alpha_chr, ciudad, ciudad_label) %>%
   summarize(
-    mean_cost   = mean(cost_day,   na.rm = TRUE),
-    median_cost = median(cost_day, na.rm = TRUE),
-    sd_cost     = sd(cost_day,     na.rm = TRUE),
-    .groups = "drop"
-  ) %>%
-  mutate(alpha_num = as.numeric(alpha_val))
-
-fig3 <- ggplot(cost_by_alpha,
-               aes(x = alpha_num, y = mean_cost)) +
-  geom_ribbon(aes(ymin = mean_cost - sd_cost,
-                  ymax = mean_cost + sd_cost),
-              fill = "#A9DFBF", alpha = 0.4) +
-  geom_line(color = "#1D6A39", linewidth = 1) +
-  geom_point(color = "#1D6A39", size = 3) +
-  scale_x_continuous(breaks = alpha_vals,
-                     labels = as.character(alpha_vals)) +
-  scale_y_continuous(labels = comma_format(prefix = "$", suffix = " COP")) +
-  labs(
-    title    = "Figure 3. Cost of dietary realism: mean daily CoNA-IPC cost by α, 2019–2024",
-    subtitle = "Mean ± SD across all city–month observations and household members",
-    caption  = paste0(
-      "Note: The difference E_IPC(α) − E* measures the cost premium of enforcing IPC-consistent\n",
-      "dietary patterns. E* is the standard CoNA cost (minimum-cost nutritionally adequate diet\n",
-      "without dietary pattern constraints)."
-    ),
-    x = expression(alpha), y = "COP / day"
-  ) +
-  paper_theme
-
-ggsave(file.path(out_fig, "fig3_cona_ipc_cost_by_alpha.png"),
-       fig3, width = 8, height = 4.5, dpi = 300)
-
-##----------------------------------------------------------
-## Prepare $comp
-##----------------------------------------------------------
-
-df.comp <- df.comp %>%
-  mutate(
-    member       = factor(recode(paste0(Sex, "_", Demo_Group), !!!member_labels),
-                          levels = member_order),
-    ciudad_label = recode(ciudad, !!!city_labels),
-    alpha_val    = as.character(alpha_val)
+    mean_cost = mean(cost_pc_real, na.rm = TRUE),
+    sd_cost   = sd(cost_pc_real,   na.rm = TRUE),
+    .groups   = "drop"
   )
 
-# Foods appearing in at least 5% of city × date observations
-# evaluated at alpha = 0.5 as reference
-top_foods <- df.comp %>%
-  filter(alpha_val == "0.5") %>%
-  group_by(Food) %>%
-  summarize(freq = n_distinct(paste(ciudad, fecha)), .groups = "drop") %>%
-  mutate(share = freq / max(freq)) %>%
-  filter(share >= 0.05) %>%
-  pull(Food)
+# E* = period mean at alpha = 0
+cost_star <- cost_mean %>%
+  filter(alpha_val == 0) %>%
+  select(ciudad, cost_star = mean_cost)
 
-##----------------------------------------------------------
-## Figure 4: Diet composition over time — aggregated across members
-##           one panel per city, compare all alpha values
-##----------------------------------------------------------
+cost_premium <- cost_mean %>%
+  left_join(cost_star, by = "ciudad") %>%
+  mutate(
+    premium_cop = mean_cost - cost_star,
+    premium_pct = (mean_cost / cost_star - 1) * 100
+  )
 
-comp_highlight <- df.comp %>%
-  filter(Food %in% top_foods) %>%
-  group_by(Food, ciudad, ciudad_label, fecha, year, alpha_val) %>%
-  summarize(quantity = mean(quantity, na.rm = TRUE), .groups = "drop") %>%
-  mutate(alpha_label = paste0("α = ", alpha_val))
-
-fig4 <- ggplot(comp_highlight,
-               aes(x = fecha, y = quantity, fill = Food)) +
-  geom_area(position = "stack", alpha = 0.85) +
-  facet_grid(alpha_label ~ ciudad_label) +
-  scale_x_date(date_breaks = "1 year", date_labels = "%Y") +
-  scale_y_continuous(labels = comma_format(suffix = " g")) +
-  labs(
-    title    = "Figure 4. Diet composition at selected α values by city, 2019–2024",
-    subtitle = "Mean daily quantity (grams) aggregated across household members",
-    caption  = paste0(
-      "Note: Only foods appearing in ≥5% of city–month observations (at α = 0.5) are shown.\n",
-      "Rows correspond to α = 0.5, α = 0.75, and α = 1.0 (full IPC quantity enforcement)."
-    ),
-    x = NULL, y = "Quantity (g / day)", fill = "Food item"
+fig2 <- ggplot(cost_premium,
+               aes(x     = alpha_val,
+                   y     = premium_pct,
+                   color = ciudad_label,
+                   group = ciudad_label)) +
+  geom_line(linewidth = 0.8) +
+  geom_point(size = 2.5) +
+  geom_hline(yintercept = 0, linetype = "dashed",
+             color = "grey50", linewidth = 0.4) +
+  scale_color_manual(values = city_colors) +
+  scale_x_continuous(
+    breaks = c(0, 0.25, 0.50, 0.75, 1.00),
+    labels = c("0\n(CoNA)", "0.25", "0.50", "0.75", "1.00")
   ) +
-  paper_theme +
-  theme(legend.position = "bottom",
-        legend.text     = element_text(size = 8),
-        axis.text.x     = element_text(angle = 60, hjust = 1)) +
-  guides(fill = guide_legend(nrow = 3))
-
-ggsave(file.path(out_fig, "fig4_cona_ipc_comp_highlight.png"),
-       fig4, width = 13, height = 10, dpi = 300)
-
-##----------------------------------------------------------
-## Figure 5: Diet composition — by household member
-##           alpha = 0.5 vs alpha = 1.0, facet: member × city
-##----------------------------------------------------------
-
-comp_extremes <- df.comp %>%
-  filter(Food %in% top_foods, alpha_val %in% c("0.5", "1")) %>%
-  group_by(Food, member, ciudad, ciudad_label, fecha, year, alpha_val) %>%
-  summarize(quantity = mean(quantity, na.rm = TRUE), .groups = "drop") %>%
-  mutate(alpha_label = if_else(alpha_val == "0.5",
-                               "α = 0.5 (loose IPC enforcement)",
-                               "α = 1.0 (full IPC enforcement)"))
-
-fig5 <- ggplot(comp_extremes,
-               aes(x = fecha, y = quantity, fill = Food)) +
-  geom_area(position = "stack", alpha = 0.85) +
-  facet_grid(member + alpha_label ~ ciudad_label) +
-  scale_x_date(date_breaks = "1 year", date_labels = "%Y") +
-  scale_y_continuous(labels = comma_format(suffix = " g")) +
+  scale_y_continuous(labels = function(x) paste0(round(x, 1), "%")) +
   labs(
-    title    = "Figure 5. Diet composition at α = 0.5 and α = 1.0 by household member and city, 2019–2024",
-    subtitle = "Comparison of loose (α = 0.5) vs. full (α = 1.0) IPC quantity share enforcement",
-    caption  = paste0(
-      "Note: Only foods appearing in ≥5% of city–month observations (at α = 0.5) are shown.\n",
-      "Each pair of rows corresponds to one household member."
+    title   = " ",
+    caption = paste0(
+      "Note: Cost premium = [E\u1d35\u1d3a\u1d36(\u03b1) \u2212 E*] / E* \u00d7 100, ",
+      "where E* is the period mean of the CoNA cost (\u03b1 = 0).\n",
+      "Period mean computed over all city\u2013month observations, 2019\u20132024. ",
+      "Costs deflated by the national CPI (base: December 2018)."
     ),
-    x = NULL, y = "Quantity (g / day)", fill = "Food item"
+    x = expression(alpha),
+    y = "Cost premium over CoNA (%)"
   ) +
-  paper_theme +
-  theme(legend.position = "bottom",
-        legend.text     = element_text(size = 8),
-        axis.text.x     = element_text(angle = 60, hjust = 1)) +
-  guides(fill = guide_legend(nrow = 3))
+  theme_q1
 
-ggsave(file.path(out_fig, "fig5_cona_ipc_comp_extremes.png"),
-       fig5, width = 14, height = 14, dpi = 300)
+ggsave(file.path(out_fig, "fig_ipc_cost_premium.png"),
+       fig2, width = 8, height = 6, dpi = 300)
+ggsave(file.path(out_fig, "fig_ipc_cost_premium.pdf"),
+       fig2, width = 8, height = 6)
 
-message("Figures 1–5 saved to: ", out_fig)
+##----------------------------------------------------------
+## Figure 3: Monthly cost premium over time
+##           Shows how the premium evolves month by month
+##           Facet: city | Color/line: alpha
+##           Helps identify if the premium is stable or
+##           varies with the inflationary episode
+##----------------------------------------------------------
+
+# Monthly premium relative to alpha = 0 in that same month
+cost_star_monthly <- cost_pc %>%
+  filter(alpha_val == 0) %>%
+  select(ciudad, ciudad_label, fecha, cost_star_m = cost_pc_real)
+
+premium_monthly <- cost_pc %>%
+  filter(alpha_val > 0) %>%
+  left_join(cost_star_monthly, by = c("ciudad", "ciudad_label", "fecha")) %>%
+  mutate(
+    premium_pct = (cost_pc_real / cost_star_m)
+  )
+
+premium_pts <- premium_monthly %>% filter(month(fecha) == 12)
+
+fig3 <- ggplot(premium_monthly,
+               aes(x        = fecha,
+                   y        = premium_pct,
+                   color    = alpha_fac,
+                   linetype = alpha_fac,
+                   group    = alpha_fac)) +
+  geom_hline(yintercept = 1, linetype = "longdash",
+             color = "grey50", linewidth = 0.35) +
+  geom_line(linewidth = 0.6, alpha = 0.9) +
+  geom_point(data = premium_pts,
+             aes(shape = alpha_fac),
+             size = 1.6, alpha = 0.9) +
+  facet_wrap(~ ciudad_label, ncol = 3) +
+  scale_color_manual(values    = alpha_palette[2:5],
+                     labels    = alpha_labels[2:5])    +
+  scale_linetype_manual(values = alpha_linetypes[2:5],
+                        labels = alpha_labels[2:5])    +
+  scale_shape_manual(values    = alpha_shapes[2:5],
+                     labels    = alpha_labels[2:5])    +
+  scale_x_date(date_breaks = "1 year", date_labels = "%Y",
+               expand = c(0.01, 0)) +
+  scale_y_continuous(labels = function(x) paste0(round(x, 3), "%")) +
+  labs(
+    title   = " ",
+    caption = paste0(
+      "Note: Monthly cost premium = [E\u1d35\u1d3a\u1d36(\u03b1, t) \u2212 E*(t)] / E*(t) \u00d7 100, ",
+      "where E*(t) is the CoNA cost in month t (\u03b1 = 0).\n",
+      "Long-dashed grey line at 0 indicates no premium over CoNA. ",
+      "Costs deflated by the national CPI (base: December 2018)."
+    ),
+    x = NULL,
+    y = "Monthly cost premium over CoNA (%)"
+  ) +
+  theme_q1 +
+  guides(color    = guide_legend(nrow = 1),
+         linetype = guide_legend(nrow = 1),
+         shape    = guide_legend(nrow = 1))
+
+ggsave(file.path(out_fig, "fig_ipc_premium_monthly.png"),
+       fig3, width = 8, height = 6, dpi = 300)
+ggsave(file.path(out_fig, "fig_ipc_premium_monthly.pdf"),
+       fig3, width = 8, height = 6)
+
+##----------------------------------------------------------
+## Table A: Mean real per capita cost and premium by alpha × city
+##----------------------------------------------------------
+
+table_a <- cost_premium %>%
+  mutate(
+    mean_cost   = round(mean_cost,   0),
+    sd_cost     = round(sd_cost,     0),
+    cost_star   = round(cost_star,   0),
+    premium_cop = round(premium_cop, 0),
+    premium_pct = round(premium_pct, 2)
+  ) %>%
+  select(
+    Alpha                          = alpha_val,
+    City                           = ciudad_label,
+    `Mean CoNA-IPC real (COP/day)` = mean_cost,
+    `SD`                           = sd_cost,
+    `CoNA cost (alpha = 0) (COP)`  = cost_star,
+    `Premium (COP)`                = premium_cop,
+    `Premium (%)`                  = premium_pct
+  ) %>%
+  arrange(City, Alpha)
+
+write_xlsx(
+  list(`Table A - Cost premium by alpha` = table_a),
+  file.path(out_tab, "table_cona_ipc_cost_premium.xlsx")
+)
+
