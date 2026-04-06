@@ -26,7 +26,7 @@ path_world <- file.path(base_dir, "world", "world.shp")
 path_dist  <- "C:/Users/danie/OneDrive/Escritorio/Least-cost-diets-and-affordability/Proyecto Interno/mapa/distancia_cantidad.xlsx"
 
 out_dir  <- "C:/Users/danie/OneDrive/Escritorio/Least-cost-diets-and-affordability/Proyecto Interno/mapa"
-out_file <- file.path(out_dir, "food_supply_flows_panel_paper_final.png")
+out_file <- file.path(out_dir, "food_supply_flows.png")
 
 if (!dir.exists(out_dir)) dir.create(out_dir, recursive = TRUE)
 
@@ -359,69 +359,50 @@ plot_city <- function(city_name) {
       drop = FALSE
     ) +
     labs(title = city_name) +
-    theme_map()
+    theme_map() +
+    theme(
+      plot.margin = margin(0, 0, 0, 0),
+      plot.title = element_text(margin = margin(b = 6))
+    )
 }
 
 # =========================================================
-# 16. SMALL LEGEND PANEL
+# 16. HORIZONTAL LEGEND PANEL
 # =========================================================
-legend_df <- data.frame(
-  supply_level = factor(
-    c("Low supply", "Medium supply", "High supply"),
-    levels = c("Low supply", "Medium supply", "High supply")
-  ),
-  x = 1,
-  y = c(3, 2, 1),
-  label = c(
-    paste0("Low: under ", scales::comma(low_max), " tonnes"),
-    paste0("Medium: ", scales::comma(low_max), "–", scales::comma(med_max), " tonnes"),
-    paste0("High: over ", scales::comma(med_max), " tonnes")
-  )
-)
-
 legend_panel <- ggplot() +
   geom_point(
     data = legend_df,
     aes(x = x, y = y, fill = supply_level, size = supply_level),
     shape = 21,
     color = "#4F6774",
-    stroke = 0.22,
+    stroke = 0.25,
     alpha = 0.95,
     show.legend = FALSE
   ) +
   geom_text(
     data = legend_df,
-    aes(x = 1.22, y = y, label = label),
-    hjust = 0,
-    size = 5.0,
+    aes(x = x, y = y - 0.055, label = label),
+    hjust = 0.5,
+    size = 4.6,
     color = "grey20"
-  ) +
-  annotate(
-    "text",
-    x = 1.22,
-    y = 3.72,
-    label = "Supply level",
-    hjust = 0,
-    fontface = "bold",
-    size = 6.2
   ) +
   scale_size_manual(
     values = c(
-      "Low supply" = 2.2,
-      "Medium supply" = 3.7,
-      "High supply" = 5.3
+      "Low supply" = 2.4,
+      "Medium supply" = 3.8,
+      "High supply" = 5.2
     )
   ) +
   scale_fill_manual(
     values = c(
-      "Low supply" = "#D6E3EA",
-      "Medium supply" = "#8FB1C0",
-      "High supply" = "#3E7691"
+      "Low supply" = "#D9E6EC",
+      "Medium supply" = "#8FAFBE",
+      "High supply" = "#2F6B84"
     )
   ) +
   coord_cartesian(
-    xlim = c(0.9, 4.6),
-    ylim = c(0.55, 3.95),
+    xlim = c(0.5, 3.5),
+    ylim = c(0.90, 1.03),
     expand = FALSE
   ) +
   theme_void() +
@@ -437,15 +418,13 @@ p_med <- plot_city("Medellín")
 p_cal <- plot_city("Cali")
 
 # =========================================================
-# 18. BUILD PANEL
+# 18. BUILD HORIZONTAL PANEL
 # =========================================================
 final_map <- cowplot::ggdraw() +
-  cowplot::draw_plot(p_bog, x = 0.03, y = 0.50, width = 0.44, height = 0.47) +
-  cowplot::draw_plot(p_med, x = 0.50, y = 0.50, width = 0.44, height = 0.47) +
-  cowplot::draw_plot(p_cal, x = 0.03, y = 0.03, width = 0.44, height = 0.47) +
-  cowplot::draw_plot(legend_panel, x = 0.54, y = 0.06, width = 0.34, height = 0.18)
-
-print(final_map)
+  cowplot::draw_plot(p_med, x = 0.03, y = 0.22, width = 0.30, height = 0.70) +
+  cowplot::draw_plot(p_bog, x = 0.35, y = 0.22, width = 0.30, height = 0.70) +
+  cowplot::draw_plot(p_cal, x = 0.67, y = 0.22, width = 0.30, height = 0.70) +
+  cowplot::draw_plot(legend_panel, x = 0.16, y = 0.145, width = 0.68, height = 0.045)
 
 # =========================================================
 # 19. SAVE
@@ -453,8 +432,8 @@ print(final_map)
 ggsave(
   filename = out_file,
   plot = final_map,
-  width = 13.2,
-  height = 10.6,
+  width = 16,
+  height = 9,
   dpi = 700,
   bg = "white"
 )
