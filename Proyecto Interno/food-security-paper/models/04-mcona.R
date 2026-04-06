@@ -2,6 +2,13 @@
 ## IPC-Constrained Cost of Nutritional Adequacy (CoNA-IPC)
 ## Minimum-cost diet with IPC quantity share constraints
 ## Loop over cities, dates, and alpha values — full output
+##
+## Alpha grid: 0, 0.25, 0.50, 0.75, 1.00
+##   alpha = 0    : standard CoNA (no IPC constraint)
+##   alpha = 0.25 : each group >= 25% of its IPC quantity share
+##   alpha = 0.50 : each group >= 50% of its IPC quantity share
+##   alpha = 0.75 : each group >= 75% of its IPC quantity share
+##   alpha = 1.00 : full IPC quantity share enforced
 ########################################################
 
 library(tidyverse)
@@ -12,12 +19,13 @@ library(FoodpriceR)
 ## Directories
 ##----------------------------------------------------------
 
-base_dir   <- "C:\\Users\\Portatil\\Desktop\\Least-cost-diets-and-affordability\\Proyecto Interno"
+base_dir      <- "C:\\Users\\sergio.barona\\Desktop\\Least-cost-diets-and-affordability\\Proyecto Interno"
 
-aux_dir    <- file.path(base_dir, "food-security-paper", "models", "aux-functions")
-out_ipc    <- file.path(base_dir, "food-security-paper", "output", "cona-ipc")
-out_eer    <- file.path(base_dir, "food-security-paper", "output", "eer")
-input1_dir <- file.path(base_dir, "food-security-paper", "output", "tcac_food_table")
+aux_dir       <- file.path(base_dir, "food-security-paper", "models", "aux-functions")
+out_ipc       <- file.path(base_dir, "food-security-paper", "output", "cona-ipc")
+out_eer       <- file.path(base_dir, "food-security-paper", "output", "eer")
+input1_dir    <- file.path(base_dir, "food-security-paper", "output", "tcac_food_table")
+input_weights <- file.path(base_dir, "food-security-paper", "input", "cpi-weights")
 
 source(file.path(aux_dir, "CoNA_IPC_paper.R"))
 
@@ -26,7 +34,7 @@ source(file.path(aux_dir, "CoNA_IPC_paper.R"))
 ##----------------------------------------------------------
 
 data_paper <- readRDS(file.path(input1_dir, "panel_city_month_food_1999_2025.rds")) %>%
-  select(ciudad, fecha, ano, mes_num, articulo, precio_100g,
+  select(ciudad, fecha, ano, mes_num, articulo, subclase_ipc, precio_100g,
          grupos_gabas, subgrupos_gabas,
          gramos_g_1_intercambio_1_intercambio,
          energia_kcal, proteina_g, lipidos_g, carbohidratos_totales_g,
@@ -54,12 +62,31 @@ data_paper <- readRDS(file.path(input1_dir, "panel_city_month_food_1999_2025.rds
     Iron          = hierro_mg,
     Zinc          = zinc_mg
   ) %>%
-  # Separate fruits and vegetables before passing to the model
   mutate(
-    Group = grupos_gabas,
-    Group = if_else(subgrupos_gabas == "FRUTAS",   "FRUTAS",   Group),
-    Group = if_else(subgrupos_gabas == "VERDURAS", "VERDURAS", Group)
+    Group_gabas = grupos_gabas,
+    Group_gabas = if_else(subgrupos_gabas == "FRUTAS",   "FRUTAS",   Group_gabas),
+    Group_gabas = if_else(subgrupos_gabas == "VERDURAS", "VERDURAS", Group_gabas),
+    clase_ipc   = paste0(substr(subclase_ipc, 1, 4), "0000"),
+    Group       = clase_ipc
   )
+
+##----------------------------------------------------------
+## Input 1.1: IPC quantity share weights
+##----------------------------------------------------------
+
+weights_24 <- read_excel(file.path(input_weights, "cpi-weights-2024.xlsx")) %>%
+  janitor::clean_names() %>%
+  select(nivel, codigo, nombre, total_ingresos)
+
+clases_v <- levels(as.factor(data_paper$clase_ipc))
+
+clase_wi_24 <- weights_24 %>%
+  filter(nivel == "Clase", codigo %in% clases_v) %>%
+  mutate(
+    share = total_ingresos / sum(total_ingresos),
+    Group = codigo
+  ) %>%
+  select(Group, nombre, share)
 
 ##----------------------------------------------------------
 ## Input 2: EER — representative household
@@ -110,40 +137,23 @@ household_ul <- merge(household_eer,
   mutate(across(where(is.numeric), ~ replace_na(.x, 9999999)))
 
 ##----------------------------------------------------------
-## Input 4: IPC expenditure shares by food group
-## Must match exactly the Group values in data_paper$Group
+## Input 4: IPC expenditure shares
 ##----------------------------------------------------------
 
-ipc_shares <- tribble(
-  ~Group,                                                                ~share,
-  "CEREALES, RAÍCES, TUBÉRCULOS Y PLÁTANOS",                           0.30,
-  "FRUTAS",                                                             0.10,
-  "VERDURAS",                                                           0.10,
-  "LECHE Y PRODUCTOS LACTEOS",                                          0.15,
-  "CARNES, HUEVOS, LEGUMINOSAS SECAS, FRUTOS SECOS Y SEMILLAS",         0.25,
-  "GRASAS",                                                             0.05,
-  "AZUCARES",                                                           0.05
-) %>% as.data.frame()
+ipc_shares <- clase_wi_24 %>% as.data.frame()
 
 stopifnot(abs(sum(ipc_shares$share) - 1) < 1e-6)
 
-# Verify group name alignment before running
 missing_in_data <- setdiff(ipc_shares$Group, unique(data_paper$Group))
 if (length(missing_in_data) > 0)
   warning("Groups in ipc_shares not found in data_paper$Group: ",
           paste(missing_in_data, collapse = ", "))
 
 ##----------------------------------------------------------
-## Alpha grid — sensitivity analysis on quantity share enforcement
-## Constraint: sum_{i in g}(x_i) / sum_i(x_i) >= alpha * s_g
-##
-## alpha = 0    : CoNA estándar (no IPC constraint)
-## alpha = 0.50 : each group must represent at least 50% of its IPC quantity share
-## alpha = 0.75 : 75% of IPC quantity share
-## alpha = 1.00 : full IPC quantity share enforced (most restrictive)
+## Alpha grid
 ##----------------------------------------------------------
 
-alphas <- c(0, 1.00)
+alphas <- c(0, 0.25, 0.50, 0.75, 1.00)
 
 ##----------------------------------------------------------
 ## Loop: estimate CoNA-IPC for each city × date × alpha
@@ -158,8 +168,6 @@ out_limit <- list()
 out_spe   <- list()
 
 for (alp in alphas) {
-  
-  
   
   message("\n========== alpha = ", alp, " ==========")
   
@@ -224,7 +232,6 @@ message("Done. Rows in df.cost: ", nrow(df.cost))
 ## Save — combined file + one file per alpha
 ##----------------------------------------------------------
 
-# Combined file with alpha column
 saveRDS(list(cost  = df.cost,
              comp  = df.comp,
              limit = df.limit,
@@ -239,7 +246,6 @@ writexl::write_xlsx(
   file.path(out_ipc, "230326_cona_ipc_full.xlsx")
 )
 
-# Separate file per alpha for convenience
 for (alp in alphas) {
   alp_tag <- gsub("\\.", "", as.character(alp))
   saveRDS(
