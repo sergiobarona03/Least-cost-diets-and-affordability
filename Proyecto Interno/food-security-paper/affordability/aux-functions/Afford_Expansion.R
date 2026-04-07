@@ -92,14 +92,17 @@ Afford <- function(Hexpense, Model_CoCA = NULL, Model_CoNA = NULL, Model_CoRD = 
       df_z$brecha_rel <- (z - df_z$food_exp_per_capita_year) / z
       df_z$brecha_rel_sqr <- df_z$brecha_rel^2
       
-      N <- nrow(df_y)
+      ##---------------------------------------------
+      ## Ponderación con factores de expansión
+      ##---------------------------------------------
       
-      rate <- (nrow(df_z) / N) * 100
+      # Total ponderado
+      N <- sum(df_y$fex_c18, na.rm = TRUE)
       
-      gap <- sum(df_z$brecha_rel) / N
-      severity <- sum(df_z$brecha_rel_sqr) / N
+      # Tasa ponderada de no asequibilidad
+      rate <- (sum(df_z$fex_c18, na.rm = TRUE) / N) * 100
       
-      df_w <- data.frame(deciles = deciles_grupos[j], rate = rate, gap = gap, severity = severity, model = model_name)
+      df_w <- data.frame(deciles = deciles_grupos[j], rate = rate, model = model_name)
       
       outcome_list[[j]] <- df_w
     }

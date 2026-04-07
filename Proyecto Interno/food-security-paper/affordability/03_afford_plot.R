@@ -14,7 +14,7 @@ library(scales)
 ## Directories
 ##----------------------------------------------------------
 
-base_dir   <- "C:\\Users\\sergio.barona\\Desktop\\Least-cost-diets-and-affordability\\Proyecto Interno"
+base_dir   <- "C:\\Users\\danie\\OneDrive\\Escritorio\\Least-cost-diets-and-affordability\\Proyecto Interno"
 afford_dir <- file.path(base_dir, "food-security-paper", "output", "affordability_metrics")
 out_fig    <- file.path(base_dir, "food-security-paper", "output", "figures")
 

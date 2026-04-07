@@ -13,7 +13,7 @@ library(scales)
 ## Directories
 ##----------------------------------------------------------
 
-base_dir <- "C:\\Users\\Portatil\\Desktop\\Least-cost-diets-and-affordability\\Proyecto Interno"
+base_dir <- "C:\\Users\\danie\\OneDrive\\Escritorio\\Least-cost-diets-and-affordability\\Proyecto Interno"
 out_real <- file.path(base_dir, "food-security-paper", "output", "real")
 out_fig  <- file.path(base_dir, "food-security-paper", "output", "figures")
 
@@ -22,15 +22,15 @@ out_fig  <- file.path(base_dir, "food-security-paper", "output", "figures")
 ##----------------------------------------------------------
 
 coca_real <- read_excel(file.path(out_real, "coca_real.xlsx")) %>%
-  select(ciudad, fecha, Demo_Group, Sex, cost_day, Cost_1000kcal) %>%
+  select(ciudad, fecha, Demo_Group, Sex, cost_day_real, Cost_1000kcal_real) %>%
   mutate(diet = "CoCA")
 
 cona_real <- read_excel(file.path(out_real, "cona_real.xlsx")) %>%
-  select(ciudad, fecha, Demo_Group, Sex, cost_day, Cost_1000kcal) %>%
+  select(ciudad, fecha, Demo_Group, Sex, cost_day_real, Cost_1000kcal_real) %>%
   mutate(diet = "CoNA")
 
 cord_real <- read_excel(file.path(out_real, "cord_real.xlsx")) %>%
-  select(ciudad, fecha, Demo_Group, Sex, cost_day, Cost_1000kcal) %>%
+  select(ciudad, fecha, Demo_Group, Sex, cost_day_real, Cost_1000kcal_real) %>%
   mutate(diet = "CoRD")
 
 diets_real <- bind_rows(coca_real, cona_real, cord_real) %>%
@@ -110,7 +110,7 @@ theme_q1 <- theme_bw(base_size = 10) +
 ##----------------------------------------------------------
 ## Figure 3: Real daily per capita household cost
 ##
-## Household total  = sum of cost_day across 3 members
+## Household total  = sum of cost_day_real across 3 members
 ## Per capita       = household total / 3
 ## One line per diet, one panel per city
 ##----------------------------------------------------------
@@ -118,7 +118,7 @@ theme_q1 <- theme_bw(base_size = 10) +
 hh_cost <- diets_real %>%
   group_by(diet, ciudad_label, fecha) %>%
   summarize(
-    hh_total   = sum(cost_day,  na.rm = TRUE),
+    hh_total   = sum(cost_day_real,  na.rm = TRUE),
     n_members  = n(),
     per_capita = hh_total / n_members,
     .groups    = "drop"
@@ -167,6 +167,69 @@ ggsave(file.path(out_fig, "fig3_real_hh_percapita_series.png"),
 
 ggsave(file.path(out_fig, "fig3_real_hh_percapita_series.pdf"),
        fig3, width = 10, height = 6)
+
+##----------------------------------------------------------
+## Figure 3: Real year-over-year variation in daily per capita
+## household cost
+##
+## YoY (%) = ((value_t / value_t-12) - 1) * 100
+## One line per diet, one panel per city
+##----------------------------------------------------------
+
+hh_cost_yoy <- hh_cost %>%
+  group_by(diet, ciudad_label) %>%
+  arrange(fecha, .by_group = TRUE) %>%
+  mutate(
+    yoy_per_capita = ((per_capita / lag(per_capita, 12)) - 1) * 100
+  ) %>%
+  ungroup()
+
+# Points every 3 months
+hh_points_yoy <- hh_cost_yoy %>%
+  filter(month(fecha) %in% c(1, 4, 7, 10), !is.na(yoy_per_capita))
+
+fig3_yoy <- ggplot(hh_cost_yoy %>% filter(!is.na(yoy_per_capita)),
+                   aes(x        = fecha,
+                       y        = yoy_per_capita,
+                       color    = diet,
+                       linetype = diet)) +
+  geom_hline(yintercept = 0,
+             color      = "grey50",
+             linewidth  = 0.4,
+             linetype   = "longdash") +
+  geom_line(linewidth = 0.6, alpha = 0.9) +
+  geom_point(data  = hh_points_yoy,
+             aes(shape = diet),
+             size  = 1.6,
+             alpha = 0.9) +
+  facet_wrap(~ ciudad_label, ncol = 3) +
+  scale_color_manual(values    = diet_colors)    +
+  scale_linetype_manual(values = diet_linetypes) +
+  scale_shape_manual(values    = diet_shapes)    +
+  scale_x_date(date_breaks = "1 year", date_labels = "%Y",
+               expand = c(0.01, 0)) +
+  scale_y_continuous(labels = function(x) paste0(round(x, 1), "%")) +
+  labs(
+    title    = " ",
+    caption  = paste0(
+      "Note: Real year-over-year variation is computed as the percentage change ",
+      "with respect to the same month in the previous year: ",
+      "((value_t / value_t-12) - 1) × 100.\n",
+      "Per capita cost is the sum of daily diet costs across all three household members ",
+      "(adult male, adult female, female child) divided by three.\n",
+      "CoCA = Cost of Caloric Adequacy; CoNA = Cost of Nutritional Adequacy; ",
+      "CoRD = Cost of the Recommended Diet."
+    ),
+    x = NULL,
+    y = "Real year-over-year change (%)"
+  ) +
+  theme_q1
+
+ggsave(file.path(out_fig, "fig3_real_hh_percapita_yoy.png"),
+       fig3_yoy, width = 10, height = 6, dpi = 300)
+
+ggsave(file.path(out_fig, "fig3_real_hh_percapita_yoy.pdf"),
+       fig3_yoy, width = 10, height = 6)
 
 ##----------------------------------------------------------
 ## Figure 4: Cost premiums

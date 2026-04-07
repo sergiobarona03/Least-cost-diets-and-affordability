@@ -17,7 +17,7 @@ library(scales)
 ## Directories
 ##----------------------------------------------------------
 
-base_dir <- "C:\\Users\\Portatil\\Desktop\\Least-cost-diets-and-affordability\\Proyecto Interno"
+base_dir <- "C:\\Users\\danie\\OneDrive\\Escritorio\\Least-cost-diets-and-affordability\\Proyecto Interno"
 out_real <- file.path(base_dir, "food-security-paper", "output", "real")
 out_fig  <- file.path(base_dir, "food-security-paper", "output", "figures")
 
@@ -26,15 +26,15 @@ out_fig  <- file.path(base_dir, "food-security-paper", "output", "figures")
 ##----------------------------------------------------------
 
 coca_real <- read_excel(file.path(out_real, "coca_real.xlsx")) %>%
-  select(ciudad, fecha, Demo_Group, Sex, cost_day, Cost_1000kcal) %>%
+  select(ciudad, fecha, Demo_Group, Sex, cost_day_real, Cost_1000kcal_real) %>%
   mutate(diet = "CoCA")
 
 cona_real <- read_excel(file.path(out_real, "cona_real.xlsx")) %>%
-  select(ciudad, fecha, Demo_Group, Sex, cost_day, Cost_1000kcal) %>%
+  select(ciudad, fecha, Demo_Group, Sex, cost_day_real, Cost_1000kcal_real) %>%
   mutate(diet = "CoNA")
 
 cord_real <- read_excel(file.path(out_real, "cord_real.xlsx")) %>%
-  select(ciudad, fecha, Demo_Group, Sex, cost_day, Cost_1000kcal) %>%
+  select(ciudad, fecha, Demo_Group, Sex, cost_day_real, Cost_1000kcal_real) %>%
   mutate(diet = "CoRD")
 
 diets_real <- bind_rows(coca_real, cona_real, cord_real) %>%
@@ -139,7 +139,7 @@ theme_q1 <- theme_bw(base_size = 10) +
 
 fig1 <- ggplot(diets_real,
                aes(x        = fecha,
-                   y        = cost_day,
+                   y        = cost_day_real,
                    color    = diet,
                    linetype = diet,
                    shape    = diet)) +
@@ -181,7 +181,7 @@ ggsave(file.path(out_fig, "fig1_real_daily_cost_by_member.pdf"),
 ##
 ## Rationale: Cost per 1,000 kcal is a meaningful diet-quality
 ## measure only for CoNA. For CoCA the energy constraint is
-## binding by construction so Cost_1000kcal is mechanically
+## binding by construction so Cost_1000kcal_real is mechanically
 ## equal across all foods. For CoRD the recommended servings
 ## fix the dietary structure independently of energy density,
 ## so the cost-per-kcal comparison would conflate dietary
@@ -198,12 +198,12 @@ cona_points <- diets_points %>% filter(diet == "CoNA")
 # Period mean per member × city
 means_1000kcal <- cona_1000kcal %>%
   group_by(member, ciudad_label) %>%
-  summarize(mean_cost = mean(Cost_1000kcal, na.rm = TRUE),
-            sd = sd(Cost_1000kcal, na.rm = TRUE))
+  summarize(mean_cost = mean(Cost_1000kcal_real, na.rm = TRUE),
+            sd = sd(Cost_1000kcal_real, na.rm = TRUE))
 
 fig2 <- ggplot(cona_1000kcal,
                aes(x        = fecha,
-                   y        = Cost_1000kcal,
+                   y        = Cost_1000kcal_real,
                    color    = member,
                    linetype = member,
                    shape    = member)) +
@@ -241,10 +241,113 @@ fig2 <- ggplot(cona_1000kcal,
   ) +
   theme_q1
 
-ggsave(file.path(out_fig, "fig2_real_cost_1000kcal_by_member.png"),
+ggsave(file.path(out_fig, "fig2_real_Cost_1000kcal_real_by_member.png"),
        fig2, width = 10, height = 8, dpi = 300)
 
-ggsave(file.path(out_fig, "fig2_real_cost_1000kcal_by_member.pdf"),
+ggsave(file.path(out_fig, "fig2_real_Cost_1000kcal_real_by_member.pdf"),
        fig2, width = 10, height = 7)
 
 message("Figures 1\u20132 saved to: ", out_fig)
+
+##----------------------------------------------------------
+## Real year-over-year variation
+##   Formula:
+##   YoY (%) = ((value_t / value_t-12) - 1) * 100
+##----------------------------------------------------------
+
+diets_real_yoy <- diets_real %>%
+  group_by(ciudad_label, member, diet) %>%
+  arrange(fecha, .by_group = TRUE) %>%
+  mutate(
+    yoy_cost_day_real = ((cost_day_real / lag(cost_day_real, 12)) - 1) * 100
+  ) %>%
+  ungroup()
+
+diets_points_yoy <- diets_real_yoy %>%
+  filter(month(fecha) == 12, !is.na(yoy_cost_day_real))
+
+fig1_yoy <- ggplot(diets_real_yoy %>% filter(!is.na(yoy_cost_day_real)),
+                   aes(x        = fecha,
+                       y        = yoy_cost_day_real,
+                       color    = diet,
+                       linetype = diet,
+                       shape    = diet)) +
+  geom_hline(yintercept = 0, color = "grey70", linewidth = 0.4) +
+  geom_line(linewidth = 0.55, alpha = 0.9) +
+  geom_point(data = diets_points_yoy, size = 1.6, alpha = 0.9) +
+  facet_grid(ciudad_label ~ member) +
+  scale_color_manual(values    = diet_colors)    +
+  scale_linetype_manual(values = diet_linetypes) +
+  scale_shape_manual(values    = diet_shapes)    +
+  scale_x_date(date_breaks = "1 year", date_labels = "%Y",
+               expand = c(0.01, 0)) +
+  scale_y_continuous(labels = function(x) paste0(round(x, 1), "%")) +
+  labs(
+    title   = " ",
+    caption = paste0(
+      "Note: Real year-over-year variation is computed as the percentage change ",
+      "with respect to the same month in the previous year.",
+      "For Figure 1, value refers to real daily cost in COP per day."
+    ),
+    x = NULL,
+    y = "Real year-over-year change (%)"
+  ) +
+  theme_q1
+
+ggsave(file.path(out_fig, "fig1_real_yoy_daily_cost_by_member.png"),
+       fig1_yoy, width = 10, height = 6, dpi = 300)
+
+ggsave(file.path(out_fig, "fig1_real_yoy_daily_cost_by_member.pdf"),
+       fig1_yoy, width = 10, height = 6)
+
+##----------------------------------------------------------
+## Figure 2: Real year-over-year variation in cost per 1,000 kcal
+##           CoNA only, by member × city
+##----------------------------------------------------------
+
+cona_1000kcal_yoy <- cona_1000kcal %>%
+  group_by(ciudad_label, member) %>%
+  arrange(fecha, .by_group = TRUE) %>%
+  mutate(
+    yoy_Cost_1000kcal_real = ((Cost_1000kcal_real / lag(Cost_1000kcal_real, 12)) - 1) * 100
+  ) %>%
+  ungroup()
+
+cona_points_yoy <- cona_1000kcal_yoy %>%
+  filter(month(fecha) == 12, !is.na(yoy_Cost_1000kcal_real))
+
+fig2_yoy <- ggplot(cona_1000kcal_yoy %>% filter(!is.na(yoy_Cost_1000kcal_real)),
+                   aes(x        = fecha,
+                       y        = yoy_Cost_1000kcal_real,
+                       color    = member,
+                       linetype = member,
+                       shape    = member)) +
+  geom_hline(yintercept = 0, color = "grey70", linewidth = 0.4) +
+  geom_line(linewidth = 0.8, alpha = 0.9) +
+  geom_point(data = cona_points_yoy, size = 1.6, alpha = 0.9) +
+  facet_wrap(~ ciudad_label, ncol = 3) +
+  scale_color_manual(values    = member_colors)    +
+  scale_linetype_manual(values = member_linetypes) +
+  scale_shape_manual(values    = member_shapes)    +
+  scale_x_date(date_breaks = "1 year", date_labels = "%Y",
+               expand = c(0.01, 0)) +
+  scale_y_continuous(labels = function(x) paste0(round(x, 1), "%")) +
+  labs(
+    title   = " ",
+    caption = paste0(
+      "Note: Real year-over-year variation is computed as the percentage change ",
+      "with respect to the same month in the previous year. ",
+      "For Figure 2, value refers to real cost per 1,000 kcal for CoNA."
+    ),
+    x = NULL,
+    y = "Real year-over-year change (%)"
+  ) +
+  theme_q1
+
+ggsave(file.path(out_fig, "fig2_real_yoy_Cost_1000kcal_real_by_member.png"),
+       fig2_yoy, width = 10, height = 8, dpi = 300)
+
+ggsave(file.path(out_fig, "fig2_real_yoy_Cost_1000kcal_real_by_member.pdf"),
+       fig2_yoy, width = 10, height = 7)
+
+message("Real YoY Figures 1–2 saved to: ", out_fig)
