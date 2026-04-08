@@ -15,7 +15,7 @@ library(janitor)
 #----------------------------------------------------------------------
 # Directorio base
 #----------------------------------------------------------------------
-base_dir <- "C:\\Users\\Portatil\\Desktop\\Least-cost-diets-and-affordability\\Proyecto Interno\\"
+base_dir <- "C:\\Users\\danie\\OneDrive\\Escritorio\\Least-cost-diets-and-affordability\\Proyecto Interno\\"
 setwd(base_dir)
 
 
