@@ -13,7 +13,7 @@ library(scales)
 ## Directories
 ##----------------------------------------------------------
 
-base_dir <- "C:\\Users\\danie\\OneDrive\\Escritorio\\Least-cost-diets-and-affordability\\Proyecto Interno"
+base_dir <- "C:\\Users\\Portatil\\Desktop\\Least-cost-diets-and-affordability\\Proyecto Interno"
 out_real <- file.path(base_dir, "food-security-paper", "output", "real")
 out_fig  <- file.path(base_dir, "food-security-paper", "output", "figures")
 
@@ -100,7 +100,7 @@ theme_q1 <- theme_bw(base_size = 10) +
     legend.title     = element_blank(),
     legend.text      = element_text(size = 9),
     legend.key.width = unit(1.2, "cm"),
-    panel.grid.major = element_line(color = "grey90", linewidth = 0.3),
+    panel.grid.major =  element_blank(),
     panel.grid.minor = element_blank(),
     strip.background = element_rect(fill = "grey96", color = "grey70"),
     strip.text       = element_text(face = "bold", size = 9),
@@ -114,6 +114,9 @@ theme_q1 <- theme_bw(base_size = 10) +
 ## Per capita       = household total / 3
 ## One line per diet, one panel per city
 ##----------------------------------------------------------
+
+# Vertical lines at January 1st of each year
+year_breaks <- seq(as.Date("2019-01-01"), as.Date("2025-01-01"), by = "1 year")
 
 hh_cost <- diets_real %>%
   group_by(diet, ciudad_label, fecha) %>%
@@ -131,17 +134,21 @@ hh_points <- hh_cost %>%
 fig3 <- ggplot(hh_cost,
                aes(x        = fecha,
                    y        = per_capita,
-                   color    = diet,
-                   linetype = diet)) +
+                   color    = ciudad_label,
+                   linetype = ciudad_label)) +
   geom_line(linewidth = 0.6, alpha = 0.9) +
+  geom_vline(xintercept = year_breaks,
+             color      = "black",
+             linewidth  = 0.3,
+             linetype   = "solid") +
   geom_point(data  = hh_points,
-             aes(shape = diet),
+             aes(shape = ciudad_label),
              size  = 1.6,
              alpha = 0.9) +
-  facet_wrap(~ ciudad_label, ncol = 3) +
-  scale_color_manual(values    = diet_colors)    +
-  scale_linetype_manual(values = diet_linetypes) +
-  scale_shape_manual(values    = diet_shapes)    +
+  facet_wrap(~ diet, ncol = 3, scales = "free_y") +
+  # scale_color_manual(values    = diet_colors)    +
+  # scale_linetype_manual(values = diet_linetypes) +
+  # scale_shape_manual(values    = diet_shapes)    +
   scale_x_date(date_breaks = "1 year", date_labels = "%Y",
                expand = c(0.01, 0)) +
   scale_y_continuous(labels = comma_format(prefix   = "$",
@@ -191,21 +198,25 @@ hh_points_yoy <- hh_cost_yoy %>%
 fig3_yoy <- ggplot(hh_cost_yoy %>% filter(!is.na(yoy_per_capita)),
                    aes(x        = fecha,
                        y        = yoy_per_capita,
-                       color    = diet,
-                       linetype = diet)) +
+                       color    = ciudad_label,
+                       linetype = ciudad_label)) +
   geom_hline(yintercept = 0,
              color      = "grey50",
              linewidth  = 0.4,
              linetype   = "longdash") +
+  geom_vline(xintercept = year_breaks,
+             color      = "black",
+             linewidth  = 0.3,
+             linetype   = "solid") +
   geom_line(linewidth = 0.6, alpha = 0.9) +
   geom_point(data  = hh_points_yoy,
-             aes(shape = diet),
+             aes(shape = ciudad_label),
              size  = 1.6,
              alpha = 0.9) +
-  facet_wrap(~ ciudad_label, ncol = 3) +
-  scale_color_manual(values    = diet_colors)    +
-  scale_linetype_manual(values = diet_linetypes) +
-  scale_shape_manual(values    = diet_shapes)    +
+  facet_wrap(~ diet, ncol = 3, scales = "free_y") +
+  # scale_color_manual(values    = diet_colors)    +
+  # scale_linetype_manual(values = diet_linetypes) +
+  # scale_shape_manual(values    = diet_shapes)    +
   scale_x_date(date_breaks = "1 year", date_labels = "%Y",
                expand = c(0.01, 0)) +
   scale_y_continuous(labels = function(x) paste0(round(x, 1), "%")) +
@@ -299,13 +310,41 @@ fig4 <- ggplot(premiums,
   theme_q1
 
 ggsave(file.path(out_fig, "fig4_cost_premiums.png"),
-       fig4, width = 10, height = 6, dpi = 300)
+       fig4, width = 12, height = 6, dpi = 300)
 
 ggsave(file.path(out_fig, "fig4_cost_premiums.pdf"),
-       fig4, width = 10, height = 6)
+       fig4, width = 12, height = 6)
 
 message("Figures 3\u20134 saved to: ", out_fig)
 
+<<<<<<< HEAD
+
+library(patchwork)
+
+
+##----------------------------------------------------------
+## Figure 3: Per capit cost + y-o-y growth
+##----------------------------------------------------------
+
+# Remove x-axis text from fig3 since fig3_yoy shares the same axis
+fig3_clean <- fig3 +
+  theme(axis.text.x  = element_blank(),
+        axis.ticks.x = element_blank(),
+        plot.margin  = margin(6, 8, 0, 6))   # remove bottom margin
+
+fig3_yoy_clean <- fig3_yoy +
+  theme(plot.margin = margin(0, 8, 6, 6))    # remove top margin
+
+combined <- fig3_clean / fig3_yoy_clean +
+  plot_layout(heights = c(1, 1)) +
+  plot_annotation(tag_levels = "A")
+
+ggsave(file.path(out_fig, "fig3_combined.png"),
+       combined, width = 12, height = 9, dpi = 300)
+
+ggsave(file.path(out_fig, "fig3_combined.pdf"),
+       combined, width = 12, height = 9)
+=======
 ##----------------------------------------------------------
 ## Final table cost premiums (city × ratio)
 ##----------------------------------------------------------
@@ -327,3 +366,4 @@ writexl::write_xlsx(
   table,
   file.path(out_fig, "table_cost_premiums.xlsx")
 )
+>>>>>>> 2688e8bef9b530128bf74a81b6ec859bc4f3583a

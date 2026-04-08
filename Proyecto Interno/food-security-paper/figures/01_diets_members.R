@@ -17,7 +17,7 @@ library(scales)
 ## Directories
 ##----------------------------------------------------------
 
-base_dir <- "C:\\Users\\danie\\OneDrive\\Escritorio\\Least-cost-diets-and-affordability\\Proyecto Interno"
+base_dir <- "C:\\Users\\Portatil\\Desktop\\Least-cost-diets-and-affordability\\Proyecto Interno"
 out_real <- file.path(base_dir, "food-security-paper", "output", "real")
 out_fig  <- file.path(base_dir, "food-security-paper", "output", "figures")
 
@@ -140,15 +140,15 @@ theme_q1 <- theme_bw(base_size = 10) +
 fig1 <- ggplot(diets_real,
                aes(x        = fecha,
                    y        = cost_day_real,
-                   color    = diet,
-                   linetype = diet,
-                   shape    = diet)) +
+                   color    = ciudad_label,
+                   linetype = ciudad_label,
+                   shape    = ciudad_label)) +
   geom_line(linewidth = 0.55, alpha = 0.9) +
   geom_point(data = diets_points, size = 1.6, alpha = 0.9) +
-  facet_grid(ciudad_label ~ member) +
-  scale_color_manual(values    = diet_colors)    +
-  scale_linetype_manual(values = diet_linetypes) +
-  scale_shape_manual(values    = diet_shapes)    +
+  facet_grid(diet ~ member, scales = "free_y") +
+  # scale_color_manual(values    = diet_colors)    +
+  # scale_linetype_manual(values = diet_linetypes) +
+  # scale_shape_manual(values    = diet_shapes)    +
   scale_x_date(date_breaks = "1 year", date_labels = "%Y",
                expand = c(0.01, 0)) +
   scale_y_continuous(labels = comma_format(prefix   = "$",
@@ -171,10 +171,10 @@ fig1 <- ggplot(diets_real,
   theme_q1
 
 ggsave(file.path(out_fig, "fig1_real_daily_cost_by_member.png"),
-       fig1, width = 10, height = 6, dpi = 300)
+       fig1, width = 10, height = 8, dpi = 300)
 
 ggsave(file.path(out_fig, "fig1_real_daily_cost_by_member.pdf"),
-       fig1, width = 10, height = 6)
+       fig1, width = 10, height = 8)
 
 ##----------------------------------------------------------
 ## Figure 2: Real cost per 1,000 kcal — CoNA only

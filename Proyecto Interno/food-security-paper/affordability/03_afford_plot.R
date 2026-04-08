@@ -14,7 +14,7 @@ library(scales)
 ## Directories
 ##----------------------------------------------------------
 
-base_dir   <- "C:\\Users\\danie\\OneDrive\\Escritorio\\Least-cost-diets-and-affordability\\Proyecto Interno"
+base_dir   <- "C:\\Users\\Portatil\\Desktop\\Least-cost-diets-and-affordability\\Proyecto Interno"
 afford_dir <- file.path(base_dir, "food-security-paper", "output", "affordability_metrics")
 out_fig    <- file.path(base_dir, "food-security-paper", "output", "figures")
 
@@ -183,16 +183,16 @@ writexl::write_xlsx(afford_overall,
 fig2 <- ggplot(afford_overall,
                aes(x        = fecha,
                    y        = rate_overall,
-                   color    = diet,
-                   linetype = diet)) +
+                   color    = ciudad_label,
+                   linetype = ciudad_label)) +
   geom_line(linewidth = 0.6, alpha = 0.9) +
   geom_point(data  = afford_points,
-             aes(shape = diet),
+             aes(shape = ciudad_label),
              size  = 1.8, alpha = 0.9) +
-  facet_wrap(~ ciudad_label, ncol = 3) +
-  scale_color_manual(values    = diet_colors)    +
-  scale_linetype_manual(values = diet_linetypes) +
-  scale_shape_manual(values    = diet_shapes)    +
+  facet_wrap(~ diet, ncol = 3) +
+  #scale_color_manual(values    = diet_colors)    +
+  #scale_linetype_manual(values = diet_linetypes) +
+  #scale_shape_manual(values    = diet_shapes)    +
   scale_x_date(date_breaks = "1 year", date_labels = "%Y",
                expand = c(0.01, 0)) +
   scale_y_continuous(labels = function(x) paste0(x, "%"),
