@@ -117,7 +117,7 @@ theme_q1 <- theme_bw(base_size = 10) +
 
 hh_cost <- diets_real %>%
   group_by(diet, ciudad_label, fecha) %>%
-  summarize(
+  dplyr::summarize(
     hh_total   = sum(cost_day_real,  na.rm = TRUE),
     n_members  = n(),
     per_capita = hh_total / n_members,
@@ -177,9 +177,9 @@ ggsave(file.path(out_fig, "fig3_real_hh_percapita_series.pdf"),
 ##----------------------------------------------------------
 
 hh_cost_yoy <- hh_cost %>%
-  group_by(diet, ciudad_label) %>%
-  arrange(fecha, .by_group = TRUE) %>%
-  mutate(
+  dplyr::group_by(diet, ciudad_label) %>%
+  dplyr::arrange(fecha, .by_group = TRUE) %>%
+  dplyr::mutate(
     yoy_per_capita = ((per_capita / lag(per_capita, 12)) - 1) * 100
   ) %>%
   ungroup()
@@ -305,3 +305,25 @@ ggsave(file.path(out_fig, "fig4_cost_premiums.pdf"),
        fig4, width = 10, height = 6)
 
 message("Figures 3\u20134 saved to: ", out_fig)
+
+##----------------------------------------------------------
+## Final table cost premiums (city × ratio)
+##----------------------------------------------------------
+
+table <- premiums %>%
+  group_by(ciudad_label, premium) %>%
+  dplyr::summarize(
+    mean = round(mean(ratio, na.rm = TRUE), 2),
+    .groups = "drop"
+  ) %>%
+  pivot_wider(
+    names_from  = ciudad_label,
+    values_from = mean
+  ) %>%
+  arrange(premium)
+
+# Exportar a Excel
+writexl::write_xlsx(
+  table,
+  file.path(out_fig, "table_cost_premiums.xlsx")
+)
