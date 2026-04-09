@@ -12,7 +12,7 @@ library(Hmisc)
 ## Directorios
 ##----------------------------------------------------------
 
-base_dir <- "C:\\Users\\danie\\OneDrive\\Escritorio\\Least-cost-diets-and-affordability\\Proyecto Interno\\"
+base_dir <- "C:\\Users\\Portatil\\Desktop\\Least-cost-diets-and-affordability\\Proyecto Interno\\"
 setwd(base_dir)
 
 source("food-security-paper/affordability/aux-functions/Afford_Expansion.R")
