@@ -16,8 +16,16 @@ library(writexl)
 ## Directories
 ##----------------------------------------------------------
 
-base_dir <- "C:\\Users\\Portatil\\Desktop\\Least-cost-diets-and-affordability\\Proyecto Interno\\"
-setwd(base_dir)
+dirs <- c(
+  "C:/Users/Portatil/Desktop/Least-cost-diets-and-affordability/Proyecto Interno",
+  "C:/Users/danie/OneDrive/Escritorio/Least-cost-diets-and-affordability/Proyecto Interno"
+)
+
+base_dir <- dirs[dir.exists(dirs)][1]
+
+if (is.na(base_dir)) {
+  stop("Ninguno de los directorios existe")
+}
 
 out_dir    <- file.path(base_dir, "food-security-paper", "output")
 income_dir <- file.path(out_dir,  "income_col")
@@ -73,7 +81,7 @@ income_summary <- income_data %>%
 ##----------------------------------------------------------
 
 table_long <- income_summary %>%
-  rename(City = ciudad, Year = year)
+  dplyr::rename(City = ciudad, Year = year)
 
 ##----------------------------------------------------------
 ## 4. Wide format for LaTeX
@@ -83,7 +91,7 @@ table_long <- income_summary %>%
 ##----------------------------------------------------------
 
 table_wide <- income_summary %>%
-  select(-N) %>%
+  dplyr::select(-N) %>%
   pivot_longer(cols      = c(Mean, SD, Median, P10, P90),
                names_to  = "Statistic",
                values_to = "value") %>%
@@ -94,7 +102,7 @@ table_wide <- income_summary %>%
   pivot_wider(names_from  = year,
               values_from = value) %>%
   arrange(ciudad, Statistic) %>%
-  rename(City = ciudad)
+  dplyr::rename(City = ciudad)
 
 ##----------------------------------------------------------
 ## 5. Save

@@ -1,0 +1,1621 @@
+This is pdfTeX, Version 3.141592653-2.6-1.40.28 (TeX Live 2025) (preloaded format=pdflatex 2026.1.29)  9 APR 2026 18:55
+entering extended mode
+ restricted \write18 enabled.
+ %&-line parsing enabled.
+**ipc_hierarchy_food_items.tex
+(./ipc_hierarchy_food_items.tex
+LaTeX2e <2025-11-01>
+L3 programming layer <2026-01-19>
+
+! LaTeX Error: Environment longtable undefined.
+
+See the LaTeX manual or LaTeX Companion for explanation.
+Type  H <return>  for immediate help.
+ ...                                              
+                                                  
+l.3 \begin{longtable}
+                     [t]{lllllc}
+Your command was ignored.
+Type  I <command> <return>  to replace it with another command,
+or  <return>  to continue without it.
+
+
+! LaTeX Error: Missing \begin{document}.
+
+See the LaTeX manual or LaTeX Companion for explanation.
+Type  H <return>  for immediate help.
+ ...                                              
+                                                  
+l.3 \begin{longtable}[
+                      t]{lllllc}
+You're in trouble here.  Try typing  <return>  to proceed.
+If that doesn't work, type  X <return>  to quit.
+
+
+! LaTeX Error: \caption outside float.
+
+See the LaTeX manual or LaTeX Companion for explanation.
+Type  H <return>  for immediate help.
+ ...                                              
+                                                  
+l.4 \caption
+            {\label{tab:tab:ipc_hierarchy_food_items}Food items classified a...
+You're in trouble here.  Try typing  <return>  to proceed.
+If that doesn't work, type  X <return>  to quit.
+
+! Undefined control sequence.
+<recently read> \toprule 
+                         
+l.5 \toprule
+            
+The control sequence at the end of the top line
+of your error message was never \def'ed. If you have
+misspelled it (e.g., `\hobx'), type `I' and the correct
+spelling (e.g., `I\hbox'). Otherwise just continue,
+and I'll forget about whatever was undefined.
+
+! Misplaced \omit.
+\multispan ->\omit 
+                   \@multispan 
+l.6 \multicolumn{6}{c}{\textbf{CPI hierarchy}}
+                                               \\
+I expect to see \omit only after tab marks or the \cr of
+an alignment. Proceed, and I'll ignore this case.
+
+! Misplaced \span.
+\sp@n ->\span 
+              \omit \advance \@multicnt \m@ne 
+l.6 \multicolumn{6}{c}{\textbf{CPI hierarchy}}
+                                               \\
+I can't figure out why you would want to use a tab mark
+or \cr or \span just now. If something like a right brace
+up above has ended a previous alignment prematurely,
+you're probably due for more error messages, and you
+might try typing `S' now just to see what is salvageable.
+
+! Misplaced \omit.
+\sp@n ->\span \omit 
+                    \advance \@multicnt \m@ne 
+l.6 \multicolumn{6}{c}{\textbf{CPI hierarchy}}
+                                               \\
+I expect to see \omit only after tab marks or the \cr of
+an alignment. Proceed, and I'll ignore this case.
+
+! Misplaced \span.
+\sp@n ->\span 
+              \omit \advance \@multicnt \m@ne 
+l.6 \multicolumn{6}{c}{\textbf{CPI hierarchy}}
+                                               \\
+I can't figure out why you would want to use a tab mark
+or \cr or \span just now. If something like a right brace
+up above has ended a previous alignment prematurely,
+you're probably due for more error messages, and you
+might try typing `S' now just to see what is salvageable.
+
+! Misplaced \omit.
+\sp@n ->\span \omit 
+                    \advance \@multicnt \m@ne 
+l.6 \multicolumn{6}{c}{\textbf{CPI hierarchy}}
+                                               \\
+I expect to see \omit only after tab marks or the \cr of
+an alignment. Proceed, and I'll ignore this case.
+
+! Misplaced \span.
+\sp@n ->\span 
+              \omit \advance \@multicnt \m@ne 
+l.6 \multicolumn{6}{c}{\textbf{CPI hierarchy}}
+                                               \\
+I can't figure out why you would want to use a tab mark
+or \cr or \span just now. If something like a right brace
+up above has ended a previous alignment prematurely,
+you're probably due for more error messages, and you
+might try typing `S' now just to see what is salvageable.
+
+! Misplaced \omit.
+\sp@n ->\span \omit 
+                    \advance \@multicnt \m@ne 
+l.6 \multicolumn{6}{c}{\textbf{CPI hierarchy}}
+                                               \\
+I expect to see \omit only after tab marks or the \cr of
+an alignment. Proceed, and I'll ignore this case.
+
+! Misplaced \span.
+\sp@n ->\span 
+              \omit \advance \@multicnt \m@ne 
+l.6 \multicolumn{6}{c}{\textbf{CPI hierarchy}}
+                                               \\
+I can't figure out why you would want to use a tab mark
+or \cr or \span just now. If something like a right brace
+up above has ended a previous alignment prematurely,
+you're probably due for more error messages, and you
+might try typing `S' now just to see what is salvageable.
+
+! Misplaced \omit.
+\sp@n ->\span \omit 
+                    \advance \@multicnt \m@ne 
+l.6 \multicolumn{6}{c}{\textbf{CPI hierarchy}}
+                                               \\
+I expect to see \omit only after tab marks or the \cr of
+an alignment. Proceed, and I'll ignore this case.
+
+! Misplaced \span.
+\sp@n ->\span 
+              \omit \advance \@multicnt \m@ne 
+l.6 \multicolumn{6}{c}{\textbf{CPI hierarchy}}
+                                               \\
+I can't figure out why you would want to use a tab mark
+or \cr or \span just now. If something like a right brace
+up above has ended a previous alignment prematurely,
+you're probably due for more error messages, and you
+might try typing `S' now just to see what is salvageable.
+
+! Misplaced \omit.
+\sp@n ->\span \omit 
+                    \advance \@multicnt \m@ne 
+l.6 \multicolumn{6}{c}{\textbf{CPI hierarchy}}
+                                               \\
+I expect to see \omit only after tab marks or the \cr of
+an alignment. Proceed, and I'll ignore this case.
+
+! Undefined control sequence.
+<argument> ...nextchar \ifcase \@chclass \@classz 
+                                                  \or \@classi \or \@classii...
+l.6 \multicolumn{6}{c}{\textbf{CPI hierarchy}}
+                                               \\
+The control sequence at the end of the top line
+of your error message was never \def'ed. If you have
+misspelled it (e.g., `\hobx'), type `I' and the correct
+spelling (e.g., `I\hbox'). Otherwise just continue,
+and I'll forget about whatever was undefined.
+
+! Undefined control sequence.
+\@mkpream ...hclass }\ifcase \@lastchclass \@acol 
+                                                  \or \or \@preamerr \@ne \o...
+l.6 \multicolumn{6}{c}{\textbf{CPI hierarchy}}
+                                               \\
+The control sequence at the end of the top line
+of your error message was never \def'ed. If you have
+misspelled it (e.g., `\hobx'), type `I' and the correct
+spelling (e.g., `I\hbox'). Otherwise just continue,
+and I'll forget about whatever was undefined.
+
+! Undefined control sequence.
+<recently read> \cmidrule 
+                          
+l.7 \cmidrule
+             (l{3pt}r{3pt}){1-6}
+The control sequence at the end of the top line
+of your error message was never \def'ed. If you have
+misspelled it (e.g., `\hobx'), type `I' and the correct
+spelling (e.g., `I\hbox'). Otherwise just continue,
+and I'll forget about whatever was undefined.
+
+! Misplaced alignment tab character &.
+l.8 Division &
+               Group & Class & Subclass & Item & COICOP\\
+I can't figure out why you would want to use a tab mark
+here. If you just want an ampersand, the remedy is
+simple: Just type `I\&' now. But if some right brace
+up above has ended a previous alignment prematurely,
+you're probably due for more error messages, and you
+might try typing `S' now just to see what is salvageable.
+
+! Misplaced alignment tab character &.
+l.8 Division & Group &
+                       Class & Subclass & Item & COICOP\\
+I can't figure out why you would want to use a tab mark
+here. If you just want an ampersand, the remedy is
+simple: Just type `I\&' now. But if some right brace
+up above has ended a previous alignment prematurely,
+you're probably due for more error messages, and you
+might try typing `S' now just to see what is salvageable.
+
+! Misplaced alignment tab character &.
+l.8 Division & Group & Class &
+                               Subclass & Item & COICOP\\
+I can't figure out why you would want to use a tab mark
+here. If you just want an ampersand, the remedy is
+simple: Just type `I\&' now. But if some right brace
+up above has ended a previous alignment prematurely,
+you're probably due for more error messages, and you
+might try typing `S' now just to see what is salvageable.
+
+! Misplaced alignment tab character &.
+l.8 Division & Group & Class & Subclass &
+                                          Item & COICOP\\
+I can't figure out why you would want to use a tab mark
+here. If you just want an ampersand, the remedy is
+simple: Just type `I\&' now. But if some right brace
+up above has ended a previous alignment prematurely,
+you're probably due for more error messages, and you
+might try typing `S' now just to see what is salvageable.
+
+! Misplaced alignment tab character &.
+l.8 Division & Group & Class & Subclass & Item &
+                                                 COICOP\\
+I can't figure out why you would want to use a tab mark
+here. If you just want an ampersand, the remedy is
+simple: Just type `I\&' now. But if some right brace
+up above has ended a previous alignment prematurely,
+you're probably due for more error messages, and you
+might try typing `S' now just to see what is salvageable.
+
+! Undefined control sequence.
+<recently read> \midrule 
+                         
+l.9 \midrule
+            
+The control sequence at the end of the top line
+of your error message was never \def'ed. If you have
+misspelled it (e.g., `\hobx'), type `I' and the correct
+spelling (e.g., `I\hbox'). Otherwise just continue,
+and I'll forget about whatever was undefined.
+
+! Undefined control sequence.
+l.10 \endfirsthead
+                  
+The control sequence at the end of the top line
+of your error message was never \def'ed. If you have
+misspelled it (e.g., `\hobx'), type `I' and the correct
+spelling (e.g., `I\hbox'). Otherwise just continue,
+and I'll forget about whatever was undefined.
+
+
+! LaTeX Error: \caption outside float.
+
+See the LaTeX manual or LaTeX Companion for explanation.
+Type  H <return>  for immediate help.
+ ...                                              
+                                                  
+l.11 \caption
+             []{Food items classified according to the CPI hierarchy. \texti...
+You're in trouble here.  Try typing  <return>  to proceed.
+If that doesn't work, type  X <return>  to quit.
+
+! Undefined control sequence.
+<recently read> \toprule 
+                         
+l.12 \toprule
+             
+The control sequence at the end of the top line
+of your error message was never \def'ed. If you have
+misspelled it (e.g., `\hobx'), type `I' and the correct
+spelling (e.g., `I\hbox'). Otherwise just continue,
+and I'll forget about whatever was undefined.
+
+! Misplaced alignment tab character &.
+l.13 Division &
+                Group & Class & Subclass & Item & COICOP\\
+I can't figure out why you would want to use a tab mark
+here. If you just want an ampersand, the remedy is
+simple: Just type `I\&' now. But if some right brace
+up above has ended a previous alignment prematurely,
+you're probably due for more error messages, and you
+might try typing `S' now just to see what is salvageable.
+
+! Misplaced alignment tab character &.
+l.13 Division & Group &
+                        Class & Subclass & Item & COICOP\\
+I can't figure out why you would want to use a tab mark
+here. If you just want an ampersand, the remedy is
+simple: Just type `I\&' now. But if some right brace
+up above has ended a previous alignment prematurely,
+you're probably due for more error messages, and you
+might try typing `S' now just to see what is salvageable.
+
+! Misplaced alignment tab character &.
+l.13 Division & Group & Class &
+                                Subclass & Item & COICOP\\
+I can't figure out why you would want to use a tab mark
+here. If you just want an ampersand, the remedy is
+simple: Just type `I\&' now. But if some right brace
+up above has ended a previous alignment prematurely,
+you're probably due for more error messages, and you
+might try typing `S' now just to see what is salvageable.
+
+! Misplaced alignment tab character &.
+l.13 Division & Group & Class & Subclass &
+                                           Item & COICOP\\
+I can't figure out why you would want to use a tab mark
+here. If you just want an ampersand, the remedy is
+simple: Just type `I\&' now. But if some right brace
+up above has ended a previous alignment prematurely,
+you're probably due for more error messages, and you
+might try typing `S' now just to see what is salvageable.
+
+! Misplaced alignment tab character &.
+l.13 Division & Group & Class & Subclass & Item &
+                                                  COICOP\\
+I can't figure out why you would want to use a tab mark
+here. If you just want an ampersand, the remedy is
+simple: Just type `I\&' now. But if some right brace
+up above has ended a previous alignment prematurely,
+you're probably due for more error messages, and you
+might try typing `S' now just to see what is salvageable.
+
+! Undefined control sequence.
+<recently read> \midrule 
+                         
+l.14 \midrule
+             
+The control sequence at the end of the top line
+of your error message was never \def'ed. If you have
+misspelled it (e.g., `\hobx'), type `I' and the correct
+spelling (e.g., `I\hbox'). Otherwise just continue,
+and I'll forget about whatever was undefined.
+
+! Undefined control sequence.
+l.15 \endhead
+             
+The control sequence at the end of the top line
+of your error message was never \def'ed. If you have
+misspelled it (e.g., `\hobx'), type `I' and the correct
+spelling (e.g., `I\hbox'). Otherwise just continue,
+and I'll forget about whatever was undefined.
+
+
+Overfull \hbox (42.5279pt too wide) in paragraph at lines 3--16
+[]\OT1/cmr/m/n/7 [t]lllllc
+ []
+
+
+Overfull \hbox (17.33339pt too wide) in paragraph at lines 3--16
+[]\OT1/cmr/m/n/7 Food
+ []
+
+
+Overfull \hbox (18.68204pt too wide) in paragraph at lines 3--16
+\OT1/cmr/m/n/7 items
+ []
+
+
+Overfull \hbox (15.66814pt too wide) in paragraph at lines 3--16
+\OT1/cmr/m/n/7 clas-
+ []
+
+
+Overfull \hbox (8.12643pt too wide) in paragraph at lines 3--16
+\OT1/cmr/m/n/7 si-
+ []
+
+
+Overfull \hbox (12.50005pt too wide) in paragraph at lines 3--16
+\OT1/cmr/m/n/7 fied
+ []
+
+
+Overfull \hbox (10.23616pt too wide) in paragraph at lines 3--16
+\OT1/cmr/m/n/7 ac-
+ []
+
+
+Overfull \hbox (17.77786pt too wide) in paragraph at lines 3--16
+\OT1/cmr/m/n/7 cord-
+ []
+
+
+Overfull \hbox (10.66672pt too wide) in paragraph at lines 3--16
+\OT1/cmr/m/n/7 ing
+ []
+
+
+Overfull \hbox (7.11115pt too wide) in paragraph at lines 3--16
+\OT1/cmr/m/n/7 to
+ []
+
+
+Overfull \hbox (11.09727pt too wide) in paragraph at lines 3--16
+\OT1/cmr/m/n/7 the
+ []
+
+
+Overfull \hbox (13.97229pt too wide) in paragraph at lines 3--16
+\OT1/cmr/m/n/7 CPI
+ []
+
+
+Overfull \hbox (9.37505pt too wide) in paragraph at lines 3--16
+\OT1/cmr/m/n/7 hi-
+ []
+
+
+Overfull \hbox (9.37505pt too wide) in paragraph at lines 3--16
+\OT1/cmr/m/n/7 er-
+ []
+
+
+Overfull \hbox (9.8056pt too wide) in paragraph at lines 3--16
+\OT1/cmr/m/n/7 ar-
+ []
+
+
+Overfull \hbox (13.36116pt too wide) in paragraph at lines 3--16
+\OT1/cmr/m/n/7 chy. 
+ []
+
+
+Overfull \hbox (41.3752pt too wide) in paragraph at lines 3--16
+\OT1/cmr/m/n/7 (l3ptr3pt)1-
+ []
+
+
+Overfull \hbox (3.98613pt too wide) in paragraph at lines 3--16
+\OT1/cmr/m/n/7 6
+ []
+
+
+Overfull \hbox (10.97922pt too wide) in paragraph at lines 3--16
+\OT1/cmr/m/n/7 Di-
+ []
+
+
+Overfull \hbox (9.15977pt too wide) in paragraph at lines 3--16
+\OT1/cmr/m/n/7 vi-
+ []
+
+
+Overfull \hbox (13.8348pt too wide) in paragraph at lines 3--16
+\OT1/cmr/m/n/7 sion
+ []
+
+
+Overfull \hbox (22.13205pt too wide) in paragraph at lines 3--16
+\OT1/cmr/m/n/7 Group
+ []
+
+
+Overfull \hbox (18.29454pt too wide) in paragraph at lines 3--16
+\OT1/cmr/m/n/7 Class
+ []
+
+
+Overfull \hbox (15.94452pt too wide) in paragraph at lines 3--16
+\OT1/cmr/m/n/7 Sub-
+ []
+
+
+Overfull \hbox (16.14175pt too wide) in paragraph at lines 3--16
+\OT1/cmr/m/n/7 class
+ []
+
+
+Overfull \hbox (16.13898pt too wide) in paragraph at lines 3--16
+\OT1/cmr/m/n/7 Item
+ []
+
+
+Overfull \hbox (31.95848pt too wide) in paragraph at lines 3--16
+\OT1/cmr/m/n/7 COICOP 
+ []
+
+
+Overfull \hbox (21.86119pt too wide) in paragraph at lines 3--16
+\OT1/cmr/m/n/7 []Food
+ []
+
+
+Overfull \hbox (18.68204pt too wide) in paragraph at lines 3--16
+\OT1/cmr/m/n/7 items
+ []
+
+
+Overfull \hbox (15.66814pt too wide) in paragraph at lines 3--16
+\OT1/cmr/m/n/7 clas-
+ []
+
+
+Overfull \hbox (8.12643pt too wide) in paragraph at lines 3--16
+\OT1/cmr/m/n/7 si-
+ []
+
+
+Overfull \hbox (12.50005pt too wide) in paragraph at lines 3--16
+\OT1/cmr/m/n/7 fied
+ []
+
+
+Overfull \hbox (10.23616pt too wide) in paragraph at lines 3--16
+\OT1/cmr/m/n/7 ac-
+ []
+
+
+Overfull \hbox (17.77786pt too wide) in paragraph at lines 3--16
+\OT1/cmr/m/n/7 cord-
+ []
+
+
+Overfull \hbox (10.66672pt too wide) in paragraph at lines 3--16
+\OT1/cmr/m/n/7 ing
+ []
+
+
+Overfull \hbox (7.11115pt too wide) in paragraph at lines 3--16
+\OT1/cmr/m/n/7 to
+ []
+
+
+Overfull \hbox (11.09727pt too wide) in paragraph at lines 3--16
+\OT1/cmr/m/n/7 the
+ []
+
+
+Overfull \hbox (13.97229pt too wide) in paragraph at lines 3--16
+\OT1/cmr/m/n/7 CPI
+ []
+
+
+Overfull \hbox (9.37505pt too wide) in paragraph at lines 3--16
+\OT1/cmr/m/n/7 hi-
+ []
+
+
+Overfull \hbox (9.37505pt too wide) in paragraph at lines 3--16
+\OT1/cmr/m/n/7 er-
+ []
+
+
+Overfull \hbox (9.8056pt too wide) in paragraph at lines 3--16
+\OT1/cmr/m/n/7 ar-
+ []
+
+
+Overfull \hbox (13.36116pt too wide) in paragraph at lines 3--16
+\OT1/cmr/m/n/7 chy.
+ []
+
+
+Overfull \hbox (18.64459pt too wide) in paragraph at lines 3--16
+\OT1/cmr/m/it/7 (con-
+ []
+
+
+Overfull \hbox (12.98343pt too wide) in paragraph at lines 3--16
+\OT1/cmr/m/it/7 tin-
+ []
+
+
+Overfull \hbox (15.68207pt too wide) in paragraph at lines 3--16
+\OT1/cmr/m/it/7 ued) 
+ []
+
+
+Overfull \hbox (28.58487pt too wide) in paragraph at lines 3--16
+\OT1/cmr/m/n/7 Division
+ []
+
+
+Overfull \hbox (22.13205pt too wide) in paragraph at lines 3--16
+\OT1/cmr/m/n/7 Group
+ []
+
+
+Overfull \hbox (18.29454pt too wide) in paragraph at lines 3--16
+\OT1/cmr/m/n/7 Class
+ []
+
+
+Overfull \hbox (15.94452pt too wide) in paragraph at lines 3--16
+\OT1/cmr/m/n/7 Sub-
+ []
+
+
+Overfull \hbox (16.14175pt too wide) in paragraph at lines 3--16
+\OT1/cmr/m/n/7 class
+ []
+
+
+Overfull \hbox (16.13898pt too wide) in paragraph at lines 3--16
+\OT1/cmr/m/n/7 Item
+ []
+
+
+Overfull \hbox (31.95848pt too wide) in paragraph at lines 3--16
+\OT1/cmr/m/n/7 COICOP 
+ []
+
+! Undefined control sequence.
+l.17 \endfoot
+             
+The control sequence at the end of the top line
+of your error message was never \def'ed. If you have
+misspelled it (e.g., `\hobx'), type `I' and the correct
+spelling (e.g., `I\hbox'). Otherwise just continue,
+and I'll forget about whatever was undefined.
+
+! Undefined control sequence.
+l.18 \bottomrule
+                
+The control sequence at the end of the top line
+of your error message was never \def'ed. If you have
+misspelled it (e.g., `\hobx'), type `I' and the correct
+spelling (e.g., `I\hbox'). Otherwise just continue,
+and I'll forget about whatever was undefined.
+
+! Undefined control sequence.
+l.19 \endlastfoot
+                 
+The control sequence at the end of the top line
+of your error message was never \def'ed. If you have
+misspelled it (e.g., `\hobx'), type `I' and the correct
+spelling (e.g., `I\hbox'). Otherwise just continue,
+and I'll forget about whatever was undefined.
+
+! Undefined control sequence.
+l.20 \addlinespace
+                  [0.5em]
+The control sequence at the end of the top line
+of your error message was never \def'ed. If you have
+misspelled it (e.g., `\hobx'), type `I' and the correct
+spelling (e.g., `I\hbox'). Otherwise just continue,
+and I'll forget about whatever was undefined.
+
+
+! LaTeX Error: Missing \begin{document}.
+
+See the LaTeX manual or LaTeX Companion for explanation.
+Type  H <return>  for immediate help.
+ ...                                              
+                                                  
+l.20 \addlinespace[
+                   0.5em]
+You're in trouble here.  Try typing  <return>  to proceed.
+If that doesn't work, type  X <return>  to quit.
+
+! Misplaced \omit.
+\multispan ->\omit 
+                   \@multispan 
+l.21 \multicolumn{6}{l}{\textbf{Aceites y grasas}}
+                                                  \\
+I expect to see \omit only after tab marks or the \cr of
+an alignment. Proceed, and I'll ignore this case.
+
+! Misplaced \span.
+\sp@n ->\span 
+              \omit \advance \@multicnt \m@ne 
+l.21 \multicolumn{6}{l}{\textbf{Aceites y grasas}}
+                                                  \\
+I can't figure out why you would want to use a tab mark
+or \cr or \span just now. If something like a right brace
+up above has ended a previous alignment prematurely,
+you're probably due for more error messages, and you
+might try typing `S' now just to see what is salvageable.
+
+! Misplaced \omit.
+\sp@n ->\span \omit 
+                    \advance \@multicnt \m@ne 
+l.21 \multicolumn{6}{l}{\textbf{Aceites y grasas}}
+                                                  \\
+I expect to see \omit only after tab marks or the \cr of
+an alignment. Proceed, and I'll ignore this case.
+
+! Misplaced \span.
+\sp@n ->\span 
+              \omit \advance \@multicnt \m@ne 
+l.21 \multicolumn{6}{l}{\textbf{Aceites y grasas}}
+                                                  \\
+I can't figure out why you would want to use a tab mark
+or \cr or \span just now. If something like a right brace
+up above has ended a previous alignment prematurely,
+you're probably due for more error messages, and you
+might try typing `S' now just to see what is salvageable.
+
+! Misplaced \omit.
+\sp@n ->\span \omit 
+                    \advance \@multicnt \m@ne 
+l.21 \multicolumn{6}{l}{\textbf{Aceites y grasas}}
+                                                  \\
+I expect to see \omit only after tab marks or the \cr of
+an alignment. Proceed, and I'll ignore this case.
+
+! Misplaced \span.
+\sp@n ->\span 
+              \omit \advance \@multicnt \m@ne 
+l.21 \multicolumn{6}{l}{\textbf{Aceites y grasas}}
+                                                  \\
+I can't figure out why you would want to use a tab mark
+or \cr or \span just now. If something like a right brace
+up above has ended a previous alignment prematurely,
+you're probably due for more error messages, and you
+might try typing `S' now just to see what is salvageable.
+
+! Misplaced \omit.
+\sp@n ->\span \omit 
+                    \advance \@multicnt \m@ne 
+l.21 \multicolumn{6}{l}{\textbf{Aceites y grasas}}
+                                                  \\
+I expect to see \omit only after tab marks or the \cr of
+an alignment. Proceed, and I'll ignore this case.
+
+! Misplaced \span.
+\sp@n ->\span 
+              \omit \advance \@multicnt \m@ne 
+l.21 \multicolumn{6}{l}{\textbf{Aceites y grasas}}
+                                                  \\
+I can't figure out why you would want to use a tab mark
+or \cr or \span just now. If something like a right brace
+up above has ended a previous alignment prematurely,
+you're probably due for more error messages, and you
+might try typing `S' now just to see what is salvageable.
+
+! Misplaced \omit.
+\sp@n ->\span \omit 
+                    \advance \@multicnt \m@ne 
+l.21 \multicolumn{6}{l}{\textbf{Aceites y grasas}}
+                                                  \\
+I expect to see \omit only after tab marks or the \cr of
+an alignment. Proceed, and I'll ignore this case.
+
+! Misplaced \span.
+\sp@n ->\span 
+              \omit \advance \@multicnt \m@ne 
+l.21 \multicolumn{6}{l}{\textbf{Aceites y grasas}}
+                                                  \\
+I can't figure out why you would want to use a tab mark
+or \cr or \span just now. If something like a right brace
+up above has ended a previous alignment prematurely,
+you're probably due for more error messages, and you
+might try typing `S' now just to see what is salvageable.
+
+! Misplaced \omit.
+\sp@n ->\span \omit 
+                    \advance \@multicnt \m@ne 
+l.21 \multicolumn{6}{l}{\textbf{Aceites y grasas}}
+                                                  \\
+I expect to see \omit only after tab marks or the \cr of
+an alignment. Proceed, and I'll ignore this case.
+
+! Undefined control sequence.
+<argument> ...nextchar \ifcase \@chclass \@classz 
+                                                  \or \@classi \or \@classii...
+l.21 \multicolumn{6}{l}{\textbf{Aceites y grasas}}
+                                                  \\
+The control sequence at the end of the top line
+of your error message was never \def'ed. If you have
+misspelled it (e.g., `\hobx'), type `I' and the correct
+spelling (e.g., `I\hbox'). Otherwise just continue,
+and I'll forget about whatever was undefined.
+
+! Undefined control sequence.
+\@mkpream ...hclass }\ifcase \@lastchclass \@acol 
+                                                  \or \or \@preamerr \@ne \o...
+l.21 \multicolumn{6}{l}{\textbf{Aceites y grasas}}
+                                                  \\
+The control sequence at the end of the top line
+of your error message was never \def'ed. If you have
+misspelled it (e.g., `\hobx'), type `I' and the correct
+spelling (e.g., `I\hbox'). Otherwise just continue,
+and I'll forget about whatever was undefined.
+
+! Undefined control sequence.
+l.22 \hspace{1em}\cellcolor
+                           {gray!10}{Alimentos y bebidas no alcohólicas} & ...
+The control sequence at the end of the top line
+of your error message was never \def'ed. If you have
+misspelled it (e.g., `\hobx'), type `I' and the correct
+spelling (e.g., `I\hbox'). Otherwise just continue,
+and I'll forget about whatever was undefined.
+
+! Misplaced alignment tab character &.
+l.22 ...10}{Alimentos y bebidas no alcohólicas} &
+                                                   \cellcolor{gray!10}{Alime...
+I can't figure out why you would want to use a tab mark
+here. If you just want an ampersand, the remedy is
+simple: Just type `I\&' now. But if some right brace
+up above has ended a previous alignment prematurely,
+you're probably due for more error messages, and you
+might try typing `S' now just to see what is salvageable.
+
+! Undefined control sequence.
+l.22 ...os y bebidas no alcohólicas} & \cellcolor
+                                                  {gray!10}{Alimentos} & \ce...
+The control sequence at the end of the top line
+of your error message was never \def'ed. If you have
+misspelled it (e.g., `\hobx'), type `I' and the correct
+spelling (e.g., `I\hbox'). Otherwise just continue,
+and I'll forget about whatever was undefined.
+
+! Misplaced alignment tab character &.
+l.22 ...�licas} & \cellcolor{gray!10}{Alimentos} &
+                                                   \cellcolor{gray!10}{Aceit...
+I can't figure out why you would want to use a tab mark
+here. If you just want an ampersand, the remedy is
+simple: Just type `I\&' now. But if some right brace
+up above has ended a previous alignment prematurely,
+you're probably due for more error messages, and you
+might try typing `S' now just to see what is salvageable.
+
+! Undefined control sequence.
+l.22 ...cellcolor{gray!10}{Alimentos} & \cellcolor
+                                                  {gray!10}{Aceites y grasas...
+The control sequence at the end of the top line
+of your error message was never \def'ed. If you have
+misspelled it (e.g., `\hobx'), type `I' and the correct
+spelling (e.g., `I\hbox'). Otherwise just continue,
+and I'll forget about whatever was undefined.
+
+! Misplaced alignment tab character &.
+l.22 ... & \cellcolor{gray!10}{Aceites y grasas} &
+                                                   \cellcolor{gray!10}{Aceit...
+I can't figure out why you would want to use a tab mark
+here. If you just want an ampersand, the remedy is
+simple: Just type `I\&' now. But if some right brace
+up above has ended a previous alignment prematurely,
+you're probably due for more error messages, and you
+might try typing `S' now just to see what is salvageable.
+
+! Undefined control sequence.
+l.22 ...or{gray!10}{Aceites y grasas} & \cellcolor
+                                                  {gray!10}{Aceites comestib...
+The control sequence at the end of the top line
+of your error message was never \def'ed. If you have
+misspelled it (e.g., `\hobx'), type `I' and the correct
+spelling (e.g., `I\hbox'). Otherwise just continue,
+and I'll forget about whatever was undefined.
+
+! Misplaced alignment tab character &.
+l.22 ...\cellcolor{gray!10}{Aceites comestibles} &
+                                                   \cellcolor{gray!10}{ACEIT...
+I can't figure out why you would want to use a tab mark
+here. If you just want an ampersand, the remedy is
+simple: Just type `I\&' now. But if some right brace
+up above has ended a previous alignment prematurely,
+you're probably due for more error messages, and you
+might try typing `S' now just to see what is salvageable.
+
+! Undefined control sequence.
+l.22 ...gray!10}{Aceites comestibles} & \cellcolor
+                                                  {gray!10}{ACEITE DE GIRASO...
+The control sequence at the end of the top line
+of your error message was never \def'ed. If you have
+misspelled it (e.g., `\hobx'), type `I' and the correct
+spelling (e.g., `I\hbox'). Otherwise just continue,
+and I'll forget about whatever was undefined.
+
+! Misplaced alignment tab character &.
+l.22 ...& \cellcolor{gray!10}{ACEITE DE GIRASOL} &
+                                                   \cellcolor{gray!10}{01150...
+I can't figure out why you would want to use a tab mark
+here. If you just want an ampersand, the remedy is
+simple: Just type `I\&' now. But if some right brace
+up above has ended a previous alignment prematurely,
+you're probably due for more error messages, and you
+might try typing `S' now just to see what is salvageable.
+
+! Undefined control sequence.
+l.22 ...r{gray!10}{ACEITE DE GIRASOL} & \cellcolor
+                                                  {gray!10}{01150102}\\
+The control sequence at the end of the top line
+of your error message was never \def'ed. If you have
+misspelled it (e.g., `\hobx'), type `I' and the correct
+spelling (e.g., `I\hbox'). Otherwise just continue,
+and I'll forget about whatever was undefined.
+
+! Misplaced alignment tab character &.
+l.23 ...{1em}Alimentos y bebidas no alcohólicas &
+                                                   Alimentos & Aceites y gra...
+I can't figure out why you would want to use a tab mark
+here. If you just want an ampersand, the remedy is
+simple: Just type `I\&' now. But if some right brace
+up above has ended a previous alignment prematurely,
+you're probably due for more error messages, and you
+might try typing `S' now just to see what is salvageable.
+
+! Misplaced alignment tab character &.
+l.23 ...os y bebidas no alcohólicas & Alimentos &
+                                                   Aceites y grasas & Aceite...
+I can't figure out why you would want to use a tab mark
+here. If you just want an ampersand, the remedy is
+simple: Just type `I\&' now. But if some right brace
+up above has ended a previous alignment prematurely,
+you're probably due for more error messages, and you
+might try typing `S' now just to see what is salvageable.
+
+! Misplaced alignment tab character &.
+l.23 ...ohólicas & Alimentos & Aceites y grasas &
+                                                   Aceites comestibles & ACE...
+I can't figure out why you would want to use a tab mark
+here. If you just want an ampersand, the remedy is
+simple: Just type `I\&' now. But if some right brace
+up above has ended a previous alignment prematurely,
+you're probably due for more error messages, and you
+might try typing `S' now just to see what is salvageable.
+
+! Misplaced alignment tab character &.
+l.23 ...& Aceites y grasas & Aceites comestibles &
+                                                   ACEITE DE SOYA O DE MAÍZ...
+I can't figure out why you would want to use a tab mark
+here. If you just want an ampersand, the remedy is
+simple: Just type `I\&' now. But if some right brace
+up above has ended a previous alignment prematurely,
+you're probably due for more error messages, and you
+might try typing `S' now just to see what is salvageable.
+
+! Misplaced alignment tab character &.
+l.23 ... comestibles & ACEITE DE SOYA O DE MAÍZ &
+                                                   01150101\\
+I can't figure out why you would want to use a tab mark
+here. If you just want an ampersand, the remedy is
+simple: Just type `I\&' now. But if some right brace
+up above has ended a previous alignment prematurely,
+you're probably due for more error messages, and you
+might try typing `S' now just to see what is salvageable.
+
+! Undefined control sequence.
+l.24 \hspace{1em}\cellcolor
+                           {gray!10}{Alimentos y bebidas no alcohólicas} & ...
+The control sequence at the end of the top line
+of your error message was never \def'ed. If you have
+misspelled it (e.g., `\hobx'), type `I' and the correct
+spelling (e.g., `I\hbox'). Otherwise just continue,
+and I'll forget about whatever was undefined.
+
+! Misplaced alignment tab character &.
+l.24 ...10}{Alimentos y bebidas no alcohólicas} &
+                                                   \cellcolor{gray!10}{Alime...
+I can't figure out why you would want to use a tab mark
+here. If you just want an ampersand, the remedy is
+simple: Just type `I\&' now. But if some right brace
+up above has ended a previous alignment prematurely,
+you're probably due for more error messages, and you
+might try typing `S' now just to see what is salvageable.
+
+! Undefined control sequence.
+l.24 ...os y bebidas no alcohólicas} & \cellcolor
+                                                  {gray!10}{Alimentos} & \ce...
+The control sequence at the end of the top line
+of your error message was never \def'ed. If you have
+misspelled it (e.g., `\hobx'), type `I' and the correct
+spelling (e.g., `I\hbox'). Otherwise just continue,
+and I'll forget about whatever was undefined.
+
+! Misplaced alignment tab character &.
+l.24 ...�licas} & \cellcolor{gray!10}{Alimentos} &
+                                                   \cellcolor{gray!10}{Aceit...
+I can't figure out why you would want to use a tab mark
+here. If you just want an ampersand, the remedy is
+simple: Just type `I\&' now. But if some right brace
+up above has ended a previous alignment prematurely,
+you're probably due for more error messages, and you
+might try typing `S' now just to see what is salvageable.
+
+! Undefined control sequence.
+l.24 ...cellcolor{gray!10}{Alimentos} & \cellcolor
+                                                  {gray!10}{Aceites y grasas...
+The control sequence at the end of the top line
+of your error message was never \def'ed. If you have
+misspelled it (e.g., `\hobx'), type `I' and the correct
+spelling (e.g., `I\hbox'). Otherwise just continue,
+and I'll forget about whatever was undefined.
+
+! Misplaced alignment tab character &.
+l.24 ... & \cellcolor{gray!10}{Aceites y grasas} &
+                                                   \cellcolor{gray!10}{Marga...
+I can't figure out why you would want to use a tab mark
+here. If you just want an ampersand, the remedy is
+simple: Just type `I\&' now. But if some right brace
+up above has ended a previous alignment prematurely,
+you're probably due for more error messages, and you
+might try typing `S' now just to see what is salvageable.
+
+! Undefined control sequence.
+l.24 ...or{gray!10}{Aceites y grasas} & \cellcolor
+                                                  {gray!10}{Margarinas y gra...
+The control sequence at the end of the top line
+of your error message was never \def'ed. If you have
+misspelled it (e.g., `\hobx'), type `I' and the correct
+spelling (e.g., `I\hbox'). Otherwise just continue,
+and I'll forget about whatever was undefined.
+
+! Misplaced alignment tab character &.
+l.24 ...argarinas y grasas animales y vegetales} &
+                                                   \cellcolor{gray!10}{MANTE...
+I can't figure out why you would want to use a tab mark
+here. If you just want an ampersand, the remedy is
+simple: Just type `I\&' now. But if some right brace
+up above has ended a previous alignment prematurely,
+you're probably due for more error messages, and you
+might try typing `S' now just to see what is salvageable.
+
+! Undefined control sequence.
+l.24 ... grasas animales y vegetales} & \cellcolor
+                                                  {gray!10}{MANTECA VEGETAL}...
+The control sequence at the end of the top line
+of your error message was never \def'ed. If you have
+misspelled it (e.g., `\hobx'), type `I' and the correct
+spelling (e.g., `I\hbox'). Otherwise just continue,
+and I'll forget about whatever was undefined.
+
+! Misplaced alignment tab character &.
+l.24 ...} & \cellcolor{gray!10}{MANTECA VEGETAL} &
+                                                   \cellcolor{gray!10}{01150...
+I can't figure out why you would want to use a tab mark
+here. If you just want an ampersand, the remedy is
+simple: Just type `I\&' now. But if some right brace
+up above has ended a previous alignment prematurely,
+you're probably due for more error messages, and you
+might try typing `S' now just to see what is salvageable.
+
+! Undefined control sequence.
+l.24 ...lor{gray!10}{MANTECA VEGETAL} & \cellcolor
+                                                  {gray!10}{01150502}\\
+The control sequence at the end of the top line
+of your error message was never \def'ed. If you have
+misspelled it (e.g., `\hobx'), type `I' and the correct
+spelling (e.g., `I\hbox'). Otherwise just continue,
+and I'll forget about whatever was undefined.
+
+! Undefined control sequence.
+<recently read> \addlinespace 
+                              
+l.25 \addlinespace
+                  [0.5em]
+The control sequence at the end of the top line
+of your error message was never \def'ed. If you have
+misspelled it (e.g., `\hobx'), type `I' and the correct
+spelling (e.g., `I\hbox'). Otherwise just continue,
+and I'll forget about whatever was undefined.
+
+! Misplaced \omit.
+\multispan ->\omit 
+                   \@multispan 
+l.26 ...ada, miel, chocolate y dulces de azúcar}}
+                                                  \\
+I expect to see \omit only after tab marks or the \cr of
+an alignment. Proceed, and I'll ignore this case.
+
+! Misplaced \span.
+\sp@n ->\span 
+              \omit \advance \@multicnt \m@ne 
+l.26 ...ada, miel, chocolate y dulces de azúcar}}
+                                                  \\
+I can't figure out why you would want to use a tab mark
+or \cr or \span just now. If something like a right brace
+up above has ended a previous alignment prematurely,
+you're probably due for more error messages, and you
+might try typing `S' now just to see what is salvageable.
+
+! Misplaced \omit.
+\sp@n ->\span \omit 
+                    \advance \@multicnt \m@ne 
+l.26 ...ada, miel, chocolate y dulces de azúcar}}
+                                                  \\
+I expect to see \omit only after tab marks or the \cr of
+an alignment. Proceed, and I'll ignore this case.
+
+! Misplaced \span.
+\sp@n ->\span 
+              \omit \advance \@multicnt \m@ne 
+l.26 ...ada, miel, chocolate y dulces de azúcar}}
+                                                  \\
+I can't figure out why you would want to use a tab mark
+or \cr or \span just now. If something like a right brace
+up above has ended a previous alignment prematurely,
+you're probably due for more error messages, and you
+might try typing `S' now just to see what is salvageable.
+
+! Misplaced \omit.
+\sp@n ->\span \omit 
+                    \advance \@multicnt \m@ne 
+l.26 ...ada, miel, chocolate y dulces de azúcar}}
+                                                  \\
+I expect to see \omit only after tab marks or the \cr of
+an alignment. Proceed, and I'll ignore this case.
+
+! Misplaced \span.
+\sp@n ->\span 
+              \omit \advance \@multicnt \m@ne 
+l.26 ...ada, miel, chocolate y dulces de azúcar}}
+                                                  \\
+I can't figure out why you would want to use a tab mark
+or \cr or \span just now. If something like a right brace
+up above has ended a previous alignment prematurely,
+you're probably due for more error messages, and you
+might try typing `S' now just to see what is salvageable.
+
+! Misplaced \omit.
+\sp@n ->\span \omit 
+                    \advance \@multicnt \m@ne 
+l.26 ...ada, miel, chocolate y dulces de azúcar}}
+                                                  \\
+I expect to see \omit only after tab marks or the \cr of
+an alignment. Proceed, and I'll ignore this case.
+
+! Misplaced \span.
+\sp@n ->\span 
+              \omit \advance \@multicnt \m@ne 
+l.26 ...ada, miel, chocolate y dulces de azúcar}}
+                                                  \\
+I can't figure out why you would want to use a tab mark
+or \cr or \span just now. If something like a right brace
+up above has ended a previous alignment prematurely,
+you're probably due for more error messages, and you
+might try typing `S' now just to see what is salvageable.
+
+! Misplaced \omit.
+\sp@n ->\span \omit 
+                    \advance \@multicnt \m@ne 
+l.26 ...ada, miel, chocolate y dulces de azúcar}}
+                                                  \\
+I expect to see \omit only after tab marks or the \cr of
+an alignment. Proceed, and I'll ignore this case.
+
+! Misplaced \span.
+\sp@n ->\span 
+              \omit \advance \@multicnt \m@ne 
+l.26 ...ada, miel, chocolate y dulces de azúcar}}
+                                                  \\
+I can't figure out why you would want to use a tab mark
+or \cr or \span just now. If something like a right brace
+up above has ended a previous alignment prematurely,
+you're probably due for more error messages, and you
+might try typing `S' now just to see what is salvageable.
+
+! Misplaced \omit.
+\sp@n ->\span \omit 
+                    \advance \@multicnt \m@ne 
+l.26 ...ada, miel, chocolate y dulces de azúcar}}
+                                                  \\
+I expect to see \omit only after tab marks or the \cr of
+an alignment. Proceed, and I'll ignore this case.
+
+! Undefined control sequence.
+<argument> ...nextchar \ifcase \@chclass \@classz 
+                                                  \or \@classi \or \@classii...
+l.26 ...ada, miel, chocolate y dulces de azúcar}}
+                                                  \\
+The control sequence at the end of the top line
+of your error message was never \def'ed. If you have
+misspelled it (e.g., `\hobx'), type `I' and the correct
+spelling (e.g., `I\hbox'). Otherwise just continue,
+and I'll forget about whatever was undefined.
+
+! Undefined control sequence.
+\@mkpream ...hclass }\ifcase \@lastchclass \@acol 
+                                                  \or \or \@preamerr \@ne \o...
+l.26 ...ada, miel, chocolate y dulces de azúcar}}
+                                                  \\
+The control sequence at the end of the top line
+of your error message was never \def'ed. If you have
+misspelled it (e.g., `\hobx'), type `I' and the correct
+spelling (e.g., `I\hbox'). Otherwise just continue,
+and I'll forget about whatever was undefined.
+
+! Misplaced alignment tab character &.
+l.27 ...{1em}Alimentos y bebidas no alcohólicas &
+                                                   Alimentos & Azúcar, merm...
+I can't figure out why you would want to use a tab mark
+here. If you just want an ampersand, the remedy is
+simple: Just type `I\&' now. But if some right brace
+up above has ended a previous alignment prematurely,
+you're probably due for more error messages, and you
+might try typing `S' now just to see what is salvageable.
+
+! Misplaced alignment tab character &.
+l.27 ...os y bebidas no alcohólicas & Alimentos &
+                                                   Azúcar, mermelada, miel,...
+I can't figure out why you would want to use a tab mark
+here. If you just want an ampersand, the remedy is
+simple: Just type `I\&' now. But if some right brace
+up above has ended a previous alignment prematurely,
+you're probably due for more error messages, and you
+might try typing `S' now just to see what is salvageable.
+
+! Misplaced alignment tab character &.
+l.27 ...ada, miel, chocolate y dulces de azúcar &
+                                                   Azúcar y otros endulzant...
+I can't figure out why you would want to use a tab mark
+here. If you just want an ampersand, the remedy is
+simple: Just type `I\&' now. But if some right brace
+up above has ended a previous alignment prematurely,
+you're probably due for more error messages, and you
+might try typing `S' now just to see what is salvageable.
+
+! Misplaced alignment tab character &.
+l.27 ...de azúcar & Azúcar y otros endulzantes &
+                                                   AZÚCAR NATURAL O MORENA ...
+I can't figure out why you would want to use a tab mark
+here. If you just want an ampersand, the remedy is
+simple: Just type `I\&' now. But if some right brace
+up above has ended a previous alignment prematurely,
+you're probably due for more error messages, and you
+might try typing `S' now just to see what is salvageable.
+
+! Misplaced alignment tab character &.
+l.27 ...s endulzantes & AZÚCAR NATURAL O MORENA &
+                                                   01180102\\
+I can't figure out why you would want to use a tab mark
+here. If you just want an ampersand, the remedy is
+simple: Just type `I\&' now. But if some right brace
+up above has ended a previous alignment prematurely,
+you're probably due for more error messages, and you
+might try typing `S' now just to see what is salvageable.
+
+! Undefined control sequence.
+l.28 \hspace{1em}\cellcolor
+                           {gray!10}{Alimentos y bebidas no alcohólicas} & ...
+The control sequence at the end of the top line
+of your error message was never \def'ed. If you have
+misspelled it (e.g., `\hobx'), type `I' and the correct
+spelling (e.g., `I\hbox'). Otherwise just continue,
+and I'll forget about whatever was undefined.
+
+! Misplaced alignment tab character &.
+l.28 ...10}{Alimentos y bebidas no alcohólicas} &
+                                                   \cellcolor{gray!10}{Alime...
+I can't figure out why you would want to use a tab mark
+here. If you just want an ampersand, the remedy is
+simple: Just type `I\&' now. But if some right brace
+up above has ended a previous alignment prematurely,
+you're probably due for more error messages, and you
+might try typing `S' now just to see what is salvageable.
+
+! Undefined control sequence.
+l.28 ...os y bebidas no alcohólicas} & \cellcolor
+                                                  {gray!10}{Alimentos} & \ce...
+The control sequence at the end of the top line
+of your error message was never \def'ed. If you have
+misspelled it (e.g., `\hobx'), type `I' and the correct
+spelling (e.g., `I\hbox'). Otherwise just continue,
+and I'll forget about whatever was undefined.
+
+! Misplaced alignment tab character &.
+l.28 ...�licas} & \cellcolor{gray!10}{Alimentos} &
+                                                   \cellcolor{gray!10}{Azúc...
+I can't figure out why you would want to use a tab mark
+here. If you just want an ampersand, the remedy is
+simple: Just type `I\&' now. But if some right brace
+up above has ended a previous alignment prematurely,
+you're probably due for more error messages, and you
+might try typing `S' now just to see what is salvageable.
+
+! Undefined control sequence.
+l.28 ...cellcolor{gray!10}{Alimentos} & \cellcolor
+                                                  {gray!10}{Azúcar, mermela...
+The control sequence at the end of the top line
+of your error message was never \def'ed. If you have
+misspelled it (e.g., `\hobx'), type `I' and the correct
+spelling (e.g., `I\hbox'). Otherwise just continue,
+and I'll forget about whatever was undefined.
+
+! Misplaced alignment tab character &.
+l.28 ...da, miel, chocolate y dulces de azúcar} &
+                                                   \cellcolor{gray!10}{Azúc...
+I can't figure out why you would want to use a tab mark
+here. If you just want an ampersand, the remedy is
+simple: Just type `I\&' now. But if some right brace
+up above has ended a previous alignment prematurely,
+you're probably due for more error messages, and you
+might try typing `S' now just to see what is salvageable.
+
+! Undefined control sequence.
+l.28 ...hocolate y dulces de azúcar} & \cellcolor
+                                                  {gray!10}{Azúcar y otros ...
+The control sequence at the end of the top line
+of your error message was never \def'ed. If you have
+misspelled it (e.g., `\hobx'), type `I' and the correct
+spelling (e.g., `I\hbox'). Otherwise just continue,
+and I'll forget about whatever was undefined.
+
+! Misplaced alignment tab character &.
+l.28 ...or{gray!10}{Azúcar y otros endulzantes} &
+                                                   \cellcolor{gray!10}{AZÚC...
+I can't figure out why you would want to use a tab mark
+here. If you just want an ampersand, the remedy is
+simple: Just type `I\&' now. But if some right brace
+up above has ended a previous alignment prematurely,
+you're probably due for more error messages, and you
+might try typing `S' now just to see what is salvageable.
+
+! Undefined control sequence.
+l.28 ...{Azúcar y otros endulzantes} & \cellcolor
+                                                  {gray!10}{AZÚCAR REFINADA...
+The control sequence at the end of the top line
+of your error message was never \def'ed. If you have
+misspelled it (e.g., `\hobx'), type `I' and the correct
+spelling (e.g., `I\hbox'). Otherwise just continue,
+and I'll forget about whatever was undefined.
+
+! Misplaced alignment tab character &.
+l.28 ... & \cellcolor{gray!10}{AZÚCAR REFINADA} &
+                                                   \cellcolor{gray!10}{01180...
+I can't figure out why you would want to use a tab mark
+here. If you just want an ampersand, the remedy is
+simple: Just type `I\&' now. But if some right brace
+up above has ended a previous alignment prematurely,
+you're probably due for more error messages, and you
+might try typing `S' now just to see what is salvageable.
+
+! Undefined control sequence.
+l.28 ...or{gray!10}{AZÚCAR REFINADA} & \cellcolor
+                                                  {gray!10}{01180101}\\
+The control sequence at the end of the top line
+of your error message was never \def'ed. If you have
+misspelled it (e.g., `\hobx'), type `I' and the correct
+spelling (e.g., `I\hbox'). Otherwise just continue,
+and I'll forget about whatever was undefined.
+
+! Misplaced alignment tab character &.
+l.29 ...{1em}Alimentos y bebidas no alcohólicas &
+                                                   Alimentos & Azúcar, merm...
+I can't figure out why you would want to use a tab mark
+here. If you just want an ampersand, the remedy is
+simple: Just type `I\&' now. But if some right brace
+up above has ended a previous alignment prematurely,
+you're probably due for more error messages, and you
+might try typing `S' now just to see what is salvageable.
+
+! Misplaced alignment tab character &.
+l.29 ...os y bebidas no alcohólicas & Alimentos &
+                                                   Azúcar, mermelada, miel,...
+I can't figure out why you would want to use a tab mark
+here. If you just want an ampersand, the remedy is
+simple: Just type `I\&' now. But if some right brace
+up above has ended a previous alignment prematurely,
+you're probably due for more error messages, and you
+might try typing `S' now just to see what is salvageable.
+
+! Misplaced alignment tab character &.
+l.29 ...ada, miel, chocolate y dulces de azúcar &
+                                                   Panela cruda para consumo...
+I can't figure out why you would want to use a tab mark
+here. If you just want an ampersand, the remedy is
+simple: Just type `I\&' now. But if some right brace
+up above has ended a previous alignment prematurely,
+you're probably due for more error messages, and you
+might try typing `S' now just to see what is salvageable.
+
+! Misplaced alignment tab character &.
+l.29 ... & Panela cruda para consumo en el hogar &
+                                                   PANELA & 01180201\\
+I can't figure out why you would want to use a tab mark
+here. If you just want an ampersand, the remedy is
+simple: Just type `I\&' now. But if some right brace
+up above has ended a previous alignment prematurely,
+you're probably due for more error messages, and you
+might try typing `S' now just to see what is salvageable.
+
+! Misplaced alignment tab character &.
+l.29 ... cruda para consumo en el hogar & PANELA &
+                                                   01180201\\
+I can't figure out why you would want to use a tab mark
+here. If you just want an ampersand, the remedy is
+simple: Just type `I\&' now. But if some right brace
+up above has ended a previous alignment prematurely,
+you're probably due for more error messages, and you
+might try typing `S' now just to see what is salvageable.
+
+! Undefined control sequence.
+<recently read> \addlinespace 
+                              
+l.30 \addlinespace
+                  [0.5em]
+The control sequence at the end of the top line
+of your error message was never \def'ed. If you have
+misspelled it (e.g., `\hobx'), type `I' and the correct
+spelling (e.g., `I\hbox'). Otherwise just continue,
+and I'll forget about whatever was undefined.
+
+! Misplaced \omit.
+\multispan ->\omit 
+                   \@multispan 
+l.31 \multicolumn{6}{l}{\textbf{Carnes}}
+                                        \\
+I expect to see \omit only after tab marks or the \cr of
+an alignment. Proceed, and I'll ignore this case.
+
+! Misplaced \span.
+\sp@n ->\span 
+              \omit \advance \@multicnt \m@ne 
+l.31 \multicolumn{6}{l}{\textbf{Carnes}}
+                                        \\
+I can't figure out why you would want to use a tab mark
+or \cr or \span just now. If something like a right brace
+up above has ended a previous alignment prematurely,
+you're probably due for more error messages, and you
+might try typing `S' now just to see what is salvageable.
+
+! Misplaced \omit.
+\sp@n ->\span \omit 
+                    \advance \@multicnt \m@ne 
+l.31 \multicolumn{6}{l}{\textbf{Carnes}}
+                                        \\
+I expect to see \omit only after tab marks or the \cr of
+an alignment. Proceed, and I'll ignore this case.
+
+! Misplaced \span.
+\sp@n ->\span 
+              \omit \advance \@multicnt \m@ne 
+l.31 \multicolumn{6}{l}{\textbf{Carnes}}
+                                        \\
+I can't figure out why you would want to use a tab mark
+or \cr or \span just now. If something like a right brace
+up above has ended a previous alignment prematurely,
+you're probably due for more error messages, and you
+might try typing `S' now just to see what is salvageable.
+
+! Misplaced \omit.
+\sp@n ->\span \omit 
+                    \advance \@multicnt \m@ne 
+l.31 \multicolumn{6}{l}{\textbf{Carnes}}
+                                        \\
+I expect to see \omit only after tab marks or the \cr of
+an alignment. Proceed, and I'll ignore this case.
+
+! Misplaced \span.
+\sp@n ->\span 
+              \omit \advance \@multicnt \m@ne 
+l.31 \multicolumn{6}{l}{\textbf{Carnes}}
+                                        \\
+I can't figure out why you would want to use a tab mark
+or \cr or \span just now. If something like a right brace
+up above has ended a previous alignment prematurely,
+you're probably due for more error messages, and you
+might try typing `S' now just to see what is salvageable.
+
+! Misplaced \omit.
+\sp@n ->\span \omit 
+                    \advance \@multicnt \m@ne 
+l.31 \multicolumn{6}{l}{\textbf{Carnes}}
+                                        \\
+I expect to see \omit only after tab marks or the \cr of
+an alignment. Proceed, and I'll ignore this case.
+
+! Misplaced \span.
+\sp@n ->\span 
+              \omit \advance \@multicnt \m@ne 
+l.31 \multicolumn{6}{l}{\textbf{Carnes}}
+                                        \\
+I can't figure out why you would want to use a tab mark
+or \cr or \span just now. If something like a right brace
+up above has ended a previous alignment prematurely,
+you're probably due for more error messages, and you
+might try typing `S' now just to see what is salvageable.
+
+! Misplaced \omit.
+\sp@n ->\span \omit 
+                    \advance \@multicnt \m@ne 
+l.31 \multicolumn{6}{l}{\textbf{Carnes}}
+                                        \\
+I expect to see \omit only after tab marks or the \cr of
+an alignment. Proceed, and I'll ignore this case.
+
+! Misplaced \span.
+\sp@n ->\span 
+              \omit \advance \@multicnt \m@ne 
+l.31 \multicolumn{6}{l}{\textbf{Carnes}}
+                                        \\
+I can't figure out why you would want to use a tab mark
+or \cr or \span just now. If something like a right brace
+up above has ended a previous alignment prematurely,
+you're probably due for more error messages, and you
+might try typing `S' now just to see what is salvageable.
+
+! Misplaced \omit.
+\sp@n ->\span \omit 
+                    \advance \@multicnt \m@ne 
+l.31 \multicolumn{6}{l}{\textbf{Carnes}}
+                                        \\
+I expect to see \omit only after tab marks or the \cr of
+an alignment. Proceed, and I'll ignore this case.
+
+! Undefined control sequence.
+<argument> ...nextchar \ifcase \@chclass \@classz 
+                                                  \or \@classi \or \@classii...
+l.31 \multicolumn{6}{l}{\textbf{Carnes}}
+                                        \\
+The control sequence at the end of the top line
+of your error message was never \def'ed. If you have
+misspelled it (e.g., `\hobx'), type `I' and the correct
+spelling (e.g., `I\hbox'). Otherwise just continue,
+and I'll forget about whatever was undefined.
+
+! Undefined control sequence.
+\@mkpream ...hclass }\ifcase \@lastchclass \@acol 
+                                                  \or \or \@preamerr \@ne \o...
+l.31 \multicolumn{6}{l}{\textbf{Carnes}}
+                                        \\
+The control sequence at the end of the top line
+of your error message was never \def'ed. If you have
+misspelled it (e.g., `\hobx'), type `I' and the correct
+spelling (e.g., `I\hbox'). Otherwise just continue,
+and I'll forget about whatever was undefined.
+
+! Undefined control sequence.
+l.32 \hspace{1em}\cellcolor
+                           {gray!10}{Alimentos y bebidas no alcohólicas} & ...
+The control sequence at the end of the top line
+of your error message was never \def'ed. If you have
+misspelled it (e.g., `\hobx'), type `I' and the correct
+spelling (e.g., `I\hbox'). Otherwise just continue,
+and I'll forget about whatever was undefined.
+
+! Misplaced alignment tab character &.
+l.32 ...10}{Alimentos y bebidas no alcohólicas} &
+                                                   \cellcolor{gray!10}{Alime...
+I can't figure out why you would want to use a tab mark
+here. If you just want an ampersand, the remedy is
+simple: Just type `I\&' now. But if some right brace
+up above has ended a previous alignment prematurely,
+you're probably due for more error messages, and you
+might try typing `S' now just to see what is salvageable.
+
+! Undefined control sequence.
+l.32 ...os y bebidas no alcohólicas} & \cellcolor
+                                                  {gray!10}{Alimentos} & \ce...
+The control sequence at the end of the top line
+of your error message was never \def'ed. If you have
+misspelled it (e.g., `\hobx'), type `I' and the correct
+spelling (e.g., `I\hbox'). Otherwise just continue,
+and I'll forget about whatever was undefined.
+
+! Misplaced alignment tab character &.
+l.32 ...�licas} & \cellcolor{gray!10}{Alimentos} &
+                                                   \cellcolor{gray!10}{Carne...
+I can't figure out why you would want to use a tab mark
+here. If you just want an ampersand, the remedy is
+simple: Just type `I\&' now. But if some right brace
+up above has ended a previous alignment prematurely,
+you're probably due for more error messages, and you
+might try typing `S' now just to see what is salvageable.
+
+! Undefined control sequence.
+l.32 ...cellcolor{gray!10}{Alimentos} & \cellcolor
+                                                  {gray!10}{Carnes} & \cellc...
+The control sequence at the end of the top line
+of your error message was never \def'ed. If you have
+misspelled it (e.g., `\hobx'), type `I' and the correct
+spelling (e.g., `I\hbox'). Otherwise just continue,
+and I'll forget about whatever was undefined.
+
+! Misplaced alignment tab character &.
+l.32 ...Alimentos} & \cellcolor{gray!10}{Carnes} &
+                                                   \cellcolor{gray!10}{Carne...
+I can't figure out why you would want to use a tab mark
+here. If you just want an ampersand, the remedy is
+simple: Just type `I\&' now. But if some right brace
+up above has ended a previous alignment prematurely,
+you're probably due for more error messages, and you
+might try typing `S' now just to see what is salvageable.
+
+! Undefined control sequence.
+l.32 ...& \cellcolor{gray!10}{Carnes} & \cellcolor
+                                                  {gray!10}{Carne de aves} &...
+The control sequence at the end of the top line
+of your error message was never \def'ed. If you have
+misspelled it (e.g., `\hobx'), type `I' and the correct
+spelling (e.g., `I\hbox'). Otherwise just continue,
+and I'll forget about whatever was undefined.
+
+! Misplaced alignment tab character &.
+l.32 ...es} & \cellcolor{gray!10}{Carne de aves} &
+                                                   \cellcolor{gray!10}{POLLO...
+I can't figure out why you would want to use a tab mark
+here. If you just want an ampersand, the remedy is
+simple: Just type `I\&' now. But if some right brace
+up above has ended a previous alignment prematurely,
+you're probably due for more error messages, and you
+might try typing `S' now just to see what is salvageable.
+
+! Undefined control sequence.
+l.32 ...color{gray!10}{Carne de aves} & \cellcolor
+                                                  {gray!10}{POLLO DESPRESADO...
+The control sequence at the end of the top line
+of your error message was never \def'ed. If you have
+misspelled it (e.g., `\hobx'), type `I' and the correct
+spelling (e.g., `I\hbox'). Otherwise just continue,
+and I'll forget about whatever was undefined.
+
+! Misplaced alignment tab character &.
+l.32 ...lor{gray!10}{POLLO DESPRESADO POR LIBRA} &
+                                                   \cellcolor{gray!10}{01120...
+(That makes 100 errors; please try again.) 
+Here is how much of TeX's memory you used:
+ 25 strings out of 469514
+ 501 string characters out of 5468199
+ 436759 words of memory out of 5000000
+ 28777 multiletter control sequences out of 15000+600000
+ 628070 words of font info for 41 fonts, out of 8000000 for 9000
+ 14 hyphenation exceptions out of 8191
+ 15i,1n,20p,345b,117s stack positions out of 10000i,1000n,20000p,200000b,200000s
+
+!  ==> Fatal error occurred, no output PDF file produced!

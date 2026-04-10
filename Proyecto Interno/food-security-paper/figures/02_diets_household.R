@@ -317,10 +317,8 @@ ggsave(file.path(out_fig, "fig4_cost_premiums.pdf"),
 
 message("Figures 3\u20134 saved to: ", out_fig)
 
-<<<<<<< HEAD
 
 library(patchwork)
-
 
 ##----------------------------------------------------------
 ## Figure 3: Per capit cost + y-o-y growth
@@ -344,7 +342,7 @@ ggsave(file.path(out_fig, "fig3_combined.png"),
 
 ggsave(file.path(out_fig, "fig3_combined.pdf"),
        combined, width = 12, height = 9)
-=======
+
 ##----------------------------------------------------------
 ## Final table cost premiums (city × ratio)
 ##----------------------------------------------------------
@@ -366,4 +364,3 @@ writexl::write_xlsx(
   table,
   file.path(out_fig, "table_cost_premiums.xlsx")
 )
->>>>>>> 2688e8bef9b530128bf74a81b6ec859bc4f3583a
