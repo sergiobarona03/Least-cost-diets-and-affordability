@@ -10,13 +10,14 @@ library(stringr)
 # Directorio
 base_dir <- "C:/Users/danie/OneDrive/Escritorio/Least-cost-diets-and-affordability/Proyecto Interno/CENSO"
 
-path_per_bog <- file.path(base_dir, "CNPV2018_5PER_A2_11.CSV")
-path_per_med <- file.path(base_dir, "CNPV2018_5PER_A2_05.CSV")
-path_per_cal <- file.path(base_dir, "CNPV2018_5PER_A2_76.CSV")
+# Rutas
+path_per_bog <- file.path(base_dir, "CNPV2018_5PER_A2_11.rds")
+path_per_med <- file.path(base_dir, "CNPV2018_5PER_A2_05.rds")
+path_per_cal <- file.path(base_dir, "CNPV2018_5PER_A2_76.rds")
 
-# Leer personas
+# Leer personas desde .rds
 read_per <- function(path_file){
-  read_csv(path_file, show_col_types = FALSE) %>%
+  readRDS(path_file) %>%
     mutate(
       U_DPTO = str_pad(as.character(U_DPTO), 2, pad = "0"),
       U_MPIO = str_pad(as.character(U_MPIO), 3, pad = "0"),
@@ -26,56 +27,107 @@ read_per <- function(path_file){
     )
 }
 
-# Etiquetas edad
-edad_lab <- c(
-  "1" = "00_04", "2" = "05_09", "3" = "10_14", "4" = "15_19",
-  "5" = "20_24", "6" = "25_29", "7" = "30_34", "8" = "35_39",
-  "9" = "40_44", "10" = "45_49", "11" = "50_54", "12" = "55_59",
-  "13" = "60_64", "14" = "65_69", "15" = "70_74", "16" = "75_79",
-  "17" = "80_84", "18" = "85_89", "19" = "90_94", "20" = "95_99",
-  "21" = "100_mas"
-)
-
-# Función por ciudad
-procesar_ciudad <- function(path_file, nombre_ciudad){
+procesar_hogar_promedio <- function(path_file, nombre_ciudad){
   
   per <- read_per(path_file) %>%
     filter(U_MPIO == "001") %>%
     mutate(
       sexo = case_when(
-        P_SEXO == 1 ~ "H",
-        P_SEXO == 2 ~ "M",
+        P_SEXO == 1 ~ "Hombre",
+        P_SEXO == 2 ~ "Mujer",
         TRUE ~ NA_character_
       ),
-      edad = edad_lab[as.character(P_EDADR)],
-      grupo = paste0(sexo, "_", edad)
+      edad_grupo = edad_lab[as.character(P_EDADR)]
     ) %>%
-    filter(!is.na(grupo))
+    filter(!is.na(sexo), !is.na(edad_grupo))
   
-  comp_hogar <- per %>%
-    dplyr::count(U_DPTO, U_MPIO, COD_ENCUESTAS, U_VIVIENDA, P_NROHOG, grupo) %>%
-    dplyr::arrange(U_DPTO, U_MPIO, COD_ENCUESTAS, U_VIVIENDA, P_NROHOG, grupo) %>%
-    dplyr::group_by(U_DPTO, U_MPIO, COD_ENCUESTAS, U_VIVIENDA, P_NROHOG) %>%
-    dplyr::summarise(
-      composicion = paste0(grupo, "=", n, collapse = "; "),
-      n_personas = sum(n),
-      .groups = "drop"
+  # Tamaño de cada hogar
+  tam_hogar <- per %>%
+    dplyr::count(U_DPTO, U_MPIO, COD_ENCUESTAS, U_VIVIENDA, P_NROHOG, name = "n_personas")
+  
+  # Tamaño promedio del hogar en la ciudad
+  tam_promedio <- mean(tam_hogar$n_personas, na.rm = TRUE)
+  
+  # Entero más cercano para representar el hogar promedio
+  tam_objetivo <- round(tam_promedio)
+  
+  # Hogares con ese tamaño
+  hogares_objetivo <- tam_hogar %>%
+    filter(n_personas == tam_objetivo)
+  
+  # Personas de esos hogares
+  per_obj <- per %>%
+    inner_join(
+      hogares_objetivo,
+      by = c("U_DPTO", "U_MPIO", "COD_ENCUESTAS", "U_VIVIENDA", "P_NROHOG")
     )
   
-  comp_hogar %>%
-    dplyr::mutate(composicion = paste0(composicion, "; total=", n_personas)) %>%
-    dplyr::filter(n_personas == 3) %>%
+  # Resumen general
+  resumen <- hogares_objetivo %>%
+    dplyr::summarise(
+      city = nombre_ciudad,
+      tam_promedio_hogar = round(tam_promedio, 2),
+      tam_representativo = tam_objetivo,
+      n_hogares_usados = n()
+    )
+  
+  # Composición demográfica: sexo + rango de edad
+  composicion <- per_obj %>%
+    dplyr::count(sexo, edad_grupo, sort = TRUE) %>%
+    mutate(
+      city = nombre_ciudad,
+      tam_representativo = tam_objetivo,
+      participacion = round(n / sum(n) * 100, 2)
+    ) %>%
+    dplyr::select(city, tam_representativo, sexo, edad_grupo, n, participacion)
+  
+  # Composición completa del hogar, para ver la estructura más frecuente
+  composicion_hogar <- per_obj %>%
+    dplyr::count(U_DPTO, U_MPIO, COD_ENCUESTAS, U_VIVIENDA, P_NROHOG, sexo, edad_grupo) %>%
+    dplyr::arrange(U_DPTO, U_MPIO, COD_ENCUESTAS, U_VIVIENDA, P_NROHOG, sexo, edad_grupo) %>%
+    dplyr::group_by(U_DPTO, U_MPIO, COD_ENCUESTAS, U_VIVIENDA, P_NROHOG) %>%
+    dplyr::summarise(
+      composicion = paste0(sexo, "_", edad_grupo, "=", n, collapse = "; "),
+      .groups = "drop"
+    ) %>%
     dplyr::count(composicion, sort = TRUE) %>%
-    slice(1:10) %>%
-    dplyr::mutate(city = nombre_ciudad, n_personas = 3) %>%
-    dplyr::select(city, n_personas, composicion, hogares = n)
+    mutate(
+      city = nombre_ciudad,
+      tam_representativo = tam_objetivo
+    ) %>%
+    dplyr::select(city, tam_representativo, composicion, hogares = n)
+  
+  list(
+    resumen = resumen,
+    composicion = composicion,
+    composicion_hogar = composicion_hogar
+  )
 }
 
-# Resultado
-resultado <- bind_rows(
-  procesar_ciudad(path_per_bog, "Bogotá"),
-  procesar_ciudad(path_per_med, "Medellín"),
-  procesar_ciudad(path_per_cal, "Cali")
+# Ejecutar por ciudad
+hogar_bog <- procesar_hogar_promedio(path_per_bog, "Bogotá")
+hogar_med <- procesar_hogar_promedio(path_per_med, "Medellín")
+hogar_cal <- procesar_hogar_promedio(path_per_cal, "Cali")
+
+# Composición demográfica detallada por ciudad
+composicion_demografica <- bind_rows(
+  hogar_bog$composicion,
+  hogar_med$composicion,
+  hogar_cal$composicion
 )
 
-print(resultado)
+print(composicion_demografica)
+
+# Estructura más frecuente del hogar promedio por ciudad
+composicion_hogar_frecuente <- bind_rows(
+  hogar_bog$composicion_hogar %>% slice(1:10),
+  hogar_med$composicion_hogar %>% slice(1:10),
+  hogar_cal$composicion_hogar %>% slice(1:10)
+)
+
+print(composicion_hogar_frecuente)
+
+write_xlsx(
+  composicion_hogar_frecuente,
+  path = file.path(base_dir, "composicion_hogar_promedio.xlsx")
+)
