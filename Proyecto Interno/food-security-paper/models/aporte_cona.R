@@ -15,7 +15,7 @@ suppressPackageStartupMessages({
 })
 
 # ------------------------------------------------------------
-# Directorios base
+# 1) Directorios y rutas
 # ------------------------------------------------------------
 dirs <- c(
   "C:/Users/Portatil/Desktop/Least-cost-diets-and-affordability/Proyecto Interno",
@@ -23,36 +23,15 @@ dirs <- c(
 )
 
 base_dir <- dirs[dir.exists(dirs)][1]
+if (is.na(base_dir)) stop("Ninguno de los directorios existe")
 
-if (is.na(base_dir)) {
-  stop("Ninguno de los directorios existe")
-}
-
-# ------------------------------------------------------------
-# 1) Rutas
-# ------------------------------------------------------------
-in_cona <- file.path(
-  base_dir,
-  "food-security-paper", "output", "cona",
-  "230326_cona_full.xlsx"
-)
-
-in_tcac <- file.path(
-  base_dir,
-  "food-security-paper", "output", "tcac_food_table",
-  "tcac_master.rds"
-)
-
-out_dir <- file.path(
-  base_dir,
-  "food-security-paper", "output", "cona",
-  "nutrient_contribution"
-)
-
+in_cona <- file.path(base_dir, "food-security-paper", "output", "cona", "230326_cona_full.xlsx")
+in_tcac <- file.path(base_dir, "food-security-paper", "output", "tcac_food_table", "tcac_master.rds")
+out_dir <- file.path(base_dir, "food-security-paper", "output", "cona", "nutrient_contribution")
 dir.create(out_dir, recursive = TRUE, showWarnings = FALSE)
 
 # ------------------------------------------------------------
-# 2) Funciones auxiliares
+# 2) Función mínima
 # ------------------------------------------------------------
 norm_food <- function(x) {
   x %>%
@@ -61,90 +40,6 @@ norm_food <- function(x) {
     toupper() %>%
     trimws() %>%
     str_replace_all("\\s+", " ")
-}
-
-norm_names <- function(x) {
-  x %>%
-    iconv(from = "", to = "ASCII//TRANSLIT") %>%
-    tolower() %>%
-    gsub("[^a-z0-9]+", "_", .) %>%
-    gsub("_+", "_", .) %>%
-    gsub("^_|_$", "", .)
-}
-
-safe_mean <- function(x) {
-  if (all(is.na(x))) return(NA_real_)
-  mean(x, na.rm = TRUE)
-}
-
-map_demo_group_to_age <- function(x) {
-  case_when(
-    x == "[1,4)"      ~ "1 a 3 años",
-    x == "[4,9)"      ~ "4 a 8 años",
-    x == "[9,14)"     ~ "9 a 13 años",
-    x == "[10, 14)"   ~ "9 a 13 años",
-    x == "[10,14)"    ~ "9 a 13 años",
-    x == "[14,19)"    ~ "14 a 18 años",
-    x == "[19,31)"    ~ "19 a 30 años",
-    x == "[31,51)"    ~ "31 a 50 años",
-    x == "[51,71)"    ~ "51 a 70 años",
-    x == "[71, Inf)"  ~ ">70 años",
-    x == "[71,Inf)"   ~ ">70 años",
-    TRUE ~ NA_character_
-  )
-}
-
-load_foodpricer_obj <- function(obj_name) {
-  if (exists(obj_name, envir = .GlobalEnv)) return(invisible(TRUE))
-  ok <- tryCatch({
-    data(list = obj_name, package = "FoodpriceR", envir = .GlobalEnv)
-    TRUE
-  }, error = function(e) FALSE)
-  if (!ok) warning("No se pudo cargar el objeto de FoodpriceR: ", obj_name)
-  invisible(ok)
-}
-
-build_req_long <- function(obj, value_name, req_to_tcac) {
-  req_tbl <- as_tibble(obj)
-  names(req_tbl) <- norm_names(names(req_tbl))
-  
-  if (!all(c("age", "sex") %in% names(req_tbl))) {
-    stop("El objeto de requerimientos debe contener las columnas Age y Sex.")
-  }
-  
-  req_tbl %>%
-    pivot_longer(
-      cols = -c(age, sex),
-      names_to = "req_nutrient",
-      values_to = value_name
-    ) %>%
-    mutate(
-      req_nutrient_raw = case_when(
-        req_nutrient == "energy" ~ "Energy",
-        req_nutrient == "protein" ~ "Protein",
-        req_nutrient == "lipids" ~ "Lipids",
-        req_nutrient == "carbohydrates" ~ "Carbohydrates",
-        req_nutrient == "vitaminc" ~ "VitaminC",
-        req_nutrient == "folate" ~ "Folate",
-        req_nutrient == "vitamina" ~ "VitaminA",
-        req_nutrient == "thiamine" ~ "Thiamine",
-        req_nutrient == "riboflavin" ~ "Riboflavin",
-        req_nutrient == "niacin" ~ "Niacin",
-        req_nutrient == "vitaminb12" ~ "VitaminB12",
-        req_nutrient == "magnesium" ~ "Magnesium",
-        req_nutrient == "phosphorus" ~ "Phosphorus",
-        req_nutrient == "sodium" ~ "Sodium",
-        req_nutrient == "calcium" ~ "Calcium",
-        req_nutrient == "iron" ~ "Iron",
-        req_nutrient == "zinc" ~ "Zinc",
-        TRUE ~ NA_character_
-      ),
-      nutriente = unname(req_to_tcac[req_nutrient_raw]),
-      age = as.character(age),
-      sex = as.character(sex)
-    ) %>%
-    filter(!is.na(nutriente)) %>%
-    select(age, sex, nutriente, all_of(value_name))
 }
 
 # ------------------------------------------------------------
@@ -157,27 +52,25 @@ tcac_nutrients <- c(
   "fosforo_mg", "sodio_mg", "calcio_mg", "hierro_mg", "zinc_mg"
 )
 
-req_name_map <- c(
-  energia_kcal            = "Energy",
-  proteina_g              = "Protein",
-  lipidos_g               = "Lipids",
-  carbohidratos_totales_g = "Carbohydrates",
-  vitamina_c_mg           = "VitaminC",
-  folatos_mcg             = "Folate",
-  vitamina_a_er           = "VitaminA",
-  tiamina_mg              = "Thiamine",
-  riboflavina_mg          = "Riboflavin",
-  niacina_mg              = "Niacin",
-  vitamina_b12_mcg        = "VitaminB12",
-  magnesio_mg             = "Magnesium",
-  fosforo_mg              = "Phosphorus",
-  sodio_mg                = "Sodium",
-  calcio_mg               = "Calcium",
-  hierro_mg               = "Iron",
-  zinc_mg                 = "Zinc"
+req_to_tcac <- c(
+  Energy = "energia_kcal",
+  Protein = "proteina_g",
+  Lipids = "lipidos_g",
+  Carbohydrates = "carbohidratos_totales_g",
+  VitaminC = "vitamina_c_mg",
+  Folate = "folatos_mcg",
+  VitaminA = "vitamina_a_er",
+  Thiamine = "tiamina_mg",
+  Riboflavin = "riboflavina_mg",
+  Niacin = "niacina_mg",
+  VitaminB12 = "vitamina_b12_mcg",
+  Magnesium = "magnesio_mg",
+  Phosphorus = "fosforo_mg",
+  Sodium = "sodio_mg",
+  Calcium = "calcio_mg",
+  Iron = "hierro_mg",
+  Zinc = "zinc_mg"
 )
-
-req_to_tcac <- setNames(names(req_name_map), req_name_map)
 
 # ------------------------------------------------------------
 # 4) Leer datos
@@ -186,7 +79,7 @@ cona <- read_excel(in_cona, sheet = "comp") %>% clean_names()
 tcac <- readRDS(in_tcac) %>% clean_names()
 
 if ("articulo" %in% names(tcac) && !("food" %in% names(tcac))) {
-  tcac <- tcac %>% dplyr::rename(food = articulo)
+  tcac <- tcac %>% rename(food = articulo)
 }
 
 # ------------------------------------------------------------
@@ -203,17 +96,11 @@ tcac <- tcac %>%
   mutate(food = norm_food(food))
 
 nutrient_cols <- intersect(tcac_nutrients, names(tcac))
-
-if (length(nutrient_cols) == 0) {
-  stop("No se encontraron nutrientes en tcac_master")
-}
+if (length(nutrient_cols) == 0) stop("No se encontraron nutrientes en tcac_master")
 
 tcac_food <- tcac %>%
-  dplyr::group_by(food) %>%
-  dplyr::summarise(
-    across(all_of(nutrient_cols), safe_mean),
-    .groups = "drop"
-  )
+  group_by(food) %>%
+  summarise(across(all_of(nutrient_cols), ~ mean(.x, na.rm = TRUE)), .groups = "drop")
 
 # ------------------------------------------------------------
 # 6) Unión y aportes
@@ -229,28 +116,20 @@ aporte_cols <- paste0(nutrient_cols, "_aporte")
 group_keys <- c("demo_group", "sex", "ciudad", "fecha")
 
 # ------------------------------------------------------------
-# 7) Totales dieta
+# 7) Totales por dieta
 # ------------------------------------------------------------
 diet_totals <- cona_eval %>%
-  dplyr::group_by(across(all_of(group_keys))) %>%
-  dplyr::summarise(
-    across(all_of(aporte_cols), ~ sum(.x, na.rm = TRUE)),
-    .groups = "drop"
-  )
+  group_by(across(all_of(group_keys))) %>%
+  summarise(across(all_of(aporte_cols), ~ sum(.x, na.rm = TRUE)), .groups = "drop")
 
-# ------------------------------------------------------------
-# 8) Aporte dentro de dieta
-# ------------------------------------------------------------
 food_contrib <- cona_eval %>%
-  dplyr::select(all_of(group_keys), food, quantity, all_of(aporte_cols)) %>%
+  select(all_of(group_keys), food, quantity, all_of(aporte_cols)) %>%
   pivot_longer(
     cols = all_of(aporte_cols),
     names_to = "nutriente",
     values_to = "aporte_absoluto"
   ) %>%
-  mutate(
-    nutriente = sub("_aporte$", "", nutriente)
-  )
+  mutate(nutriente = sub("_aporte$", "", nutriente))
 
 diet_totals_long <- diet_totals %>%
   pivot_longer(
@@ -258,16 +137,14 @@ diet_totals_long <- diet_totals %>%
     names_to = "nutriente",
     values_to = "total_nutriente_dieta"
   ) %>%
-  mutate(
-    nutriente = sub("_aporte$", "", nutriente)
-  )
+  mutate(nutriente = sub("_aporte$", "", nutriente))
 
 food_contrib <- food_contrib %>%
   left_join(
     diet_totals_long,
     by = c("demo_group", "sex", "ciudad", "fecha", "nutriente")
   ) %>%
-  dplyr::mutate(
+  mutate(
     pct_aporte_dieta = if_else(
       total_nutriente_dieta > 0,
       100 * aporte_absoluto / total_nutriente_dieta,
@@ -276,75 +153,146 @@ food_contrib <- food_contrib %>%
   )
 
 # ------------------------------------------------------------
-# 9) Cargar EER, EER_LL y UL
+# 8) Cargar EER, EER_LL y UL
 # ------------------------------------------------------------
-invisible(load_foodpricer_obj("EER"))
-invisible(load_foodpricer_obj("EER_LL"))
-invisible(load_foodpricer_obj("UL"))
+data("EER", package = "FoodpriceR", envir = environment())
+data("EER_LL", package = "FoodpriceR", envir = environment())
+data("UL", package = "FoodpriceR", envir = environment())
 
-req_eer <- build_req_long(
-  get("EER", envir = .GlobalEnv),
-  "eer",
-  req_to_tcac
-)
+# ------------------------------------------------------------
+# 9) Pasar requerimientos a formato largo
+# ------------------------------------------------------------
+req_eer <- as_tibble(EER)
+req_eer_ll <- as_tibble(EER_LL)
+req_ul <- as_tibble(UL)
 
-req_eer_ll <- build_req_long(
-  get("EER_LL", envir = .GlobalEnv),
-  "eer_ll",
-  req_to_tcac
-)
+names(req_eer) <- janitor::make_clean_names(names(req_eer))
+names(req_eer_ll) <- janitor::make_clean_names(names(req_eer_ll))
+names(req_ul) <- janitor::make_clean_names(names(req_ul))
 
-req_ul <- build_req_long(
-  get("UL", envir = .GlobalEnv),
-  "ul",
-  req_to_tcac
-)
+req_eer <- req_eer %>%
+  pivot_longer(-c(age, sex), names_to = "req_nutrient", values_to = "eer") %>%
+  mutate(
+    req_nutrient = case_when(
+      req_nutrient == "energy" ~ "Energy",
+      req_nutrient == "protein" ~ "Protein",
+      req_nutrient == "lipids" ~ "Lipids",
+      req_nutrient == "carbohydrates" ~ "Carbohydrates",
+      req_nutrient == "vitaminc" ~ "VitaminC",
+      req_nutrient == "folate" ~ "Folate",
+      req_nutrient == "vitamina" ~ "VitaminA",
+      req_nutrient == "thiamine" ~ "Thiamine",
+      req_nutrient == "riboflavin" ~ "Riboflavin",
+      req_nutrient == "niacin" ~ "Niacin",
+      req_nutrient == "vitaminb12" ~ "VitaminB12",
+      req_nutrient == "magnesium" ~ "Magnesium",
+      req_nutrient == "phosphorus" ~ "Phosphorus",
+      req_nutrient == "sodium" ~ "Sodium",
+      req_nutrient == "calcium" ~ "Calcium",
+      req_nutrient == "iron" ~ "Iron",
+      req_nutrient == "zinc" ~ "Zinc",
+      TRUE ~ NA_character_
+    ),
+    nutriente = req_to_tcac[req_nutrient],
+    age = as.character(age),
+    sex = as.character(sex)
+  ) %>%
+  filter(!is.na(nutriente)) %>%
+  select(age, sex, nutriente, eer)
+
+req_eer_ll <- req_eer_ll %>%
+  pivot_longer(-c(age, sex), names_to = "req_nutrient", values_to = "eer_ll") %>%
+  mutate(
+    req_nutrient = case_when(
+      req_nutrient == "energy" ~ "Energy",
+      req_nutrient == "protein" ~ "Protein",
+      req_nutrient == "lipids" ~ "Lipids",
+      req_nutrient == "carbohydrates" ~ "Carbohydrates",
+      req_nutrient == "vitaminc" ~ "VitaminC",
+      req_nutrient == "folate" ~ "Folate",
+      req_nutrient == "vitamina" ~ "VitaminA",
+      req_nutrient == "thiamine" ~ "Thiamine",
+      req_nutrient == "riboflavin" ~ "Riboflavin",
+      req_nutrient == "niacin" ~ "Niacin",
+      req_nutrient == "vitaminb12" ~ "VitaminB12",
+      req_nutrient == "magnesium" ~ "Magnesium",
+      req_nutrient == "phosphorus" ~ "Phosphorus",
+      req_nutrient == "sodium" ~ "Sodium",
+      req_nutrient == "calcium" ~ "Calcium",
+      req_nutrient == "iron" ~ "Iron",
+      req_nutrient == "zinc" ~ "Zinc",
+      TRUE ~ NA_character_
+    ),
+    nutriente = req_to_tcac[req_nutrient],
+    age = as.character(age),
+    sex = as.character(sex)
+  ) %>%
+  filter(!is.na(nutriente)) %>%
+  select(age, sex, nutriente, eer_ll)
+
+req_ul <- req_ul %>%
+  pivot_longer(-c(age, sex), names_to = "req_nutrient", values_to = "ul") %>%
+  mutate(
+    req_nutrient = case_when(
+      req_nutrient == "energy" ~ "Energy",
+      req_nutrient == "protein" ~ "Protein",
+      req_nutrient == "lipids" ~ "Lipids",
+      req_nutrient == "carbohydrates" ~ "Carbohydrates",
+      req_nutrient == "vitaminc" ~ "VitaminC",
+      req_nutrient == "folate" ~ "Folate",
+      req_nutrient == "vitamina" ~ "VitaminA",
+      req_nutrient == "thiamine" ~ "Thiamine",
+      req_nutrient == "riboflavin" ~ "Riboflavin",
+      req_nutrient == "niacin" ~ "Niacin",
+      req_nutrient == "vitaminb12" ~ "VitaminB12",
+      req_nutrient == "magnesium" ~ "Magnesium",
+      req_nutrient == "phosphorus" ~ "Phosphorus",
+      req_nutrient == "sodium" ~ "Sodium",
+      req_nutrient == "calcium" ~ "Calcium",
+      req_nutrient == "iron" ~ "Iron",
+      req_nutrient == "zinc" ~ "Zinc",
+      TRUE ~ NA_character_
+    ),
+    nutriente = req_to_tcac[req_nutrient],
+    age = as.character(age),
+    sex = as.character(sex)
+  ) %>%
+  filter(!is.na(nutriente)) %>%
+  select(age, sex, nutriente, ul)
 
 req_bounds <- req_eer %>%
   full_join(req_eer_ll, by = c("age", "sex", "nutriente")) %>%
   full_join(req_ul, by = c("age", "sex", "nutriente"))
 
 # ------------------------------------------------------------
-# 10) Estandarizar sexo para el cruce
+# 10) Unir requerimientos a food_contrib
 # ------------------------------------------------------------
-food_contrib_validated_base <- food_contrib %>%
-  dplyr::mutate(
-    sex_original = as.character(sex),
-    age = map_demo_group_to_age(as.character(demo_group))
-  )
-
-sex_req_values <- sort(unique(req_bounds$sex))
-print(sex_req_values)
-
-# Intento de homologación básica
-food_contrib_validated_base <- food_contrib_validated_base %>%
+food_contrib_validated <- food_contrib %>%
   mutate(
-    sex_req = case_when(
-      sex_original %in% c("0", "M", "Male", "Hombre", "Masculino", "masculino") &
-        any(sex_req_values %in% c("0", "M", "Male", "Hombre", "Masculino", "masculino")) ~
-        sex_req_values[sex_req_values %in% c("0", "M", "Male", "Hombre", "Masculino", "masculino")][1],
-      
-      sex_original %in% c("1", "F", "Female", "Mujer", "Femenino", "femenino") &
-        any(sex_req_values %in% c("1", "F", "Female", "Mujer", "Femenino", "femenino")) ~
-        sex_req_values[sex_req_values %in% c("1", "F", "Female", "Mujer", "Femenino", "femenino")][1],
-      
-      sex_original %in% sex_req_values ~ sex_original,
+    age = case_when(
+      demo_group == "[1,4)" ~ "1 a 3 años",
+      demo_group == "[4,9)" ~ "4 a 8 años",
+      demo_group %in% c("[9,14)", "[10,14)", "[10, 14)") ~ "9 a 13 años",
+      demo_group == "[14,19)" ~ "14 a 18 años",
+      demo_group == "[19,31)" ~ "19 a 30 años",
+      demo_group == "[31,51)" ~ "31 a 50 años",
+      demo_group == "[51,71)" ~ "51 a 70 años",
+      demo_group %in% c("[71,Inf)", "[71, Inf)") ~ ">70 años",
       TRUE ~ NA_character_
-    )
-  )
-
-food_contrib_validated <- food_contrib_validated_base %>%
+    ),
+    sex = as.character(sex)
+  ) %>%
   left_join(
     req_bounds,
-    by = c("age", "sex_req" = "sex", "nutriente")
+    by = c("age", "sex", "nutriente")
   )
 
 # ------------------------------------------------------------
 # 11) Resumen
 # ------------------------------------------------------------
 demo_summary <- food_contrib %>%
-  dplyr::group_by(demo_group, sex, nutriente, food) %>%
-  dplyr::summarise(
+  group_by(demo_group, sex, nutriente, food) %>%
+  summarise(
     aporte_promedio = mean(aporte_absoluto, na.rm = TRUE),
     pct_promedio_dieta = mean(pct_aporte_dieta, na.rm = TRUE),
     .groups = "drop"
@@ -352,24 +300,20 @@ demo_summary <- food_contrib %>%
   arrange(demo_group, sex, nutriente, desc(pct_promedio_dieta))
 
 top_foods_demo <- demo_summary %>%
-  dplyr::group_by(demo_group, sex, nutriente) %>%
+  group_by(demo_group, sex, nutriente) %>%
   slice_max(order_by = pct_promedio_dieta, n = 10, with_ties = FALSE) %>%
   ungroup()
 
 text_summary <- top_foods_demo %>%
   mutate(
-    resumen = paste0(
-      food, " aporta ",
-      round(pct_promedio_dieta, 2),
-      "% del total de ", nutriente
-    )
+    resumen = paste0(food, " aporta ", round(pct_promedio_dieta, 2), "% del total de ", nutriente)
   )
 
 # ------------------------------------------------------------
-# 12) Diagnóstico rápido
+# 12) Diagnóstico
 # ------------------------------------------------------------
 diag_match <- food_contrib_validated %>%
-  dplyr::summarise(
+  summarise(
     filas_totales = n(),
     filas_con_age = sum(!is.na(age)),
     filas_con_eer = sum(!is.na(eer)),
