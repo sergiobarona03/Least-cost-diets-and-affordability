@@ -2,13 +2,17 @@
 ## Cost of Nutritional Adequacy (CoNA)
 ## Figure 6: Shadow price elasticity heatmap over time
 ##           Discrete legend — data-driven breaks
-## Table 3:  Binding frequency — simple Excel
+## Table:    SPE summary by nutrient × member × city
+##           Mean (SD) of SPE over 2019–2024
+##           Pooled over months with SPE > 0 (binding only)
+##           and over all months (including non-binding)
 ########################################################
 
 library(tidyverse)
 library(readxl)
 library(scales)
 library(writexl)
+library(lubridate)
 
 ##----------------------------------------------------------
 ## Directories and data
@@ -64,23 +68,12 @@ nutrient_order_spe <- df.spe %>%
 df.spe <- df.spe %>%
   mutate(Nutrients = factor(Nutrients, levels = nutrient_order_spe))
 
-# One observation per nutrient × member × city × month — no aggregation needed
 spe_summary <- df.spe %>%
   select(Nutrients, member, ciudad_label, fecha, SPE) %>%
   rename(spe_val = SPE)
 
 ##----------------------------------------------------------
-## Discrete SPE bins — data-driven breaks
-##
-## Based on the empirical distribution (N = 10,368):
-##   = 0          : not binding (66.2% of obs)
-##   (0, 0.02]    : very low — Sodium, Niacin (near-zero binding)
-##   (0.02, 0.10] : low      — VitaminC, VitaminA
-##   (0.10, 0.40] : moderate — Protein, Zinc, VitaminB12
-##   > 0.40       : high     — Calcium (binds at 100%, mean SPE ~ 0.37)
-##
-## Palette: light grey → teal → gold → deep purple
-## Perceptually distinct, reads well in greyscale
+## Discrete SPE bins
 ##----------------------------------------------------------
 
 spe_breaks <- c(-Inf, 0, 0.02, 0.10, 0.40, Inf)
@@ -93,11 +86,11 @@ spe_labels <- c(
 )
 
 spe_palette <- c(
-  "0 (not binding)" = "#FFFFCC",   # light grey  — not binding
-  "(0, 0.02]"       = "#FEE08B",   # pale yellow — very low
-  "(0.02, 0.10]"    = "#FC8D59",   # orange      — low
-  "(0.10, 0.40]"    = "#D7191C",   # red         — moderate
-  "> 0.40"          = "#7B0000"    # dark red    — high
+  "0 (not binding)" = "#FFFFCC",
+  "(0, 0.02]"       = "#FEE08B",
+  "(0.02, 0.10]"    = "#FC8D59",
+  "(0.10, 0.40]"    = "#D7191C",
+  "> 0.40"          = "#7B0000"
 )
 
 spe_summary <- spe_summary %>%
@@ -111,9 +104,7 @@ spe_summary <- spe_summary %>%
   )
 
 ##----------------------------------------------------------
-## Figure 6: SPE heatmap over time — discrete legend
-##           x: fecha (monthly) | y: nutrients
-##           facet: city (rows) × member (columns)
+## Figure 6: SPE heatmap over time
 ##----------------------------------------------------------
 
 fig6 <- ggplot(spe_summary,
@@ -133,8 +124,8 @@ fig6 <- ggplot(spe_summary,
     expand            = c(0, 0)
   ) +
   labs(
-    title    = " ",
-    caption  = paste0(
+    title   = " ",
+    caption = paste0(
       "Note: The shadow price elasticity (SPE) measures the proportional reduction in diet cost ",
       "from a marginal relaxation of each nutritional lower bound,\n",
       "normalised by the constraint level. Only lower-bound constraints are shown. ",
@@ -151,10 +142,6 @@ fig6 <- ggplot(spe_summary,
   theme_bw(base_size = 10) +
   theme(
     text              = element_text(family = "serif"),
-    plot.title        = element_text(face = "bold", size = 11,
-                                     margin = margin(b = 4)),
-    plot.subtitle     = element_text(size = 9, color = "grey35",
-                                     margin = margin(b = 6)),
     plot.caption      = element_text(size = 7.5, color = "grey45",
                                      hjust = 0, margin = margin(t = 6)),
     axis.text.x       = element_text(size = 7, angle = 45, hjust = 1),
@@ -180,57 +167,124 @@ ggsave(file.path(out_fig, "fig6_spe_heatmap_cona.pdf"),
        fig6, width = 10, height = 7)
 
 ##----------------------------------------------------------
-## Prepare binding frequency data (df.limit)
-##----------------------------------------------------------
-
-df.limit <- df.limit %>%
-  mutate(
-    member       = recode(paste0(Sex, "_", Age), !!!member_labels),
-    member       = factor(member, levels = member_order),
-    ciudad_label = recode(ciudad, !!!city_labels)
-  )
-
-# Nutrient order: descending binding frequency
-nutrient_order_lim <- df.limit %>%
-  group_by(Nutrients) %>%
-  summarize(freq = mean(Limiting == 1, na.rm = TRUE), .groups = "drop") %>%
-  arrange(desc(freq)) %>%
-  pull(Nutrients)
-
-df.limit <- df.limit %>%
-  mutate(Nutrients = factor(Nutrients, levels = nutrient_order_lim))
-
-##----------------------------------------------------------
-## Table 3: Binding frequency — simple writexl table
+## Table: SPE summary by nutrient × member × city
 ##
-## Rows    = nutrients ordered by descending binding frequency
-## Columns = member × city
-## Values  = % of months where constraint is binding
+## Two statistics per cell:
+##   mean_all (SD): mean SPE over ALL months (including 0)
+##   mean_bind (SD): mean SPE over binding months only (SPE > 0)
+##
+## Compact version: pooled across cities
+## Full version: by member × city
 ##----------------------------------------------------------
 
-tab_binding <- df.limit %>%
+##----------------------------------------------------------
+## Compact: pooled across cities
+## Rows: nutrient | Columns: member
+## Cell: mean_all (SD) / mean_bind (SD)
+##----------------------------------------------------------
+
+tab_spe_compact <- spe_summary %>%
+  group_by(Nutrients, member) %>%
+  summarize(
+    mean_all  = round(mean(spe_val,              na.rm = TRUE), 3),
+    sd_all    = round(sd(spe_val,                na.rm = TRUE), 3),
+    mean_bind = round(mean(spe_val[spe_val > 0], na.rm = TRUE), 3),
+    sd_bind   = round(sd(spe_val[spe_val > 0],   na.rm = TRUE), 3),
+    pct_bind  = round(mean(spe_val > 0,          na.rm = TRUE) * 100, 1),
+    .groups   = "drop"
+  ) %>%
+  mutate(
+    cell_all  = paste0(mean_all,  " (", sd_all,  ")"),
+    cell_bind = paste0(
+      if_else(is.nan(mean_bind), "—", paste0(mean_bind, " (", sd_bind, ")")),
+      " [", pct_bind, "%]"
+    )
+  ) %>%
+  arrange(match(Nutrients, nutrient_order_spe))
+
+# Wide: mean over all months
+tab_wide_all <- tab_spe_compact %>%
+  select(Nutrients, member, cell_all) %>%
+  pivot_wider(names_from = member, values_from = cell_all) %>%
+  mutate(Statistic = "Mean SPE, all months (SD)") %>%
+  select(Nutrients, Statistic, `Adult male`, `Adult female`, `Female child`)
+
+# Wide: mean over binding months only
+tab_wide_bind <- tab_spe_compact %>%
+  select(Nutrients, member, cell_bind) %>%
+  pivot_wider(names_from = member, values_from = cell_bind) %>%
+  mutate(Statistic = "Mean SPE, binding months (SD) [% binding]") %>%
+  select(Nutrients, Statistic, `Adult male`, `Adult female`, `Female child`)
+
+tab_compact_final <- bind_rows(tab_wide_all, tab_wide_bind) %>%
+  arrange(match(Nutrients, nutrient_order_spe), Statistic)
+
+##----------------------------------------------------------
+## Full: by member × city
+## Rows: nutrient | Columns: member × city
+## Cell: mean_all (SD)
+##----------------------------------------------------------
+
+tab_spe_full <- spe_summary %>%
   group_by(Nutrients, member, ciudad_label) %>%
   summarize(
-    freq_pct = round(mean(Limiting == 1, na.rm = TRUE) * 100, 1),
+    mean_all = round(mean(spe_val,              na.rm = TRUE), 3),
+    sd_all   = round(sd(spe_val,                na.rm = TRUE), 3),
     .groups  = "drop"
   ) %>%
-  unite("col", member, ciudad_label, sep = " \u2014 ") %>%
-  pivot_wider(names_from  = col,
-              values_from = freq_pct) %>%
-  arrange(match(Nutrients, nutrient_order_lim))
+  mutate(
+    cell = paste0(mean_all, " (", sd_all, ")")
+  ) %>%
+  select(Nutrients, member, ciudad_label, cell) %>%
+  pivot_wider(
+    names_from  = c(member, ciudad_label),
+    values_from = cell,
+    names_glue  = "{member} | {ciudad_label}"
+  ) %>%
+  arrange(match(Nutrients, nutrient_order_spe)) %>%
+  select(
+    Nutrients,
+    starts_with("Adult male | Bogotá"),
+    starts_with("Adult male | Cali"),
+    starts_with("Adult male | Medellín"),
+    starts_with("Adult female | Bogotá"),
+    starts_with("Adult female | Cali"),
+    starts_with("Adult female | Medellín"),
+    starts_with("Female child | Bogotá"),
+    starts_with("Female child | Cali"),
+    starts_with("Female child | Medellín")
+  )
 
-note <- tibble(
+##----------------------------------------------------------
+## Notes
+##----------------------------------------------------------
+
+note_spe <- tibble(
   Note = paste0(
-    "Values represent the percentage of city-month observations ",
-    "(January 2019 - December 2024) in which each nutritional lower bound ",
-    "is binding for the cost-minimising CoNA diet. ",
-    "A constraint is binding when the optimal diet exactly meets the minimum ",
-    "nutritional requirement. Nutrients ordered by descending overall binding frequency."
+    "Each cell in the compact table reports the mean (SD) of the shadow price elasticity (SPE) ",
+    "over all months (row 1) and over binding months only, i.e. months where SPE > 0 (row 2), ",
+    "with the percentage of binding months shown in brackets.\n",
+    "The SPE measures the proportional reduction in CoNA cost from a 1% marginal relaxation of ",
+    "each nutritional lower bound, normalised by the constraint level.\n",
+    "A value of 0 indicates a non-binding (non-limiting) constraint in that month. ",
+    "Nutrients are ordered by descending binding frequency. ",
+    "Period: January 2019 -- December 2024. ",
+    "CoNA = Cost of Nutritional Adequacy."
   )
 )
 
+##----------------------------------------------------------
+## Save
+##----------------------------------------------------------
+
 write_xlsx(
-  list(`Table 3` = tab_binding,
-       `Notes`   = note),
-  file.path(out_tabs, "table3_binding_frequency_cona.xlsx")
+  list(
+    `Compact (pooled cities)` = tab_compact_final,
+    `Full (by member x city)` = tab_spe_full,
+    `Notes`                   = note_spe
+  ),
+  file.path(out_tabs, "table_spe_summary_cona.xlsx")
 )
+
+message("Figure 6 saved to: ", out_fig)
+message("SPE table saved to: ", out_tabs)
