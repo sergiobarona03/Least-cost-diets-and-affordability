@@ -11,7 +11,16 @@ library(FoodpriceR)
 ## Directories
 ##----------------------------------------------------------
 
-base_dir <- "C:\\Users\\Portatil\\Desktop\\Least-cost-diets-and-affordability\\Proyecto Interno"
+dirs <- c(
+  "C:/Users/Portatil/Desktop/Least-cost-diets-and-affordability/Proyecto Interno",
+  "C:/Users/danie/OneDrive/Escritorio/Least-cost-diets-and-affordability/Proyecto Interno"
+)
+
+base_dir <- dirs[dir.exists(dirs)][1]
+
+if (is.na(base_dir)) {
+  stop("Ninguno de los directorios existe")
+}
 
 aux_dir    <- file.path(base_dir, "food-security-paper", "models", "aux-functions")
 out_cona   <- file.path(base_dir, "food-security-paper", "output", "cona")
@@ -25,7 +34,7 @@ source(file.path(aux_dir, "CoNA_paper.R"))
 ##----------------------------------------------------------
 
 data_paper <- readRDS(file.path(input1_dir, "panel_city_month_food_1999_2025.rds")) %>%
-  select(ciudad, fecha, ano, mes_num, articulo, precio_100g,
+  dplyr::select(ciudad, fecha, ano, mes_num, articulo, precio_100g,
          grupos_gabas, subgrupos_gabas,
          gramos_g_1_intercambio_1_intercambio,
          energia_kcal, proteina_g, lipidos_g, carbohidratos_totales_g,
@@ -34,7 +43,7 @@ data_paper <- readRDS(file.path(input1_dir, "panel_city_month_food_1999_2025.rds
          magnesio_mg, fosforo_mg, sodio_mg, calcio_mg, hierro_mg, zinc_mg) %>%
   distinct() %>%
   filter(fecha >= "2019-01-01", fecha < "2025-01-01") %>%
-  rename(
+  dplyr::rename(
     Energy        = energia_kcal,
     Protein       = proteina_g,
     Lipids        = lipidos_g,
@@ -74,7 +83,7 @@ household_eer <- agg_eer %>%
     TRUE ~ cod_mun
   )) %>%
   filter(ciudad %in% c("BOGOTA", "MEDELLIN", "CALI")) %>%
-  rename(Age = rango, Sex = sex, Energy = eer) %>%
+  dplyr::rename(Age = rango, Sex = sex, Energy = eer) %>%
   mutate(Sex = if_else(Sex == "Masculino", 0L, 1L)) %>%
   as.data.frame()
 
@@ -128,7 +137,7 @@ for (i in dominios) {
     data.aux <- data_paper %>%
       filter(ciudad == i, fecha == t, !is.na(precio_100g)) %>%
       filter(articulo != "ARROZ PARA SOPA") %>%
-      rename(Price_100g = precio_100g, Food = articulo) %>%
+      dplyr::rename(Price_100g = precio_100g, Food = articulo) %>%
       as.data.frame()
     
     if (nrow(data.aux) == 0) next

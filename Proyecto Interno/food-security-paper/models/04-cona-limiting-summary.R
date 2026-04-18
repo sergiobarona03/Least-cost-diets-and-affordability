@@ -15,7 +15,17 @@ library(writexl)
 ## Directories
 ##----------------------------------------------------------
 
-base_dir <- "C:\\Users\\Portatil\\Desktop\\Least-cost-diets-and-affordability\\Proyecto Interno"
+dirs <- c(
+  "C:/Users/Portatil/Desktop/Least-cost-diets-and-affordability/Proyecto Interno",
+  "C:/Users/danie/OneDrive/Escritorio/Least-cost-diets-and-affordability/Proyecto Interno"
+)
+
+base_dir <- dirs[dir.exists(dirs)][1]
+
+if (is.na(base_dir)) {
+  stop("Ninguno de los directorios existe")
+}
+
 out_cona <- file.path(base_dir, "food-security-paper", "output", "cona")
 out_fig  <- file.path(base_dir, "food-security-paper", "output", "figures")
 out_tabs <- file.path(base_dir, "food-security-paper", "output", "tables")
@@ -58,8 +68,8 @@ df.limit <- df.limit %>%
 
 # Nutrient order: descending binding frequency
 nutrient_order <- df.limit %>%
-  group_by(Nutrients) %>%
-  summarize(freq = mean(Limiting == 1, na.rm = TRUE), .groups = "drop") %>%
+  dplyr::group_by(Nutrients) %>%
+  dplyr::summarize(freq = mean(Limiting == 1, na.rm = TRUE), .groups = "drop") %>%
   arrange(desc(freq)) %>%
   pull(Nutrients)
 
@@ -169,8 +179,8 @@ ggsave(file.path(out_fig, "fig_optratio_heatmap_cona.pdf"),
 ##----------------------------------------------------------
 
 tab_compact <- df.limit %>%
-  group_by(Nutrients, member) %>%
-  summarize(
+  dplyr::group_by(Nutrients, member) %>%
+  dplyr::summarize(
     pct_limiting = round(mean(ratio_bin == "= 100% (limiting)",
                               na.rm = TRUE) * 100, 1),
     mean_ratio   = round(mean(ratio, na.rm = TRUE), 1),
@@ -180,11 +190,11 @@ tab_compact <- df.limit %>%
   mutate(
     cell = paste0(pct_limiting, "% | ", mean_ratio, " (", sd_ratio, ")")
   ) %>%
-  select(Nutrients, member, cell) %>%
+  dplyr::select(Nutrients, member, cell) %>%
   pivot_wider(names_from  = member,
               values_from = cell) %>%
   arrange(match(Nutrients, nutrient_order)) %>%
-  select(Nutrients, `Adult male`, `Adult female`, `Female child`)
+  dplyr::select(Nutrients, `Adult male`, `Adult female`, `Female child`)
 
 ##----------------------------------------------------------
 ## Table: Full version by member × city
@@ -195,8 +205,8 @@ tab_compact <- df.limit %>%
 ##----------------------------------------------------------
 
 tab_full <- df.limit %>%
-  group_by(Nutrients, member, ciudad_label) %>%
-  summarize(
+  dplyr::group_by(Nutrients, member, ciudad_label) %>%
+  dplyr::summarize(
     pct_limiting = round(mean(ratio_bin == "= 100% (limiting)",
                               na.rm = TRUE) * 100, 1),
     mean_ratio   = round(mean(ratio, na.rm = TRUE), 1),
@@ -206,14 +216,14 @@ tab_full <- df.limit %>%
   mutate(
     cell = paste0(pct_limiting, "% | ", mean_ratio, " (", sd_ratio, ")")
   ) %>%
-  select(Nutrients, member, ciudad_label, cell) %>%
+  dplyr::select(Nutrients, member, ciudad_label, cell) %>%
   pivot_wider(
     names_from  = c(member, ciudad_label),
     values_from = cell,
     names_glue  = "{member} | {ciudad_label}"
   ) %>%
   arrange(match(Nutrients, nutrient_order)) %>%
-  select(
+  dplyr::select(
     Nutrients,
     starts_with("Adult male | Bogotá"),
     starts_with("Adult male | Cali"),

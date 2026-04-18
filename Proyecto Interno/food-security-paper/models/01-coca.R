@@ -10,7 +10,16 @@ library(readxl)
 ## Directorios
 ##----------------------------------------------------------
 
-base_dir <- "C:\\Users\\Portatil\\Desktop\\Least-cost-diets-and-affordability\\Proyecto Interno"
+dirs <- c(
+  "C:/Users/Portatil/Desktop/Least-cost-diets-and-affordability/Proyecto Interno",
+  "C:/Users/danie/OneDrive/Escritorio/Least-cost-diets-and-affordability/Proyecto Interno"
+)
+
+base_dir <- dirs[dir.exists(dirs)][1]
+
+if (is.na(base_dir)) {
+  stop("Ninguno de los directorios existe")
+}
 
 aux_dir  <- file.path(base_dir, "food-security-paper", "models", "aux-functions")
 out_coca <- file.path(base_dir, "food-security-paper", "output", "coca")
@@ -64,7 +73,7 @@ household_eer <- agg_eer %>%
 
 preparar_eer <- function(eer_ciudad) {
   eer_ciudad %>%
-    rename(Age = rango, Sex = sex, Energy = eer) %>%
+    dplyr::rename(Age = rango, Sex = sex, Energy = eer) %>%
     mutate(Sex = if_else(Sex == "Masculino", 0L, 1L)) %>%
     as.data.frame()
 }
@@ -88,7 +97,7 @@ for (i in dominios) {
     data.aux <- data_paper %>%
       filter(ciudad == i, fecha == t, !is.na(precio_100g)) %>%
       filter(articulo != "ARROZ PARA SOPA") %>%
-      rename(Price_100g = precio_100g,
+      dplyr::rename(Price_100g = precio_100g,
              Food       = articulo,
              Energy     = energia_kcal) %>%
       as.data.frame()

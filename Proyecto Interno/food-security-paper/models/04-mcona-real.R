@@ -13,13 +13,21 @@ library(lubridate)
 ##----------------------------------------------------------
 ## Directorios
 ##----------------------------------------------------------
+dirs <- c(
+  "C:/Users/Portatil/Desktop/Least-cost-diets-and-affordability/Proyecto Interno",
+  "C:/Users/danie/OneDrive/Escritorio/Least-cost-diets-and-affordability/Proyecto Interno"
+)
 
-base_dir    <- "C:\\Users\\sergio.barona\\Desktop\\Least-cost-diets-and-affordability\\Proyecto Interno\\food-security-paper"
+base_dir <- dirs[dir.exists(dirs)][1]
 
-ipc_path    <- file.path(base_dir, "input", "prices", "IPC.xls")
-ipc_in_path <- file.path(base_dir, "output", "cona-ipc",
+if (is.na(base_dir)) {
+  stop("Ninguno de los directorios existe")
+}
+
+ipc_path  <- file.path(base_dir, "food-security-paper","input", "prices","IPC.xls")
+ipc_in_path <- file.path(base_dir, "food-security-paper", "output", "cona-ipc",
                          "230326_cona_ipc_full.rds")
-out_real    <- file.path(base_dir, "output", "real")
+out_real    <- file.path(base_dir, "food-security-paper", "output", "real")
 
 ##----------------------------------------------------------
 ## Funciones auxiliares
@@ -90,8 +98,8 @@ cona_ipc_real <- deflactar_costos(cona_ipc_cost)
 ##----------------------------------------------------------
 
 cona_ipc_pc_real <- cona_ipc_real %>%
-  group_by(ciudad, fecha, alpha_val) %>%
-  summarize(
+  dplyr::group_by(ciudad, fecha, alpha_val) %>%
+  dplyr::summarize(
     hh_total_nom   = sum(cost_day,  na.rm = TRUE),
     hh_total_real   = sum(cost_day_real,  na.rm = TRUE),
     n_members  = n(),

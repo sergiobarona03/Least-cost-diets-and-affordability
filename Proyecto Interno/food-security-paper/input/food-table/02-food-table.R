@@ -12,7 +12,16 @@ library(tidyverse)
 library(readxl)
 
 # Directorio base
-base_dir <- "C:\\Users\\Portatil\\Desktop\\Least-cost-diets-and-affordability\\Proyecto Interno\\"
+dirs <- c(
+  "C:/Users/Portatil/Desktop/Least-cost-diets-and-affordability/Proyecto Interno",
+  "C:/Users/danie/OneDrive/Escritorio/Least-cost-diets-and-affordability/Proyecto Interno"
+)
+
+base_dir <- dirs[dir.exists(dirs)][1]
+
+if (is.na(base_dir)) {
+  stop("Ninguno de los directorios existe")
+}
 
 # Directorio de precios
 price_dir   <- file.path(base_dir, "food-security-paper/output/forecasting_fullsample")
@@ -73,7 +82,7 @@ prices_ext <- prices_extended %>%
     articulo = as.character(articulo),
     ciudad = norm_city(ciudad)
   ) %>%
-  filter(ciudad %in% cities_use_std)
+  dplyr::filter(ciudad %in% c("BOGOTA", "MEDELLIN", "CALI"))
 
 # ------------------------------------------------------------
 # 3) Leer TCAC y hacer merge (price-tcac)
@@ -170,6 +179,26 @@ appendix_table = panel %>%
   ) %>%
   arrange(grupos_gabas, subgrupos_gabas, articulo)
 
+numeric_vars <- c(
+  "parte_comestible_percent",
+  "energia_kcal",
+  "proteina_g",
+  "lipidos_g",
+  "carbohidratos_totales_g",
+  "calcio_mg",
+  "hierro_mg",
+  "zinc_mg",
+  "magnesio_mg",
+  "fosforo_mg",
+  "vitamina_c_mg",
+  "tiamina_mg",
+  "riboflavina_mg",
+  "niacina_mg",
+  "folatos_mcg",
+  "vitamina_b12_mcg",
+  "vitamina_a_er",
+  "sodio_mg"
+)
 
 library(kableExtra)
 

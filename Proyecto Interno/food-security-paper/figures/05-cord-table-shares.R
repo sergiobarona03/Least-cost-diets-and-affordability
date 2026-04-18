@@ -14,7 +14,17 @@ library(lubridate)
 ## Directories
 ##----------------------------------------------------------
 
-base_dir   <- "C:\\Users\\Portatil\\Desktop\\Least-cost-diets-and-affordability\\Proyecto Interno"
+dirs <- c(
+  "C:/Users/Portatil/Desktop/Least-cost-diets-and-affordability/Proyecto Interno",
+  "C:/Users/danie/OneDrive/Escritorio/Least-cost-diets-and-affordability/Proyecto Interno"
+)
+
+base_dir <- dirs[dir.exists(dirs)][1]
+
+if (is.na(base_dir)) {
+  stop("Ninguno de los directorios existe")
+}
+
 out_cord   <- file.path(base_dir, "food-security-paper", "output", "cord")
 out_tab    <- file.path(base_dir, "food-security-paper", "output", "tables")
 input1_dir <- file.path(base_dir, "food-security-paper", "output", "tcac_food_table")
@@ -39,7 +49,7 @@ data_paper_prices <- readRDS(
          gramos_g_1_intercambio_1_intercambio) %>%
   distinct() %>%
   filter(fecha >= "2019-01-01", fecha < "2025-01-01") %>%
-  rename(
+  dplyr::rename(
     Food      = articulo,
     Serving_g = gramos_g_1_intercambio_1_intercambio,
     Group     = grupos_gabas
@@ -102,22 +112,22 @@ comp_cost <- df.comp %>%
 
 compute_shares <- function(df, group_vars) {
   df %>%
-    group_by(across(all_of(c(group_vars, "fecha", "Group_en")))) %>%
+    dplyr::group_by(across(all_of(c(group_vars, "fecha", "Group_en")))) %>%
     dplyr::summarize(cost_group = sum(cost_contrib, na.rm = TRUE),
                      .groups = "drop") %>%
-    group_by(across(all_of(c(group_vars, "fecha")))) %>%
-    mutate(
+    dplyr::group_by(across(all_of(c(group_vars, "fecha")))) %>%
+    dplyr::mutate(
       total_cost = sum(cost_group),
       share      = cost_group / total_cost * 100
     ) %>%
     ungroup() %>%
-    group_by(across(all_of(c(group_vars, "Group_en")))) %>%
+    dplyr::group_by(across(all_of(c(group_vars, "Group_en")))) %>%
     dplyr::summarize(
       mean_share = round(mean(share, na.rm = TRUE), 1),
       .groups    = "drop"
     ) %>%
-    mutate(Group_en = factor(Group_en, levels = group_order)) %>%
-    arrange(across(all_of(group_vars)), Group_en)
+    dplyr::mutate(Group_en = factor(Group_en, levels = group_order)) %>%
+    dplyr::arrange(across(all_of(group_vars)), Group_en)
 }
 
 ##----------------------------------------------------------
@@ -131,7 +141,7 @@ table_city_year <- shares_city_year %>%
   pivot_wider(names_from  = year,
               values_from = mean_share) %>%
   arrange(ciudad_label, Group_en) %>%
-  rename(City         = ciudad_label,
+  dplyr::rename(City         = ciudad_label,
          `Food group` = Group_en)
 
 ##----------------------------------------------------------
@@ -145,7 +155,7 @@ table_pooled_year <- shares_pooled_year %>%
   pivot_wider(names_from  = year,
               values_from = mean_share) %>%
   arrange(Group_en) %>%
-  rename(`Food group` = Group_en)
+  dplyr::rename(`Food group` = Group_en)
 
 ##----------------------------------------------------------
 ## Table 3: By city, pooled across years (period mean)
@@ -169,7 +179,7 @@ shares_city_pooled <- comp_cost %>%
   pivot_wider(names_from  = ciudad_label,
               values_from = mean_share) %>%
   arrange(Group_en) %>%
-  rename(`Food group` = Group_en) %>%
+  dplyr::rename(`Food group` = Group_en) %>%
   select(`Food group`, Bogotá, Cali, Medellín)
 
 ##----------------------------------------------------------
@@ -182,7 +192,7 @@ write_xlsx(
     `Pooled across cities` = table_pooled_year,
     `By city (period mean)` = shares_city_pooled,
     `Raw values`           = shares_city_year %>%
-      rename(City           = ciudad_label,
+      dplyr::rename(City           = ciudad_label,
              `Food group`   = Group_en,
              Year           = year,
              `Mean share (%)` = mean_share)

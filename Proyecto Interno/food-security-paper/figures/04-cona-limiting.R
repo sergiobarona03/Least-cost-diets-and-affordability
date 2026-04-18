@@ -18,7 +18,17 @@ library(lubridate)
 ## Directories and data
 ##----------------------------------------------------------
 
-base_dir <- "C:\\Users\\Portatil\\Desktop\\Least-cost-diets-and-affordability\\Proyecto Interno"
+dirs <- c(
+  "C:/Users/Portatil/Desktop/Least-cost-diets-and-affordability/Proyecto Interno",
+  "C:/Users/danie/OneDrive/Escritorio/Least-cost-diets-and-affordability/Proyecto Interno"
+)
+
+base_dir <- dirs[dir.exists(dirs)][1]
+
+if (is.na(base_dir)) {
+  stop("Ninguno de los directorios existe")
+}
+
 out_cona <- file.path(base_dir, "food-security-paper", "output", "cona")
 out_fig  <- file.path(base_dir, "food-security-paper", "output", "figures")
 out_tabs <- file.path(base_dir, "food-security-paper", "output", "tables")
@@ -60,8 +70,8 @@ df.spe <- df.spe %>%
 
 # Nutrient order: descending % binding across all observations
 nutrient_order_spe <- df.spe %>%
-  group_by(Nutrients) %>%
-  summarize(pct_bind = mean(SPE > 0, na.rm = TRUE), .groups = "drop") %>%
+  dplyr::group_by(Nutrients) %>%
+  dplyr::summarize(pct_bind = mean(SPE > 0, na.rm = TRUE), .groups = "drop") %>%
   arrange(desc(pct_bind)) %>%
   pull(Nutrients)
 
@@ -70,7 +80,7 @@ df.spe <- df.spe %>%
 
 spe_summary <- df.spe %>%
   select(Nutrients, member, ciudad_label, fecha, SPE) %>%
-  rename(spe_val = SPE)
+  dplyr::rename(spe_val = SPE)
 
 ##----------------------------------------------------------
 ## Discrete SPE bins
@@ -184,8 +194,8 @@ ggsave(file.path(out_fig, "fig6_spe_heatmap_cona.pdf"),
 ##----------------------------------------------------------
 
 tab_spe_compact <- spe_summary %>%
-  group_by(Nutrients, member) %>%
-  summarize(
+  dplyr::group_by(Nutrients, member) %>%
+  dplyr::summarize(
     mean_all  = round(mean(spe_val,              na.rm = TRUE), 3),
     sd_all    = round(sd(spe_val,                na.rm = TRUE), 3),
     mean_bind = round(mean(spe_val[spe_val > 0], na.rm = TRUE), 3),
@@ -204,14 +214,14 @@ tab_spe_compact <- spe_summary %>%
 
 # Wide: mean over all months
 tab_wide_all <- tab_spe_compact %>%
-  select(Nutrients, member, cell_all) %>%
+  dplyr::select(Nutrients, member, cell_all) %>%
   pivot_wider(names_from = member, values_from = cell_all) %>%
   mutate(Statistic = "Mean SPE, all months (SD)") %>%
   select(Nutrients, Statistic, `Adult male`, `Adult female`, `Female child`)
 
 # Wide: mean over binding months only
 tab_wide_bind <- tab_spe_compact %>%
-  select(Nutrients, member, cell_bind) %>%
+  dplyr::select(Nutrients, member, cell_bind) %>%
   pivot_wider(names_from = member, values_from = cell_bind) %>%
   mutate(Statistic = "Mean SPE, binding months (SD) [% binding]") %>%
   select(Nutrients, Statistic, `Adult male`, `Adult female`, `Female child`)
@@ -226,8 +236,8 @@ tab_compact_final <- bind_rows(tab_wide_all, tab_wide_bind) %>%
 ##----------------------------------------------------------
 
 tab_spe_full <- spe_summary %>%
-  group_by(Nutrients, member, ciudad_label) %>%
-  summarize(
+  dplyr::group_by(Nutrients, member, ciudad_label) %>%
+  dplyr::summarize(
     mean_all = round(mean(spe_val,              na.rm = TRUE), 3),
     sd_all   = round(sd(spe_val,                na.rm = TRUE), 3),
     .groups  = "drop"

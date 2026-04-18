@@ -79,7 +79,7 @@ cona <- read_excel(in_cona, sheet = "comp") %>% clean_names()
 tcac <- readRDS(in_tcac) %>% clean_names()
 
 if ("articulo" %in% names(tcac) && !("food" %in% names(tcac))) {
-  tcac <- tcac %>% rename(food = articulo)
+  tcac <- tcac %>% dplyr::rename(food = articulo)
 }
 
 # ------------------------------------------------------------
@@ -99,8 +99,8 @@ nutrient_cols <- intersect(tcac_nutrients, names(tcac))
 if (length(nutrient_cols) == 0) stop("No se encontraron nutrientes en tcac_master")
 
 tcac_food <- tcac %>%
-  group_by(food) %>%
-  summarise(across(all_of(nutrient_cols), ~ mean(.x, na.rm = TRUE)), .groups = "drop")
+  dplyr::group_by(food) %>%
+  dplyr::summarise(across(all_of(nutrient_cols), ~ mean(.x, na.rm = TRUE)), .groups = "drop")
 
 # ------------------------------------------------------------
 # 6) Unión y aportes
@@ -119,11 +119,11 @@ group_keys <- c("demo_group", "sex", "ciudad", "fecha")
 # 7) Totales por dieta
 # ------------------------------------------------------------
 diet_totals <- cona_eval %>%
-  group_by(across(all_of(group_keys))) %>%
-  summarise(across(all_of(aporte_cols), ~ sum(.x, na.rm = TRUE)), .groups = "drop")
+  dplyr::group_by(across(all_of(group_keys))) %>%
+  dplyr::summarise(across(all_of(aporte_cols), ~ sum(.x, na.rm = TRUE)), .groups = "drop")
 
 food_contrib <- cona_eval %>%
-  select(all_of(group_keys), food, quantity, all_of(aporte_cols)) %>%
+  dplyr::select(all_of(group_keys), food, quantity, all_of(aporte_cols)) %>%
   pivot_longer(
     cols = all_of(aporte_cols),
     names_to = "nutriente",
@@ -291,8 +291,8 @@ food_contrib_validated <- food_contrib %>%
 # 11) Resumen
 # ------------------------------------------------------------
 demo_summary <- food_contrib %>%
-  group_by(demo_group, sex, nutriente, food) %>%
-  summarise(
+  dplyr::group_by(demo_group, sex, nutriente, food) %>%
+  dplyr::summarise(
     aporte_promedio = mean(aporte_absoluto, na.rm = TRUE),
     pct_promedio_dieta = mean(pct_aporte_dieta, na.rm = TRUE),
     .groups = "drop"
@@ -310,21 +310,7 @@ text_summary <- top_foods_demo %>%
   )
 
 # ------------------------------------------------------------
-# 12) Diagnóstico
-# ------------------------------------------------------------
-diag_match <- food_contrib_validated %>%
-  summarise(
-    filas_totales = n(),
-    filas_con_age = sum(!is.na(age)),
-    filas_con_eer = sum(!is.na(eer)),
-    filas_con_eer_ll = sum(!is.na(eer_ll)),
-    filas_con_ul = sum(!is.na(ul))
-  )
-
-print(diag_match)
-
-# ------------------------------------------------------------
-# 13) Guardar
+# 12) Guardar
 # ------------------------------------------------------------
 saveRDS(food_contrib, file.path(out_dir, "food_contribution.rds"))
 saveRDS(food_contrib_validated, file.path(out_dir, "food_contribution_validated.rds"))
@@ -335,8 +321,7 @@ write_xlsx(
     food_contribution = food_contrib,
     food_contribution_validated = food_contrib_validated,
     top_foods = top_foods_demo,
-    resumen = text_summary,
-    diagnostico_match = diag_match
+    resumen = text_summary
   ),
   path = file.path(out_dir, "outputs.xlsx")
 )

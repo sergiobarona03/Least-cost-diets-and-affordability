@@ -19,10 +19,19 @@ library(writexl)
 ## Directories
 ##----------------------------------------------------------
 
-base_dir <- "C:\\Users\\sergio.barona\\Desktop\\Least-cost-diets-and-affordability\\Proyecto Interno\\food-security-paper"
-out_real <- file.path(base_dir, "output", "real")
-out_fig  <- file.path(base_dir, "output", "cona-ipc")
-out_tab  <- file.path(base_dir, "output", "cona-ipc")
+dirs <- c(
+  "C:/Users/Portatil/Desktop/Least-cost-diets-and-affordability/Proyecto Interno",
+  "C:/Users/danie/OneDrive/Escritorio/Least-cost-diets-and-affordability/Proyecto Interno"
+)
+
+base_dir <- dirs[dir.exists(dirs)][1]
+
+if (is.na(base_dir)) {
+  stop("Ninguno de los directorios existe")
+}
+out_real <- file.path(base_dir, "food-security-paper", "output", "real")
+out_fig  <- file.path(base_dir, "food-security-paper", "output", "cona-ipc")
+out_tab  <- file.path(base_dir, "food-security-paper", "output", "cona-ipc")
 
 ##----------------------------------------------------------
 ## Load validated deflated per capita costs
@@ -171,8 +180,8 @@ ggsave(file.path(out_fig, "fig_ipc_cost_series.pdf"),
 
 # Period mean by alpha × city
 cost_mean <- cost_pc %>%
-  group_by(alpha_val, alpha_chr, ciudad, ciudad_label) %>%
-  summarize(
+  dplyr::group_by(alpha_val, alpha_chr, ciudad, ciudad_label) %>%
+  dplyr::summarize(
     mean_cost = mean(cost_pc_real, na.rm = TRUE),
     sd_cost   = sd(cost_pc_real,   na.rm = TRUE),
     .groups   = "drop"
@@ -181,7 +190,7 @@ cost_mean <- cost_pc %>%
 # E* = period mean at alpha = 0
 cost_star <- cost_mean %>%
   filter(alpha_val == 0) %>%
-  select(ciudad, cost_star = mean_cost)
+  dplyr::select(ciudad, cost_star = mean_cost)
 
 cost_premium <- cost_mean %>%
   left_join(cost_star, by = "ciudad") %>%
@@ -234,12 +243,12 @@ ggsave(file.path(out_fig, "fig_ipc_cost_premium.pdf"),
 # Monthly premium relative to alpha = 0 in that same month
 cost_star_monthly <- cost_pc %>%
   filter(alpha_val == 0) %>%
-  select(ciudad, ciudad_label, fecha, cost_star_m = cost_pc_real)
+  dplyr::select(ciudad, ciudad_label, fecha, cost_star_m = cost_pc_real)
 
 premium_monthly <- cost_pc %>%
   filter(alpha_val > 0) %>%
   left_join(cost_star_monthly, by = c("ciudad", "ciudad_label", "fecha")) %>%
-  mutate(
+  dplyr::mutate(
     premium_pct = (cost_pc_real / cost_star_m)
   )
 

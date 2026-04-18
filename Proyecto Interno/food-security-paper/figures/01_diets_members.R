@@ -17,7 +17,17 @@ library(scales)
 ## Directories
 ##----------------------------------------------------------
 
-base_dir <- "C:\\Users\\Portatil\\Desktop\\Least-cost-diets-and-affordability\\Proyecto Interno"
+dirs <- c(
+  "C:/Users/Portatil/Desktop/Least-cost-diets-and-affordability/Proyecto Interno",
+  "C:/Users/danie/OneDrive/Escritorio/Least-cost-diets-and-affordability/Proyecto Interno"
+)
+
+base_dir <- dirs[dir.exists(dirs)][1]
+
+if (is.na(base_dir)) {
+  stop("Ninguno de los directorios existe")
+}
+
 out_real <- file.path(base_dir, "food-security-paper", "output", "real")
 out_fig  <- file.path(base_dir, "food-security-paper", "output", "figures")
 
@@ -197,8 +207,8 @@ cona_points <- diets_points %>% filter(diet == "CoNA")
 
 # Period mean per member × city
 means_1000kcal <- cona_1000kcal %>%
-  group_by(member, ciudad_label) %>%
-  summarize(mean_cost = mean(Cost_1000kcal_real, na.rm = TRUE),
+  dplyr::group_by(member, ciudad_label) %>%
+  dplyr::summarize(mean_cost = mean(Cost_1000kcal_real, na.rm = TRUE),
             sd = sd(Cost_1000kcal_real, na.rm = TRUE))
 
 fig2 <- ggplot(cona_1000kcal,
@@ -256,15 +266,15 @@ message("Figures 1\u20132 saved to: ", out_fig)
 ##----------------------------------------------------------
 
 diets_real_yoy <- diets_real %>%
-  group_by(ciudad_label, member, diet) %>%
-  arrange(fecha, .by_group = TRUE) %>%
+  dplyr::group_by(ciudad_label, member, diet) %>%
+  dplyr::arrange(fecha, .by_group = TRUE) %>%
   mutate(
     yoy_cost_day_real = ((cost_day_real / lag(cost_day_real, 12)) - 1) * 100
   ) %>%
   ungroup()
 
 diets_points_yoy <- diets_real_yoy %>%
-  filter(month(fecha) == 12, !is.na(yoy_cost_day_real))
+  dplyr::filter(month(fecha) == 12, !is.na(yoy_cost_day_real))
 
 fig1_yoy <- ggplot(diets_real_yoy %>% filter(!is.na(yoy_cost_day_real)),
                    aes(x        = fecha,
@@ -306,8 +316,8 @@ ggsave(file.path(out_fig, "fig1_real_yoy_daily_cost_by_member.pdf"),
 ##----------------------------------------------------------
 
 cona_1000kcal_yoy <- cona_1000kcal %>%
-  group_by(ciudad_label, member) %>%
-  arrange(fecha, .by_group = TRUE) %>%
+  dplyr::group_by(ciudad_label, member) %>%
+  dplyr::arrange(fecha, .by_group = TRUE) %>%
   mutate(
     yoy_Cost_1000kcal_real = ((Cost_1000kcal_real / lag(Cost_1000kcal_real, 12)) - 1) * 100
   ) %>%

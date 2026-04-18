@@ -11,7 +11,16 @@ library(FoodpriceR)
 ## Directories
 ##----------------------------------------------------------
 
-base_dir   <- "C:\\Users\\Portatil\\Desktop\\Least-cost-diets-and-affordability\\Proyecto Interno"
+dirs <- c(
+  "C:/Users/Portatil/Desktop/Least-cost-diets-and-affordability/Proyecto Interno",
+  "C:/Users/danie/OneDrive/Escritorio/Least-cost-diets-and-affordability/Proyecto Interno"
+)
+
+base_dir <- dirs[dir.exists(dirs)][1]
+
+if (is.na(base_dir)) {
+  stop("Ninguno de los directorios existe")
+}
 
 aux_dir    <- file.path(base_dir, "food-security-paper", "models",  "aux-functions")
 out_gaba   <- file.path(base_dir, "food-security-paper", "output",  "gaba")
@@ -52,7 +61,7 @@ map_group_paper <- c(
 data_paper <- readRDS(
   file.path(input1_dir, "panel_city_month_food_1999_2025.rds")
 ) %>%
-  select(ciudad, fecha, ano, mes_num, articulo, precio_100g,
+  dplyr::select(ciudad, fecha, ano, mes_num, articulo, precio_100g,
          grupos_gabas, subgrupos_gabas,
          gramos_g_1_intercambio_1_intercambio,
          energia_kcal, proteina_g, lipidos_g, carbohidratos_totales_g,
@@ -61,7 +70,7 @@ data_paper <- readRDS(
          magnesio_mg, fosforo_mg, sodio_mg, calcio_mg, hierro_mg, zinc_mg) %>%
   distinct() %>%
   filter(fecha >= "2019-01-01", fecha < "2025-01-01") %>%
-  rename(
+  dplyr::rename(
     Energy        = energia_kcal,
     Protein       = proteina_g,
     Lipids        = lipidos_g,
@@ -112,8 +121,8 @@ serv_adj <- read_excel(
   file.path(out_gaba, "230326_ajd_gabas_exchanges.xlsx")
 ) %>%
   filter(cod_mun != "Nacional") %>%
-  select(-c("e_kcal", "factor_ajuste", "n_exchanges", "e_kcal_adj")) %>%
-  rename(
+  dplyr::select(-c("e_kcal", "factor_ajuste", "n_exchanges", "e_kcal_adj")) %>%
+  dplyr::rename(
     Age     = rango,
     Sex     = sex,
     Group   = grupo_principal,
@@ -132,7 +141,7 @@ serv_adj <- read_excel(
                     "11001" = "BOGOTA",
                     "76001" = "CALI")
   ) %>%
-  select(-cod_mun) %>%
+  dplyr::select(-cod_mun) %>%
   filter(Group %in% GROUP_CANON)
 
 ##----------------------------------------------------------
@@ -175,7 +184,7 @@ for (i in dominios) {
     
     data.aux <- data_paper %>%
       filter(ciudad == i, fecha == t, !is.na(precio_100g)) %>%
-      rename(Food = articulo) %>%
+      dplyr::rename(Food = articulo) %>%
       as.data.frame()
     
     if (nrow(data.aux) == 0) next

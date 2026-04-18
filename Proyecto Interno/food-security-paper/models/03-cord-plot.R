@@ -13,7 +13,17 @@ library(patchwork)
 ## Directories and data
 ##----------------------------------------------------------
 
-base_dir   <- "C:\\Users\\Portatil\\Desktop\\Least-cost-diets-and-affordability\\Proyecto Interno"
+dirs <- c(
+  "C:/Users/Portatil/Desktop/Least-cost-diets-and-affordability/Proyecto Interno",
+  "C:/Users/danie/OneDrive/Escritorio/Least-cost-diets-and-affordability/Proyecto Interno"
+)
+
+base_dir <- dirs[dir.exists(dirs)][1]
+
+if (is.na(base_dir)) {
+  stop("Ninguno de los directorios existe")
+}
+
 out_cord   <- file.path(base_dir, "food-security-paper", "output", "cord")
 out_fig    <- file.path(base_dir, "food-security-paper", "output", "cord")
 out_tabs   <- file.path(base_dir, "food-security-paper", "output", "cord")
@@ -108,8 +118,8 @@ df.comp <- df.comp %>%
 
 # Per capita cost (mean across members) by city × date
 cost_pc <- df.cost %>%
-  group_by(ciudad, ciudad_label, fecha, year) %>%
-  summarize(
+  dplyr::group_by(ciudad, ciudad_label, fecha, year) %>%
+  dplyr::summarize(
     cost_percap    = mean(cost_day,  na.rm = TRUE),
     cost_household = sum(cost_day,   na.rm = TRUE),
     .groups = "drop"
@@ -176,8 +186,8 @@ ggsave(file.path(out_fig, "fig2_cord_by_member.png"),
 ##----------------------------------------------------------
 
 comp_group <- df.comp %>%
-  group_by(ciudad_label, fecha, member, Group_en) %>%
-  summarize(total_servings = sum(Number_Serving, na.rm = TRUE),
+  dplyr::group_by(ciudad_label, fecha, member, Group_en) %>%
+  dplyr::summarize(total_servings = sum(Number_Serving, na.rm = TRUE),
             .groups = "drop")
 
 fig3 <- ggplot(comp_group,
@@ -218,8 +228,8 @@ ggsave(file.path(out_fig, "fig3_cord_comp_group_area.png"),
 
 # Keep foods appearing in ≥ 10% of city-month obs to avoid clutter
 top_foods <- df.comp %>%
-  group_by(Food) %>%
-  summarize(freq = n_distinct(paste(ciudad, fecha)), .groups = "drop") %>%
+  dplyr::group_by(Food) %>%
+  dplyr::summarize(freq = n_distinct(paste(ciudad, fecha)), .groups = "drop") %>%
   mutate(share = freq / max(freq)) %>%
   filter(share >= 0.10) %>%
   arrange(Group = df.comp$Group[match(Food, df.comp$Food)], Food) %>%
@@ -277,8 +287,8 @@ ggsave(file.path(out_fig, "fig4_cord_food_heatmap.png"),
 
 food_freq <- df.comp %>%
   filter(Food %in% top_foods) %>%
-  group_by(Food, Group_en, member, ciudad_label) %>%
-  summarize(
+  dplyr::group_by(Food, Group_en, member, ciudad_label) %>%
+  dplyr::summarize(
     freq     = mean(Number_Serving > 0, na.rm = TRUE),
     .groups  = "drop"
   ) %>%
@@ -320,8 +330,8 @@ message("Figures 1–5 saved to: ", out_fig)
 ##----------------------------------------------------------
 
 tab_cost <- df.cost %>%
-  group_by(year, member, ciudad_label) %>%
-  summarize(mean_cost = mean(cost_day, na.rm = TRUE), .groups = "drop") %>%
+  dplyr::group_by(year, member, ciudad_label) %>%
+  dplyr::summarize(mean_cost = mean(cost_day, na.rm = TRUE), .groups = "drop") %>%
   pivot_wider(names_from = ciudad_label, values_from = mean_cost) %>%
   arrange(member, year) %>%
   mutate(across(where(is.numeric), ~ round(.x, 1)))

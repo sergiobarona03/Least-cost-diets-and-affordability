@@ -19,7 +19,16 @@ library(writexl)
 ## Directories
 ##----------------------------------------------------------
 
-base_dir   <- "C:\\Users\\sergio.barona\\Desktop\\Least-cost-diets-and-affordability\\Proyecto Interno"
+dirs <- c(
+  "C:/Users/Portatil/Desktop/Least-cost-diets-and-affordability/Proyecto Interno",
+  "C:/Users/danie/OneDrive/Escritorio/Least-cost-diets-and-affordability/Proyecto Interno"
+)
+
+base_dir <- dirs[dir.exists(dirs)][1]
+
+if (is.na(base_dir)) {
+  stop("Ninguno de los directorios existe")
+}
 out_ipc    <- file.path(base_dir, "food-security-paper", "output", "cona-ipc")
 out_real   <- file.path(base_dir, "food-security-paper", "output", "real")
 income_dir <- file.path(base_dir, "food-security-paper", "output", "income_col")
@@ -50,7 +59,7 @@ income_data <- read.csv(file.path(income_dir, "deciles_food_income.csv")) %>%
 ##----------------------------------------------------------
 
 income_monthly <- income_data  %>% distinct() %>% select(-deciles) %>%
-  group_by(dominio, year, mes, fecha) %>%
+  dplyr::group_by(dominio, year, mes, fecha) %>%
   mutate(
     deciles_wtd = as.integer(cut(
       per_capita_income,
@@ -60,7 +69,7 @@ income_monthly <- income_data  %>% distinct() %>% select(-deciles) %>%
       include.lowest = TRUE,
       right          = TRUE
     ))
-  ) %>% rename(deciles = deciles_wtd)
+  ) %>% dplyr::rename(deciles = deciles_wtd)
 
 ##----------------------------------------------------------
 ## City alignment
@@ -73,7 +82,7 @@ city_labels <- c(
 )
 
 income_monthly <- income_monthly %>%
-  rename(ciudad = dominio) %>%
+  dplyr::rename(ciudad = dominio) %>%
   mutate(ciudad_label = recode(ciudad, !!!city_labels))
 
 cost_pc_nom <- cost_pc_nom %>%
@@ -235,7 +244,7 @@ ggsave(file.path(out_fig, "fig_ipc_afford_heatmap.pdf"),
 ##----------------------------------------------------------
 
 overall_rate <- afford_ipc %>%
-  group_by(ciudad_label, fecha, alpha_fac) %>%
+  dplyr::group_by(ciudad_label, fecha, alpha_fac) %>%
   dplyr::summarize(
     rate_overall = mean(cannot_afford, na.rm = TRUE) * 100,
     .groups      = "drop"

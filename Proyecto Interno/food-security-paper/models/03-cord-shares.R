@@ -13,7 +13,17 @@ library(patchwork)
 ## Directories and data
 ##----------------------------------------------------------
 
-base_dir <- "C:\\Users\\Portatil\\Desktop\\Least-cost-diets-and-affordability\\Proyecto Interno"
+dirs <- c(
+  "C:/Users/Portatil/Desktop/Least-cost-diets-and-affordability/Proyecto Interno",
+  "C:/Users/danie/OneDrive/Escritorio/Least-cost-diets-and-affordability/Proyecto Interno"
+)
+
+base_dir <- dirs[dir.exists(dirs)][1]
+
+if (is.na(base_dir)) {
+  stop("Ninguno de los directorios existe")
+}
+
 out_cord <- file.path(base_dir, "food-security-paper", "output", "cord")
 out_fig  <- file.path(base_dir, "food-security-paper", "output", "cord")
 input1_dir <- file.path(base_dir, "food-security-paper", "output", "tcac_food_table")
@@ -31,13 +41,13 @@ df.comp <- cord$comp %>%
 data_paper_prices <- readRDS(
   file.path(input1_dir, "panel_city_month_food_1999_2025.rds")
 ) %>%
-  select(ciudad, fecha, articulo,
+  dplyr::select(ciudad, fecha, articulo,
          grupos_gabas, subgrupos_gabas,
          precio_100g,
          gramos_g_1_intercambio_1_intercambio) %>%
   distinct() %>%
   filter(fecha >= "2019-01-01", fecha < "2025-01-01") %>%
-  rename(
+  dplyr::rename(
     Food      = articulo,
     Serving_g = gramos_g_1_intercambio_1_intercambio,
     Group     = grupos_gabas
@@ -123,16 +133,16 @@ comp_cost <- df.comp %>%
 
 # Cost share by group × member × city × date
 shares_time <- comp_cost %>%
-  group_by(ciudad_label, fecha, member, Group_en) %>%
-  summarize(cost_group = sum(cost_contrib, na.rm = TRUE), .groups = "drop") %>%
-  group_by(ciudad_label, fecha, member) %>%
+  dplyr::group_by(ciudad_label, fecha, member, Group_en) %>%
+  dplyr::summarize(cost_group = sum(cost_contrib, na.rm = TRUE), .groups = "drop") %>%
+  dplyr::group_by(ciudad_label, fecha, member) %>%
   mutate(share = cost_group / sum(cost_group)) %>%
   ungroup()
 
 # Mean share over entire period for donut
 shares_mean <- comp_cost %>%
-  group_by(Group_en) %>%
-  summarize(cost_group = sum(cost_contrib, na.rm = TRUE), .groups = "drop") %>%
+  dplyr::group_by(Group_en) %>%
+  dplyr::summarize(cost_group = sum(cost_contrib, na.rm = TRUE), .groups = "drop") %>%
   mutate(
     share     = cost_group / sum(cost_group),
     share_pct = round(share * 100, 1),

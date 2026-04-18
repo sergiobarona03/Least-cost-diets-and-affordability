@@ -15,7 +15,17 @@ library(scales)
 ## Directories
 ##----------------------------------------------------------
 
-base_dir   <- "C:\\Users\\Portatil\\Desktop\\Least-cost-diets-and-affordability\\Proyecto Interno"
+dirs <- c(
+  "C:/Users/Portatil/Desktop/Least-cost-diets-and-affordability/Proyecto Interno",
+  "C:/Users/danie/OneDrive/Escritorio/Least-cost-diets-and-affordability/Proyecto Interno"
+)
+
+base_dir <- dirs[dir.exists(dirs)][1]
+
+if (is.na(base_dir)) {
+  stop("Ninguno de los directorios existe")
+}
+
 out_cord   <- file.path(base_dir, "food-security-paper", "output", "cord")
 out_eer    <- file.path(base_dir, "food-security-paper", "output", "eer")
 out_val    <- file.path(base_dir, "food-security-paper", "output", "cord")
@@ -46,7 +56,7 @@ nutrients_cols <- c("Energy", "Protein", "Lipids", "Carbohydrates",
 data_nutrients <- readRDS(
   file.path(input1_dir, "panel_city_month_food_1999_2025.rds")
 ) %>%
-  select(ciudad, fecha, articulo,
+  dplyr::select(ciudad, fecha, articulo,
          gramos_g_1_intercambio_1_intercambio,
          energia_kcal, proteina_g, lipidos_g, carbohidratos_totales_g,
          vitamina_c_mg, folatos_mcg, vitamina_a_er, tiamina_mg,
@@ -54,7 +64,7 @@ data_nutrients <- readRDS(
          magnesio_mg, fosforo_mg, sodio_mg, calcio_mg, hierro_mg, zinc_mg) %>%
   distinct() %>%
   filter(fecha >= "2019-01-01", fecha < "2025-01-01") %>%
-  rename(
+  dplyr::rename(
     Food      = articulo,
     Serving_g = gramos_g_1_intercambio_1_intercambio,
     Energy        = energia_kcal,
@@ -96,7 +106,7 @@ household_eer <- agg_eer %>%
     TRUE ~ cod_mun
   )) %>%
   filter(ciudad %in% c("BOGOTA", "MEDELLIN", "CALI")) %>%
-  rename(Age = rango, Sex = sex, Energy = eer) %>%
+  dplyr::rename(Age = rango, Sex = sex, Energy = eer) %>%
   mutate(Sex = if_else(Sex == "Masculino", 0L, 1L)) %>%
   as.data.frame()
 
@@ -149,8 +159,8 @@ cord_intake <- df.comp %>%
   mutate(across(all_of(nutrients_cols), ~ .x * grams / 100,
                 .names = "intake_{.col}")) %>%
   # Sum intake across all foods per member × city × date
-  group_by(ciudad, fecha, Demo_Group, Sex) %>%
-  summarize(across(starts_with("intake_"), ~ sum(.x, na.rm = TRUE)),
+  dplyr::group_by(ciudad, fecha, Demo_Group, Sex) %>%
+  dplyr::summarize(across(starts_with("intake_"), ~ sum(.x, na.rm = TRUE)),
             .groups = "drop") %>%
   # Clean column names
   rename_with(~ str_remove(.x, "^intake_"), starts_with("intake_"))
@@ -162,7 +172,7 @@ cord_intake <- df.comp %>%
 cord_long <- cord_intake %>%
   pivot_longer(cols = all_of(nutrients_cols),
                names_to = "Nutrient", values_to = "Intake") %>%
-  rename(Age = Demo_Group)
+  dplyr::rename(Age = Demo_Group)
 
 
 cord_long$Sex = as.factor(cord_long$Sex)
@@ -190,8 +200,8 @@ validation <- cord_long %>%
 
 # By nutrient × member × city: % of months compliant
 compliance_summary <- validation %>%
-  group_by(Nutrient, Age, Sex, ciudad) %>%
-  summarize(
+  dplyr::group_by(Nutrient, Age, Sex, ciudad) %>%
+  dplyr::summarize(
     pct_meets_LL   = mean(meets_LL,   na.rm = TRUE) * 100,
     pct_meets_UL   = mean(meets_UL,   na.rm = TRUE) * 100,
     pct_meets_both = mean(meets_both, na.rm = TRUE) * 100,
@@ -202,8 +212,8 @@ compliance_summary <- validation %>%
 
 # Overall compliance by nutrient (across all cities and members)
 compliance_overall <- validation %>%
-  group_by(Nutrient) %>%
-  summarize(
+  dplyr::group_by(Nutrient) %>%
+  dplyr::summarize(
     pct_meets_LL   = mean(meets_LL,   na.rm = TRUE) * 100,
     mean_pct_of_LL = mean(pct_of_LL,  na.rm = TRUE),
     mean_gap_pct   = mean(gap_LL_pct, na.rm = TRUE),

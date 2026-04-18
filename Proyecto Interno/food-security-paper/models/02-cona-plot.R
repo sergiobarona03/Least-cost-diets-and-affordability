@@ -12,7 +12,17 @@ library(patchwork)
 ## Directories
 ##----------------------------------------------------------
 
-base_dir <- "C:\\Users\\Portatil\\Desktop\\Least-cost-diets-and-affordability\\Proyecto Interno"
+dirs <- c(
+  "C:/Users/Portatil/Desktop/Least-cost-diets-and-affordability/Proyecto Interno",
+  "C:/Users/danie/OneDrive/Escritorio/Least-cost-diets-and-affordability/Proyecto Interno"
+)
+
+base_dir <- dirs[dir.exists(dirs)][1]
+
+if (is.na(base_dir)) {
+  stop("Ninguno de los directorios existe")
+}
+
 out_cona <- file.path(base_dir, "food-security-paper", "output", "cona")
 out_fig  <- file.path(base_dir, "food-security-paper", "output", "cona")
 
@@ -76,8 +86,8 @@ df.cost <- df.cost %>%
 
 # Per capita cost (mean across members) by city × date
 cost_pc <- df.cost %>%
-  group_by(ciudad, ciudad_label, fecha, year) %>%
-  summarize(
+  dplyr::group_by(ciudad, ciudad_label, fecha, year) %>%
+  dplyr::summarize(
     cost_percap    = mean(cost_day, na.rm = TRUE),
     cost_household = sum(cost_day,  na.rm = TRUE),
     .groups = "drop"
@@ -144,8 +154,8 @@ df.comp <- df.comp %>%
 # Keep only foods that appear in at least 5% of observations
 # to avoid a cluttered legend
 top_foods <- df.comp %>%
-  group_by(Food) %>%
-  summarize(freq = n_distinct(paste(ciudad, fecha)), .groups = "drop") %>%
+  dplyr::group_by(Food) %>%
+  dplyr::summarize(freq = n_distinct(paste(ciudad, fecha)), .groups = "drop") %>%
   mutate(share = freq / max(freq)) %>%
   filter(share >= 0.05) %>%
   pull(Food)
@@ -153,14 +163,14 @@ top_foods <- df.comp %>%
 # Monthly mean quantity by food × city — aggregated across members
 comp_agg <- df.comp %>%
   filter(Food %in% top_foods) %>%
-  group_by(Food, ciudad, ciudad_label, fecha, year) %>%
-  summarize(quantity = mean(quantity, na.rm = TRUE), .groups = "drop")
+  dplyr::group_by(Food, ciudad, ciudad_label, fecha, year) %>%
+  dplyr::summarize(quantity = mean(quantity, na.rm = TRUE), .groups = "drop")
 
 # Monthly mean quantity by food × member × city
 comp_member <- df.comp %>%
   filter(Food %in% top_foods) %>%
-  group_by(Food, member, ciudad, ciudad_label, fecha, year) %>%
-  summarize(quantity = mean(quantity, na.rm = TRUE), .groups = "drop")
+  dplyr::group_by(Food, member, ciudad, ciudad_label, fecha, year) %>%
+  dplyr::summarize(quantity = mean(quantity, na.rm = TRUE), .groups = "drop")
 
 ##----------------------------------------------------------
 ## Figure 3: Food composition over time — aggregated

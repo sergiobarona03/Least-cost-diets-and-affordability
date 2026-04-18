@@ -14,7 +14,17 @@ library(openxlsx)
 ## Directories and data
 ##----------------------------------------------------------
 
-base_dir <- "C:\\Users\\Portatil\\Desktop\\Least-cost-diets-and-affordability\\Proyecto Interno"
+dirs <- c(
+  "C:/Users/Portatil/Desktop/Least-cost-diets-and-affordability/Proyecto Interno",
+  "C:/Users/danie/OneDrive/Escritorio/Least-cost-diets-and-affordability/Proyecto Interno"
+)
+
+base_dir <- dirs[dir.exists(dirs)][1]
+
+if (is.na(base_dir)) {
+  stop("Ninguno de los directorios existe")
+}
+
 out_cona <- file.path(base_dir, "food-security-paper", "output", "cona")
 out_fig  <- file.path(base_dir, "food-security-paper", "output", "cona")
 out_tabs <- file.path(base_dir, "food-security-paper", "output", "cona")
@@ -56,8 +66,8 @@ df.limit <- df.limit %>%
 # Reorder nutrients by descending binding frequency
 # (consistent ordering with SPE heatmap)
 nutrient_order <- df.limit %>%
-  group_by(Nutrients) %>%
-  summarize(freq = mean(Limiting == 1, na.rm = TRUE), .groups = "drop") %>%
+  dplyr::group_by(Nutrients) %>%
+  dplyr::summarize(freq = mean(Limiting == 1, na.rm = TRUE), .groups = "drop") %>%
   arrange(desc(freq)) %>%
   pull(Nutrients)
 
@@ -120,8 +130,8 @@ message("Figure 8 saved to: ", out_fig)
 ##----------------------------------------------------------
 
 tab_binding <- df.limit %>%
-  group_by(Nutrients, member, ciudad_label) %>%
-  summarize(
+  dplyr::group_by(Nutrients, member, ciudad_label) %>%
+  dplyr::summarize(
     freq     = mean(Limiting == 1, na.rm = TRUE),
     n_months = sum(Limiting == 1, na.rm = TRUE),
     .groups  = "drop"

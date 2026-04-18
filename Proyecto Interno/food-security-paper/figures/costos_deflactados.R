@@ -10,12 +10,22 @@ library(stringi)
 
 
 # Directorios base
-base_dir <- "C:\\Users\\sergio.barona\\Desktop\\Least-cost-diets-and-affordability\\Proyecto Interno"
-ipc_path  <- file.path(base_dir, "input", "prices","IPC.xls")
+dirs <- c(
+  "C:/Users/Portatil/Desktop/Least-cost-diets-and-affordability/Proyecto Interno",
+  "C:/Users/danie/OneDrive/Escritorio/Least-cost-diets-and-affordability/Proyecto Interno"
+)
 
-coca_path <- file.path(base_dir, "output", "coca", "230326_coca_results.xlsx")
-cona_path <- file.path(base_dir, "output", "cona", "230326_cona_results.xlsx")
-cord_path <- file.path(base_dir, "output", "cord", "230326_cord_full.xlsx")
+base_dir <- dirs[dir.exists(dirs)][1]
+
+if (is.na(base_dir)) {
+  stop("Ninguno de los directorios existe")
+}
+
+ipc_path  <- file.path(base_dir, "food-security-paper", "input", "prices","IPC.xls")
+
+coca_path <- file.path(base_dir, "food-security-paper", "output", "coca", "230326_coca_results.xlsx")
+cona_path <- file.path(base_dir, "food-security-paper", "output", "cona", "230326_cona_results.xlsx")
+cord_path <- file.path(base_dir, "food-security-paper", "output", "cord", "230326_cord_full.xlsx")
 
 output_path <- file.path(base_dir, "output", "real")
 dir.create(output_path, recursive = TRUE, showWarnings = FALSE)

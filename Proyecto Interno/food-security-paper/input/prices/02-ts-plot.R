@@ -19,7 +19,16 @@ library(writexl)
 # -----------------------------
 
 # Definir directorio base
-base_dir <- "C:/Users/Portatil/Desktop/Least-cost-diets-and-affordability/Proyecto Interno"
+dirs <- c(
+  "C:/Users/Portatil/Desktop/Least-cost-diets-and-affordability/Proyecto Interno",
+  "C:/Users/danie/OneDrive/Escritorio/Least-cost-diets-and-affordability/Proyecto Interno"
+)
+
+base_dir <- dirs[dir.exists(dirs)][1]
+
+if (is.na(base_dir)) {
+  stop("Ninguno de los directorios existe")
+}
 
 # Definir directorio de input
 out_dir   <- file.path(base_dir, "food-security-paper/output/forecasting_fullsample")
@@ -37,26 +46,22 @@ price_data = prices_extended %>%
          date < "2025-01-01")
 
 # Definir clase
-price_data$cod_clase = paste0(substr(price_data$subclase_ipc, 1,
-                                          4), "0000")
+price_data$cod_clase = paste0(substr(price_data$subclase_ipc, 1, 4), "0000")
 
 # Seleccionar variables y agregar
 plot_price_data = price_data %>%
-  group_by(date, ciudad, cod_clase, subclase_ipc) %>%
-  summarise(ipc = unique(ipc))
-
-
+  dplyr::group_by(date, ciudad, cod_clase, subclase_ipc) %>%
+  dplyr::summarise(ipc = unique(ipc))
 
 # Vector de meses
 meses_esp <- c("Ene","Feb","Mar","Abr",
                "May","Jun","Jul","Ago","Sep","Oct","Nov","Dic")
 # Recuperar el IPC por clase
-ipc_clase_raw = readxl::read_excel(file.path(base_dir, 
-                                         "var-ipc/IPC-clase.xls")) %>%
+ipc_clase_raw = readxl::read_excel(file.path(base_dir,"var-ipc/IPC-clase.xls")) %>%
   clean_names()
 
 ipc_clase <- ipc_clase_raw %>%
-  mutate(
+  dplyr::mutate(
     ciudad = case_when(
       ciudad == "CARTAGENA DE INDIAS" ~ "CARTAGENA",
       ciudad == "BOGOTÁ, D.C." ~ "BOGOTÁ D.C.",
@@ -68,16 +73,15 @@ ipc_clase <- ipc_clase_raw %>%
     ipc_clase = as.numeric(numero_indice),
     date = make_date(ano, mes_num)
   ) %>%
-  select(ciudad, clase, cod_clase, date, ano, mes_num, ipc_clase) %>%
+  dplyr::select(ciudad, clase, cod_clase, date, ano, mes_num, ipc_clase) %>%
   filter(!is.na(date), !is.na(ipc_clase), 
          !is.na(cod_clase), 
          !is.na(ciudad)) %>%
-  arrange(ciudad, cod_clase, date)
+  dplyr::arrange(ciudad, cod_clase, date)
 
 # Agregar la información del IPC por clase
-plot_price_data = merge(plot_price_data, ipc_clase, by = c("date",
-                                                           "ciudad",
-                                                           "cod_clase"))
+plot_price_data = merge(plot_price_data, ipc_clase, by = c("date","ciudad","cod_clase"))
+
 # Nombre de la clase 
 clase_labels <- c(
   "01110000 - Pan Y Cereales"          = "01110000 - Bread & cereals",
@@ -98,9 +102,8 @@ clase_labels <- c(
 # -----------------------------------------------
 
 # Opción 1: Usando valor de la clase
-clase_plot_data = plot_price_data %>% select(date, ciudad, clase,
-                                             cod_clase, ipc_clase) %>%
-  distinct()
+clase_plot_data = plot_price_data %>% dplyr::select(date, ciudad, clase,
+                                             cod_clase, ipc_clase) %>% distinct()
 
 city_labels <- c(
   "BOGOTÁ D.C." = "Bogotá",
@@ -109,10 +112,10 @@ city_labels <- c(
 )
 
 clase_plot_data = plot_price_data %>% 
-  select(date, ciudad, clase, cod_clase, ipc_clase) %>%
+  dplyr::select(date, ciudad, clase, cod_clase, ipc_clase) %>%
   distinct() %>%
   arrange(ciudad, cod_clase, date) %>%
-  group_by(ciudad, cod_clase) %>%
+  dplyr::group_by(ciudad, cod_clase) %>%
   mutate(ipc_yoy = (ipc_clase / lag(ipc_clase, 12) - 1) * 100) %>%
   ungroup() %>%
   filter(!is.na(ipc_yoy))
@@ -132,7 +135,7 @@ p_clase1 = clase_plot_data %>%
     name   = NULL,
     values = c("Bogotá"   = "#E63946",
                "Medellín" = "#457B9D",
-               "Cali"     = "#2A9D8F")
+               "Cali"     = "#27AE60")
   ) +
   scale_linetype_manual(
     name   = NULL,

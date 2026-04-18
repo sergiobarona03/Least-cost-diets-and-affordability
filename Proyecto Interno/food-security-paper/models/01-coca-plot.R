@@ -12,7 +12,17 @@ library(lubridate)
 ## Directories and data
 ##----------------------------------------------------------
 
-base_dir <- "C:\\Users\\Portatil\\Desktop\\Least-cost-diets-and-affordability\\Proyecto Interno"
+dirs <- c(
+  "C:/Users/Portatil/Desktop/Least-cost-diets-and-affordability/Proyecto Interno",
+  "C:/Users/danie/OneDrive/Escritorio/Least-cost-diets-and-affordability/Proyecto Interno"
+)
+
+base_dir <- dirs[dir.exists(dirs)][1]
+
+if (is.na(base_dir)) {
+  stop("Ninguno de los directorios existe")
+}
+
 out_coca <- file.path(base_dir, "food-security-paper", "output", "coca")
 out_fig  <- file.path(base_dir, "food-security-paper", "output", "coca")
 
@@ -61,8 +71,8 @@ paper_theme <- theme_bw(base_size = 11) +
 ##----------------------------------------------------------
 
 coca_pc <- df.coca %>%
-  group_by(ciudad, fecha, year) %>%
-  summarize(
+  dplyr::group_by(ciudad, fecha, year) %>%
+  dplyr::summarize(
     cost_percap    = mean(cost_day, na.rm = TRUE),
     cost_household = sum(cost_day,  na.rm = TRUE),
     .groups = "drop"
@@ -94,8 +104,8 @@ ggsave(file.path(out_fig, "fig1_coca_percapita_series.png"),
 ##----------------------------------------------------------
 
 coca_member <- df.coca %>%
-  group_by(ciudad, fecha, member) %>%
-  summarize(cost = sum(cost_day, na.rm = TRUE), .groups = "drop")
+  dplyr::group_by(ciudad, fecha, member) %>%
+  dplyr::summarize(cost = sum(cost_day, na.rm = TRUE), .groups = "drop")
 
 city_labels <- c(
   "BOGOTA"   = "Bogotá",
