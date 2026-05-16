@@ -1,10 +1,12 @@
 # ============================================================
-# Librerías
+# 02. Lista alimentos y PANEL BALANCEADO (final)
 # ============================================================
 
+# Librerías
 library(tidyverse)
 library(dplyr)
 library(openxlsx)
+library(stringi)
 
 
 # ============================================================
@@ -26,7 +28,14 @@ ruta_panel <- file.path(base_dir, "interno/output/paneles")
 # Cargar panel final
 # ============================================================
 
-panel_final <- readRDS(file.path(ruta_panel, "panel_final.rds"))
+panel_final <- readRDS(file.path(ruta_panel, "panel.rds")) %>%
+  mutate(
+    city = str_squish(as.character(city)),
+    city = case_when(
+      str_detect(str_to_lower(city), "^cartagena") ~ "Cartagena",
+      TRUE ~ city
+    )
+  )
 
 
 # ============================================================
@@ -47,8 +56,23 @@ alimentos_excluir <- c(
   "ALMUERZO CORRIENTE O EJECUTIVO", "ALMUERZO ESPECIAL O A LA CARTA",
   "CHOCOLATE EN PASTA", "CAFÉ INSTANTÁNEO", "CAFÉ MOLIDO", "COMBOS",
   "CREMAS", "TINTO",
-  "HAMBURGUESA", "KUMIS", "JUGOS NATURALES", "SUERO", "BOCADILLO VELEÑO"
+  "HAMBURGUESA", "KUMIS", "JUGOS NATURALES", "SUERO",
+  "BOCADILLO VELEÑO", "Color (bolsita)",
+  "Mayonesa doy pack", "Mostaza doy pack", "Salsa de tomate doy pack",
+  "Jugo instantáneo (sobre)", "Galletas saladas", "Gelatina", "Margarina",
+  "Chocolate instantáneo", "Chocolate amargo", "Chocolate dulce",
+  "Vinagre"
 )
+
+
+# ============================================================
+# Normalizar vector de exclusión
+# ============================================================
+
+alimentos_excluir_norm <- alimentos_excluir %>%
+  str_to_upper() %>%
+  stringi::stri_trans_general("Latin-ASCII") %>%
+  str_squish()
 
 
 # ============================================================
@@ -56,9 +80,16 @@ alimentos_excluir <- c(
 # ============================================================
 
 panel_filtrado <- panel_final %>%
+  mutate(
+    sipsa_name_norm = sipsa_name %>%
+      str_to_upper() %>%
+      stringi::stri_trans_general("Latin-ASCII") %>%
+      str_squish()
+  ) %>%
   filter(
-    !str_to_upper(sipsa_name) %in% alimentos_excluir
-  )
+    !sipsa_name_norm %in% alimentos_excluir_norm
+  ) %>%
+  select(-sipsa_name_norm)
 
 
 # ============================================================
@@ -111,7 +142,9 @@ alimentos_totales <- panel_balanceado %>%
 
 alimentos_por_ciudad
 
-nrow(alimentos_totales)  # número de alimentos comunes a TODAS las ciudades
+nrow(alimentos_totales)
+
+alimentos_totales
 
 
 # ============================================================

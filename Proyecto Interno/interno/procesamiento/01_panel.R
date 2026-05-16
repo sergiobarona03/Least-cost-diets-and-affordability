@@ -1,7 +1,8 @@
 # ============================================================
-# Librerías
+# 01. Construcción: PANEL ALIMENTOS
 # ============================================================
 
+# Librerías
 library(tidyverse)
 library(lubridate)
 library(janitor)
@@ -76,23 +77,38 @@ construir_panel_mes <- function(ruta_mes, orden_mes) {
     ) %>%
       clean_names() %>%
       select(any_of(variables_panel)) %>%
+      
       mutate(
         sipsa_name = as.character(sipsa_name),
+        
+        city = str_squish(as.character(city)),
+        
         city = case_when(
-          str_to_lower(str_squish(city)) %in% c("bogotá", "bogotá, d.c.", "bogota", "bogota, d.c.") ~ "Bogotá",
-          TRUE ~ str_squish(city)
+          str_to_lower(city) %in% c(
+            "bogotá",
+            "bogotá, d.c.",
+            "bogota",
+            "bogota, d.c."
+          ) ~ "Bogotá",
+          
+          str_detect(str_to_lower(city), "^cartagena") ~ "Cartagena",
+          
+          TRUE ~ city
         ),
+        
         sku_code = as.character(sku_code),
         exito_name = as.character(exito_name),
         price = parse_number(price),
         unit_price = as.character(unit_price),
         measurement_unit = as.character(measurement_unit),
         tcac_code = str_remove(as.character(tcac_code), ",.*$"),
+        
         fecha = fecha_archivo,
         dia = day(fecha),
         mes = month(fecha),
         orden_mes = orden_mes
       ) %>%
+      
       filter(
         !is.na(sipsa_name),
         !is.na(city),
@@ -102,10 +118,11 @@ construir_panel_mes <- function(ruta_mes, orden_mes) {
         !str_detect(unit_price, "T|\\+00:00"),
         price > 0
       )
+    
   }) %>%
+    
     arrange(fecha, sipsa_name, city, sku_code)
 }
-
 
 # ============================================================
 # Paneles mensuales
@@ -222,4 +239,4 @@ write.xlsx(
 saveRDS(panel_julio, file.path(ruta_salida, "panel_julio.rds"))
 saveRDS(panel_agosto, file.path(ruta_salida, "panel_agosto.rds"))
 saveRDS(panel_septiembre, file.path(ruta_salida, "panel_septiembre.rds"))
-saveRDS(panel_final, file.path(ruta_salida, "panel_final.rds"))
+saveRDS(panel_final, file.path(ruta_salida, "panel.rds"))
