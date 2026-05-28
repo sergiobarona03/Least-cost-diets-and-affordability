@@ -3,10 +3,12 @@
 # =========================================================
 
 library(tidyverse)
+library(writexl)
+library(haven)
 
 # Directorios
-input_dir  <- "C:/Users/danie/OneDrive/Escritorio/Least-cost-diets-and-affordability/Proyecto Interno/food-security-paper/input/requirements"
-output_dir <- "C:/Users/danie/OneDrive/Escritorio/Least-cost-diets-and-affordability/Proyecto Interno/food-security-paper/output/eer"
+input_dir  <- "C:/Users/danie/OneDrive/Escritorio/Least-cost-diets-and-affordability/Proyecto Interno/interno/input/requirements"
+output_dir <- "C:/Users/danie/OneDrive/Escritorio/Least-cost-diets-and-affordability/Proyecto Interno/interno/output/eer"
 
 dir.create(output_dir, recursive = TRUE, showWarnings = FALSE)
 
@@ -20,7 +22,12 @@ cap4   <- readRDS(file.path(input_dir, "Cap4.rds"))
 cap7   <- readRDS(file.path(input_dir, "Cap7.rds"))
 cap10  <- readRDS(file.path(input_dir, "Cap10.rds"))
 
-# Funciones 
+# Función numérica
+to_num <- function(x) {
+  suppressWarnings(as.numeric(haven::zap_labels(x)))
+}
+
+# Funciones auxiliares
 w_mean <- function(x, w) {
   ok <- !is.na(x) & !is.na(w) & w > 0
   if (!any(ok)) return(NA_real_)
@@ -55,100 +62,142 @@ eer_iom_2023 <- function(age, height, weight, sexo, pal_cat) {
   }
   
   if (age >= 14 && age < 19) {
-    if (sexo == "Masculino" && pal_cat == "Inactive")   return(-447.51 + 3.68 * age + 13.01 * height + 13.15 * weight + 20)
-    if (sexo == "Masculino" && pal_cat == "Low active") return(19.12 + 3.68 * age + 8.62 * height + 20.28 * weight + 20)
-    if (sexo == "Masculino" && pal_cat == "Active")     return(-388.19 + 3.68 * age + 12.66 * height + 20.46 * weight + 20)
+    if (sexo == "Masculino" && pal_cat == "Inactive")    return(-447.51 + 3.68 * age + 13.01 * height + 13.15 * weight + 20)
+    if (sexo == "Masculino" && pal_cat == "Low active")  return(19.12 + 3.68 * age + 8.62 * height + 20.28 * weight + 20)
+    if (sexo == "Masculino" && pal_cat == "Active")      return(-388.19 + 3.68 * age + 12.66 * height + 20.46 * weight + 20)
     if (sexo == "Masculino" && pal_cat == "Very active") return(-671.75 + 3.68 * age + 15.38 * height + 23.25 * weight + 20)
     
-    if (sexo == "Femenino" && pal_cat == "Inactive")    return(55.59 - 22.25 * age + 8.43 * height + 17.07 * weight + 20)
-    if (sexo == "Femenino" && pal_cat == "Low active")  return(-297.54 - 22.25 * age + 12.77 * height + 14.73 * weight + 20)
-    if (sexo == "Femenino" && pal_cat == "Active")      return(-189.55 - 22.25 * age + 11.74 * height + 18.34 * weight + 20)
-    if (sexo == "Femenino" && pal_cat == "Very active") return(-709.59 - 22.25 * age + 18.22 * height + 14.25 * weight + 20)
+    if (sexo == "Femenino" && pal_cat == "Inactive")     return(55.59 - 22.25 * age + 8.43 * height + 17.07 * weight + 20)
+    if (sexo == "Femenino" && pal_cat == "Low active")   return(-297.54 - 22.25 * age + 12.77 * height + 14.73 * weight + 20)
+    if (sexo == "Femenino" && pal_cat == "Active")       return(-189.55 - 22.25 * age + 11.74 * height + 18.34 * weight + 20)
+    if (sexo == "Femenino" && pal_cat == "Very active")  return(-709.59 - 22.25 * age + 18.22 * height + 14.25 * weight + 20)
   }
   
   if (age >= 19) {
-    if (sexo == "Masculino" && pal_cat == "Inactive")   return(753.07 - 10.83 * age + 6.50 * height + 14.10 * weight)
-    if (sexo == "Masculino" && pal_cat == "Low active") return(581.47 - 10.83 * age + 8.30 * height + 14.94 * weight)
-    if (sexo == "Masculino" && pal_cat == "Active")     return(1004.82 - 10.83 * age + 6.52 * height + 15.91 * weight)
+    if (sexo == "Masculino" && pal_cat == "Inactive")    return(753.07 - 10.83 * age + 6.50 * height + 14.10 * weight)
+    if (sexo == "Masculino" && pal_cat == "Low active")  return(581.47 - 10.83 * age + 8.30 * height + 14.94 * weight)
+    if (sexo == "Masculino" && pal_cat == "Active")      return(1004.82 - 10.83 * age + 6.52 * height + 15.91 * weight)
     if (sexo == "Masculino" && pal_cat == "Very active") return(-517.88 - 10.83 * age + 15.61 * height + 19.11 * weight)
     
-    if (sexo == "Femenino" && pal_cat == "Inactive")    return(584.90 - 7.01 * age + 5.72 * height + 11.71 * weight)
-    if (sexo == "Femenino" && pal_cat == "Low active")  return(575.77 - 7.01 * age + 6.60 * height + 12.14 * weight)
-    if (sexo == "Femenino" && pal_cat == "Active")      return(710.25 - 7.01 * age + 6.54 * height + 12.34 * weight)
-    if (sexo == "Femenino" && pal_cat == "Very active") return(511.83 - 7.01 * age + 9.07 * height + 12.56 * weight)
+    if (sexo == "Femenino" && pal_cat == "Inactive")     return(584.90 - 7.01 * age + 5.72 * height + 11.71 * weight)
+    if (sexo == "Femenino" && pal_cat == "Low active")   return(575.77 - 7.01 * age + 6.60 * height + 12.14 * weight)
+    if (sexo == "Femenino" && pal_cat == "Active")       return(710.25 - 7.01 * age + 6.54 * height + 12.34 * weight)
+    if (sexo == "Femenino" && pal_cat == "Very active")  return(511.83 - 7.01 * age + 9.07 * height + 12.56 * weight)
   }
   
   NA_real_
 }
 
-# Agregar dominios 
+dominios_geo <- c(
+  "Barranquilla", "Bogotá", "Bucaramanga", "Cali", "Cartagena",
+  "Cúcuta", "Ibagué", "Manizales", "Medellín", "Montería",
+  "Pasto", "Pereira", "Villavicencio", "Colombia"
+)
+
+# Agregar dominios antropometría
 agregar_dominios_antropo <- function(df) {
   base <- df %>%
     mutate(
-      Region = as.character(Region),
-      Subregion = as.character(Subregion)
+      Region = as.character(haven::zap_labels(Region)),
+      Subregion = as.character(haven::zap_labels(Subregion))
     )
   
   bind_rows(
-    base %>% filter(Subregion == "Cali A.M.")     %>% mutate(dominio_geo = "Cali"),
-    base %>% filter(Subregion == "Bogota")        %>% mutate(dominio_geo = "Bogotá"),
-    base %>% filter(Subregion == "Medellin A.M.") %>% mutate(dominio_geo = "Medellín"),
+    base %>% filter(Subregion == "Barranquilla A. M.")                   %>% mutate(dominio_geo = "Barranquilla"),
+    base %>% filter(Subregion == "Bogota")                               %>% mutate(dominio_geo = "Bogotá"),
+    base %>% filter(Subregion == "Santanderes")                          %>% mutate(dominio_geo = "Bucaramanga"),
+    base %>% filter(Subregion == "Cali A.M.")                            %>% mutate(dominio_geo = "Cali"),
+    base %>% filter(Subregion == "Atlantico, San Andres, Bolivar Norte") %>% mutate(dominio_geo = "Cartagena"),
+    base %>% filter(Subregion == "Santanderes")                          %>% mutate(dominio_geo = "Cúcuta"),
+    base %>% filter(Subregion == "Tolima, Huila, Caqueta")               %>% mutate(dominio_geo = "Ibagué"),
+    base %>% filter(Subregion == "Caldas, Risaralda, Quindio")           %>% mutate(dominio_geo = "Manizales"),
+    base %>% filter(Subregion == "Medellin A.M.")                        %>% mutate(dominio_geo = "Medellín"),
+    base %>% filter(Subregion == "Bolivar Sur, Sucre, Cordoba")          %>% mutate(dominio_geo = "Montería"),
+    base %>% filter(Subregion == "Cauca y Nari+\xa6o sin Litoral")       %>% mutate(dominio_geo = "Pasto"),
+    base %>% filter(Subregion == "Caldas, Risaralda, Quindio")           %>% mutate(dominio_geo = "Pereira"),
+    base %>% filter(Subregion == "Orinoquia y Amazonia")                 %>% mutate(dominio_geo = "Villavicencio"),
     base %>% mutate(dominio_geo = "Colombia")
   )
 }
 
+# Agregar dominios actividad física
 agregar_dominios_af <- function(df) {
   base <- df %>%
     mutate(
-      Region = as.character(Region),
-      Subregion = as.character(Subregion)
+      Region = as.character(haven::zap_labels(Region)),
+      Subregion = as.character(haven::zap_labels(Subregion))
     )
   
   bind_rows(
-    base %>% filter(Subregion == "9")  %>% mutate(dominio_geo = "Cali"),
+    base %>% filter(Subregion == "4")  %>% mutate(dominio_geo = "Barranquilla"),
     base %>% filter(Subregion == "5")  %>% mutate(dominio_geo = "Bogotá"),
+    base %>% filter(Subregion == "14") %>% mutate(dominio_geo = "Bucaramanga"),
+    base %>% filter(Subregion == "9")  %>% mutate(dominio_geo = "Cali"),
+    base %>% filter(Subregion == "3")  %>% mutate(dominio_geo = "Cartagena"),
+    base %>% filter(Subregion == "14") %>% mutate(dominio_geo = "Cúcuta"),
+    base %>% filter(Subregion == "15") %>% mutate(dominio_geo = "Ibagué"),
+    base %>% filter(Subregion == "8")  %>% mutate(dominio_geo = "Manizales"),
     base %>% filter(Subregion == "12") %>% mutate(dominio_geo = "Medellín"),
+    base %>% filter(Subregion == "6")  %>% mutate(dominio_geo = "Montería"),
+    base %>% filter(Subregion == "1")  %>% mutate(dominio_geo = "Pasto"),
+    base %>% filter(Subregion == "8")  %>% mutate(dominio_geo = "Pereira"),
+    base %>% filter(Subregion == "13") %>% mutate(dominio_geo = "Villavicencio"),
     base %>% mutate(dominio_geo = "Colombia")
   )
 }
 
 # Antropometría ENSIN
 antropo_ensin <- agregar_dominios_antropo(antro) %>%
+  mutate(
+    ANTSEXO = to_num(ANTSEXO),
+    AN_EDAD = to_num(AN_EDAD),
+    AN_7 = to_num(AN_7),
+    AN_8 = to_num(AN_8),
+    FactorExpansionPer = to_num(FactorExpansionPer)
+  ) %>%
   transmute(
     dominio_geo,
     sexo = case_when(
-      ANTSEXO %in% c(1, "1") ~ "Masculino",
-      ANTSEXO %in% c(2, "2") ~ "Femenino",
+      ANTSEXO == 1 ~ "Masculino",
+      ANTSEXO == 2 ~ "Femenino",
       TRUE ~ NA_character_
     ),
-    edad = suppressWarnings(as.numeric(AN_EDAD)),
-    peso = suppressWarnings(as.numeric(AN_7)),
-    talla = suppressWarnings(as.numeric(AN_8)),
-    factor_exp = suppressWarnings(as.numeric(FactorExpansionPer))
+    edad = AN_EDAD,
+    peso = AN_7,
+    talla = AN_8,
+    factor_exp = FactorExpansionPer
   ) %>%
   filter(
-    dominio_geo %in% c("Cali", "Bogotá", "Medellín", "Colombia"),
+    dominio_geo %in% dominios_geo,
     !is.na(sexo), !is.na(edad), !is.na(peso), !is.na(talla), !is.na(factor_exp),
     edad >= 14, peso > 0, talla > 0, factor_exp > 0
   )
 
-# Antropometría SABE mayores con cap1 + cap10
+# Antropometría SABE
 antropo_sabe <- cap1 %>%
+  mutate(
+    P121 = to_num(P121),
+    P122EDAD = to_num(P122EDAD)
+  ) %>%
   transmute(
     NumIdentificador,
     sexo = case_when(
-      P121 %in% c(1, "1") ~ "Masculino",
-      P121 %in% c(2, "2") ~ "Femenino",
+      P121 == 1 ~ "Masculino",
+      P121 == 2 ~ "Femenino",
       TRUE ~ NA_character_
     ),
-    edad = suppressWarnings(as.numeric(P122EDAD))
+    edad = P122EDAD
   ) %>%
   left_join(
     cap10 %>%
+      mutate(
+        P1005PESO = to_num(P1005PESO),
+        P1006TALLA = to_num(P1006TALLA)
+      ) %>%
       transmute(
         NumIdentificador,
-        peso  = suppressWarnings(as.numeric(P1005PESO)),
-        talla = suppressWarnings(as.numeric(P1006TALLA))
+        peso = P1005PESO,
+        talla = P1006TALLA
       ),
     by = "NumIdentificador"
   ) %>%
@@ -165,64 +214,77 @@ antropo_sabe <- cap1 %>%
     edad >= 60, peso > 0, talla > 0
   )
 
-# ENSIN para ciudades y Colombia < 60, SABE para Colombia 60+
+# Base antropométrica final
 antropo_base <- bind_rows(
   antropo_ensin %>% filter(!(dominio_geo == "Colombia" & edad >= 60)),
   antropo_sabe
 )
 
 insumos_antropo <- antropo_base %>%
-  dplyr::mutate(grupo_edad = grupo_edad(edad)) %>%
-  dplyr::filter(!is.na(grupo_edad)) %>%
-  dplyr::group_by(dominio_geo, sexo, grupo_edad) %>%
-  dplyr::summarise(
+  mutate(grupo_edad = grupo_edad(edad)) %>%
+  filter(!is.na(grupo_edad)) %>%
+  group_by(dominio_geo, sexo, grupo_edad) %>%
+  summarise(
     edad_rep   = w_mean(edad, factor_exp),
     peso_prom  = w_mean(peso, factor_exp),
     talla_prom = w_mean(talla, factor_exp),
     .groups = "drop"
   )
 
-# Actividad física ENSIN
+# Actividad física adolescentes ENSIN
 af_ado_limpia <- agregar_dominios_af(af_ado) %>%
+  mutate(
+    AFSEXO = to_num(AFSEXO),
+    AFEDAD = to_num(AFEDAD),
+    FactorExpansionAF = to_num(FactorExpansionAF),
+    activof = to_num(activof)
+  ) %>%
   transmute(
     dominio_geo,
     sexo = case_when(
-      AFSEXO %in% c(1, "1") ~ "Masculino",
-      AFSEXO %in% c(2, "2") ~ "Femenino",
+      AFSEXO == 1 ~ "Masculino",
+      AFSEXO == 2 ~ "Femenino",
       TRUE ~ NA_character_
     ),
-    edad = suppressWarnings(as.numeric(AFEDAD)),
-    factor_exp = suppressWarnings(as.numeric(FactorExpansionAF)),
+    edad = AFEDAD,
+    factor_exp = FactorExpansionAF,
     af_cat = case_when(
-      activof %in% c(1, "1") ~ "Moderada",
-      activof %in% c(0, "0") ~ "Ligera",
+      activof == 1 ~ "Moderada",
+      activof == 0 ~ "Ligera",
       TRUE ~ NA_character_
     )
   ) %>%
   filter(
-    dominio_geo %in% c("Cali", "Bogotá", "Medellín", "Colombia"),
+    dominio_geo %in% dominios_geo,
     !is.na(sexo), !is.na(edad), !is.na(factor_exp), !is.na(af_cat),
     edad >= 14, edad < 19, factor_exp > 0
   )
 
+# Actividad física adultos ENSIN
 af_adu_limpia <- agregar_dominios_af(af_adu) %>%
+  mutate(
+    AFSEXO = to_num(AFSEXO),
+    AFEDAD = to_num(AFEDAD),
+    FactorExpansionAF = to_num(FactorExpansionAF),
+    meetcombinatt = to_num(meetcombinatt)
+  ) %>%
   transmute(
     dominio_geo,
     sexo = case_when(
-      AFSEXO %in% c(1, "1") ~ "Masculino",
-      AFSEXO %in% c(2, "2") ~ "Femenino",
+      AFSEXO == 1 ~ "Masculino",
+      AFSEXO == 2 ~ "Femenino",
       TRUE ~ NA_character_
     ),
-    edad = suppressWarnings(as.numeric(AFEDAD)),
-    factor_exp = suppressWarnings(as.numeric(FactorExpansionAF)),
+    edad = AFEDAD,
+    factor_exp = FactorExpansionAF,
     af_cat = case_when(
-      meetcombinatt %in% c(1, "1") ~ "Moderada",
-      meetcombinatt %in% c(0, "0") ~ "Ligera",
+      meetcombinatt == 1 ~ "Moderada",
+      meetcombinatt == 0 ~ "Ligera",
       TRUE ~ NA_character_
     )
   ) %>%
   filter(
-    dominio_geo %in% c("Cali", "Bogotá", "Medellín", "Colombia"),
+    dominio_geo %in% dominios_geo,
     !is.na(sexo), !is.na(edad), !is.na(factor_exp), !is.na(af_cat),
     edad >= 19, factor_exp > 0
   )
@@ -230,11 +292,11 @@ af_adu_limpia <- agregar_dominios_af(af_adu) %>%
 af_ensin <- bind_rows(af_ado_limpia, af_adu_limpia)
 
 insumos_af_ensin <- af_ensin %>%
-  dplyr::mutate(grupo_edad = grupo_edad(edad)) %>%
-  dplyr::filter(!is.na(grupo_edad)) %>%
-  dplyr::group_by(dominio_geo, sexo, grupo_edad, af_cat) %>%
-  dplyr::summarise(freq = sum(factor_exp, na.rm = TRUE), .groups = "drop") %>%
-  dplyr::group_by(dominio_geo, sexo, grupo_edad) %>%
+  mutate(grupo_edad = grupo_edad(edad)) %>%
+  filter(!is.na(grupo_edad)) %>%
+  group_by(dominio_geo, sexo, grupo_edad, af_cat) %>%
+  summarise(freq = sum(factor_exp, na.rm = TRUE), .groups = "drop") %>%
+  group_by(dominio_geo, sexo, grupo_edad) %>%
   slice_max(order_by = freq, n = 1, with_ties = FALSE) %>%
   ungroup() %>%
   transmute(
@@ -244,33 +306,46 @@ insumos_af_ensin <- af_ensin %>%
     AF_predominante = af_cat
   )
 
-# Actividad física SABE para mayores
+# Actividad física SABE mayores
 af_sabe <- cap1 %>%
+  mutate(
+    P121 = to_num(P121),
+    P122EDAD = to_num(P122EDAD)
+  ) %>%
   transmute(
     NumIdentificador,
     sexo = case_when(
-      P121 %in% c(1, "1") ~ "Masculino",
-      P121 %in% c(2, "2") ~ "Femenino",
+      P121 == 1 ~ "Masculino",
+      P121 == 2 ~ "Femenino",
       TRUE ~ NA_character_
     ),
-    edad = suppressWarnings(as.numeric(P122EDAD))
+    edad = P122EDAD
   ) %>%
   left_join(
     cap4 %>%
+      mutate(
+        P407B_2 = to_num(P407B_2),
+        P409_11 = to_num(P409_11)
+      ) %>%
       transmute(
         NumIdentificador,
-        P407B_2 = suppressWarnings(as.numeric(P407B_2)),
-        P409_11 = suppressWarnings(as.numeric(P409_11))
+        P407B_2,
+        P409_11
       ),
     by = "NumIdentificador"
   ) %>%
   left_join(
     cap7 %>%
+      mutate(
+        P719 = to_num(P719),
+        P720 = to_num(P720),
+        P721 = to_num(P721)
+      ) %>%
       transmute(
         NumIdentificador,
-        P719 = suppressWarnings(as.numeric(P719)),
-        P720 = suppressWarnings(as.numeric(P720)),
-        P721 = suppressWarnings(as.numeric(P721))
+        P719,
+        P720,
+        P721
       ),
     by = "NumIdentificador"
   ) %>%
@@ -287,11 +362,11 @@ af_sabe <- cap1 %>%
   )
 
 insumos_af_sabe <- af_sabe %>%
-  dplyr::mutate(grupo_edad = grupo_edad(edad)) %>%
-  dplyr::filter(!is.na(grupo_edad)) %>%
-  dplyr::group_by(dominio_geo, sexo, grupo_edad, af_cat) %>%
-  dplyr::summarise(freq = sum(factor_exp, na.rm = TRUE), .groups = "drop") %>%
-  dplyr::group_by(dominio_geo, sexo, grupo_edad) %>%
+  mutate(grupo_edad = grupo_edad(edad)) %>%
+  filter(!is.na(grupo_edad)) %>%
+  group_by(dominio_geo, sexo, grupo_edad, af_cat) %>%
+  summarise(freq = sum(factor_exp, na.rm = TRUE), .groups = "drop") %>%
+  group_by(dominio_geo, sexo, grupo_edad) %>%
   slice_max(order_by = freq, n = 1, with_ties = FALSE) %>%
   ungroup() %>%
   transmute(
@@ -301,7 +376,7 @@ insumos_af_sabe <- af_sabe %>%
     AF_predominante = af_cat
   )
 
-# ENSIN para todo salvo Colombia 70+, SABE para Colombia 70+
+# Actividad física final
 insumos_af <- bind_rows(
   insumos_af_ensin %>% filter(!(dominio_geo == "Colombia" & grupo_edad == "[70,Inf)")),
   insumos_af_sabe  %>% filter(dominio_geo == "Colombia", grupo_edad == "[70,Inf)")
@@ -317,10 +392,10 @@ tabla_eer <- insumos_antropo %>%
     eer_kcal_dia = pmap_dbl(
       list(edad_rep, talla_prom, peso_prom, sexo, pal_iom),
       ~ eer_iom_2023(
-        age    = ..1,
-        height = ..2,
-        weight = ..3,
-        sexo   = ..4,
+        age     = ..1,
+        height  = ..2,
+        weight  = ..3,
+        sexo    = ..4,
         pal_cat = ..5
       )
     )
@@ -339,6 +414,9 @@ tabla_eer <- insumos_antropo %>%
   arrange(dominio_geo, sexo, grupo_edad)
 
 # Guardar base
-writexl::write_xlsx(tabla_eer, file.path(output_dir, "270326_adult_eer.xlsx"))
+writexl::write_xlsx(
+  tabla_eer,
+  file.path(output_dir, "250526_adult_eer.xlsx")
+)
 
 tabla_eer
