@@ -1,0 +1,286 @@
+---
+title: "Panel de Precios Éxito"
+date: "`r format(Sys.Date(), '%d de %B de %Y')`"
+output:
+  pdf_document:
+    toc: true
+    toc_depth: 2
+    number_sections: true
+    latex_engine: pdflatex
+    fig_caption: true
+geometry: margin=2.5cm
+fontsize: 11pt
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  echo    = FALSE,
+  warning = FALSE,
+  message = FALSE,
+  fig.pos = "H",
+  out.width = "100%"
+)
+
+library(tidyverse)
+library(knitr)
+library(kableExtra)
+library(scales)
+library(stringi)
+
+# ============================================================
+# RUTAS
+# ============================================================
+base_dir    <- "C:/Users/danie/OneDrive/Escritorio/Least-cost-diets-and-affordability/Proyecto Interno/"
+ruta_panel  <- file.path(base_dir, "interno/output/paneles")
+ruta_salida <- file.path(base_dir, "interno/output/lista alimentos")
+
+# ============================================================
+# CARGAR Y PREPARAR DATOS
+# ============================================================
+panel_final <- readRDS(file.path(ruta_panel, "panel.rds")) %>%
+  mutate(
+    city       = str_squish(as.character(city)),
+    city       = case_when(
+      str_detect(str_to_lower(city), "^cartagena") ~ "Cartagena",
+      TRUE ~ city
+    ),
+    sku_code   = as.character(sku_code),
+    sipsa_name = str_squish(as.character(sipsa_name)),
+    fecha      = as.Date(fecha)
+  )
+
+alimentos_excluir <- c(
+  "AREPAS RELLENAS CON ALGO", "BOCADILLOS",
+  "CEREAL ALIMENTO PARA BEBÉ", "CEREAL PARA DESAYUNO", "CHOCOLATE INSTANTANEO",
+  "CHORIZO", "GALLETAS DE SAL", "GALLETAS DULCES", "GALLETAS INTEGRALES",
+  "GASEOSAS", "GELATINA O FLAN", "HARINA PARA TORTAS", "HELADOS DE CREMA",
+  "JAMÓN", "JUGOS INSTANTANEOS O EN POLVO", "JUGOS PROCESADOS",
+  "MALTAS", "MAYONESA", "MERMELADA", "MORTADELA",
+  "PIZZA", "SALCHICHAS", "SALCHICHÓN", "SALSA DE TOMATE",
+  "SOPAS", "YOGOURT", "CREMA DE LECHE", "PAPAS FRITAS",
+  "CILANTRO", "COLOR", "COMINOS", "LAUREL", "MOSTAZA",
+  "PIMIENTA", "TOMILLO", "REVUELTO VERDE",
+  "ALMUERZO CORRIENTE O EJECUTIVO", "ALMUERZO ESPECIAL O A LA CARTA",
+  "CHOCOLATE EN PASTA", "CAFÉ INSTANTÁNEO", "CAFÉ MOLIDO", "COMBOS",
+  "CREMAS", "TINTO", "HAMBURGUESA", "KUMIS", "JUGOS NATURALES", "SUERO",
+  "BOCADILLO VELEÑO", "Color (bolsita)", "Mayonesa doy pack",
+  "Mostaza doy pack", "Salsa de tomate doy pack", "Jugo instantáneo (sobre)",
+  "Galletas saladas", "Gelatina", "Margarina", "Chocolate instantáneo",
+  "Chocolate amargo", "Chocolate dulce", "Vinagre"
+)
+
+alimentos_excluir_norm <- alimentos_excluir %>%
+  str_to_upper() %>%
+  stringi::stri_trans_general("Latin-ASCII") %>%
+  str_squish()
+
+panel_filtrado <- panel_final %>%
+  mutate(
+    sipsa_name_norm = sipsa_name %>%
+      str_to_upper() %>%
+      stringi::stri_trans_general("Latin-ASCII") %>%
+      str_squish()
+  ) %>%
+  filter(
+    !sipsa_name_norm %in% alimentos_excluir_norm,
+    !is.na(city), !is.na(sku_code),
+    !is.na(sipsa_name), !is.na(fecha)
+  ) %>%
+  select(-sipsa_name_norm)
+
+umbral_por_ciudad <- panel_filtrado %>%
+  group_by(city) %>%
+  summarise(
+    fechas_disponibles = n_distinct(fecha),
+    umbral             = floor(0.85 * fechas_disponibles),
+    .groups = "drop"
+  )
+
+lista_por_ciudad <- panel_filtrado %>%
+  group_by(city, sku_code, sipsa_name) %>%
+  summarise(n_fechas = n_distinct(fecha), .groups = "drop") %>%
+  left_join(umbral_por_ciudad, by = "city") %>%
+  filter(n_fechas >= umbral)
+
+n_por_ciudad <- lista_por_ciudad %>%
+  count(city, name = "n_alimentos")
+
+ciudades_problema <- n_por_ciudad %>%
+  filter(n_alimentos < 100) %>%
+  pull(city)
+```
+
+# Introducción
+
+Este documento describe la construcción del panel de precios de alimentos a partir de datos recolectados mediante web scraping en tiendas Éxito de 13 ciudades colombianas durante el período julio--septiembre de 2025.
+
+El proceso de construcción se organizó en dos etapa: la primera consolida los datos del web scraping y define un producto representativo por alimento y ciudad. La segunda depura el panel, excluye alimentos procesados, salsas, entre otros, y aplica un criterio de cobertura temporal mínima para garantizar la cobertura de los alimentos en la mayoría de fechas.
+
+# Construcción del panel
+
+## Etapa 1: consolidación y selección del producto representativo
+
+Los archivos del web scraping se descargaron en tres carpetas mensuales (julio, agosto y septiembre), cada una con múltiples archivos CSV diarios. Para cada archivo se extrajo la fecha directamente desde el nombre del archivo y se estandarizaron los nombres de algunas ciudades.
+
+Dentro de cada categoría de alimento (identificada por `sipsa_name`) pueden existir múltiples productos (SKU) con distintas presentaciones. Para hacer el panel comparable entre ciudades y fechas, se seleccionó un único SKU representativo por combinación alimento--ciudad. El criterio de selección fue la proximidad de la presentación a un tamaño de referencia: 500 gramos para sólidos y 1.000 mililitros para líquidos. Cuando dos SKU estaban igual de cerca al tamaño de referencia, se prefirió el que contaba con más fechas de observación. El resultado de esta etapa es el archivo `panel.rds`, que contiene una sola fila por combinación alimento--ciudad--fecha.
+
+## Etapa 2: depuración y panel balanceado
+
+Sobre el panel consolidado se aplicaron dos filtros. Primero, se excluyeron categorías de alimentos que no son pertinentes para el análisis de dietas de costo mínimo: preparaciones industriales, condimentos, bebidas procesadas, comidas preparadas y productos de pastelería, entre otros. Segundo, se aplicó un criterio de cobertura temporal mínima para asegurar que los precios de cada alimento sean representativos del período y no observaciones aisladas.
+
+### Criterio de cobertura temporal
+
+El web scraping no fue igual de frecuente en todas las ciudades a lo largo del período para todos los alimentos y algunos días del mes. Las fechas perdidas fueron: 
+ 1. Julio: 19 - 20 - 21 - 30 - 31
+ 2. Agosto: 1 - 3 - 27 
+ 3. Septiembre: 17 - 26
+
+El número de fechas únicas de observación varía entre ciudades, lo que hace que un umbral fijo (por ejemplo, 70 fechas) penalice de forma desproporcionada a las ciudades con menos días del web scraping, aunque sus alimentos tengan una cobertura relativamente aceptable.
+
+Para corregir esto se adoptó un **umbral relativo**: cada alimento que haya sido observado en al menos el 85% de las fechas disponibles en su ciudad. Esto garantiza que el criterio sea equivalente en términos relativos para todas las ciudades, independientemente de cuántos días tuvo cobertura el web scraping en cada una.
+
+```{r tabla-umbral}
+umbral_por_ciudad %>%
+  arrange(fechas_disponibles) %>%
+  rename(
+    Ciudad               = city,
+    `Fechas disponibles` = fechas_disponibles,
+    `Umbral (85%)`       = umbral
+  ) %>%
+  kable(booktabs = TRUE, align = c("l", "c", "c"),
+        caption = "Fechas únicas de scraping y umbral de cobertura por ciudad") %>%
+  kable_styling(latex_options = c("striped", "hold_position"), font_size = 10)
+```
+
+La mayoría de ciudades cuenta con 79 fechas únicas, lo que equivale a un umbral de 67 observaciones. Las ciudades con menos fechas disponibles tienen un umbral proporcional más bajo.
+
+# Cobertura resultante por ciudad
+
+Una vez aplicado el umbral relativo, el número de alimentos con cobertura suficiente varía considerablemente entre ciudades. La tabla y el gráfico siguientes resumen el resultado final.
+
+```{r tabla-resumen}
+n_por_ciudad %>%
+  left_join(umbral_por_ciudad, by = "city") %>%
+  arrange(n_alimentos) %>%
+  mutate(
+    alerta = ifelse(n_alimentos < 100, "Sí", "No")
+  ) %>%
+  rename(
+    Ciudad               = city,
+    `Alimentos`          = n_alimentos,
+    `Fechas disponibles` = fechas_disponibles,
+    `Umbral`             = umbral,
+    `Bajo 100`           = alerta
+  ) %>%
+  kable(booktabs = TRUE, align = c("l", "c", "c", "c", "c"),
+        caption = "Alimentos con cobertura suficiente por ciudad") %>%
+  kable_styling(latex_options = c("striped", "hold_position"), font_size = 10) %>%
+  row_spec(
+    which(
+      n_por_ciudad %>%
+        arrange(n_alimentos) %>%
+        mutate(flag = n_alimentos < 100) %>%
+        pull(flag)
+    ),
+    bold = TRUE, color = "red"
+  )
+```
+
+```{r grafico-general, fig.height=4, fig.cap="Número de alimentos por ciudad que cumplen el umbral de cobertura"}
+n_por_ciudad %>%
+  arrange(n_alimentos) %>%
+  mutate(
+    city  = factor(city, levels = city),
+    grupo = case_when(
+      n_alimentos >= 100 ~ "100 o más",
+      TRUE               ~ "Menos de 100"
+    )
+  ) %>%
+  ggplot(aes(x = city, y = n_alimentos, fill = grupo)) +
+  geom_col(width = 0.65) +
+  geom_text(aes(label = n_alimentos), hjust = -0.2, size = 3.2, color = "gray20") +
+  geom_hline(yintercept = 100, linetype = "dashed", color = "gray40", linewidth = 0.5) +
+  scale_fill_manual(values = c("100 o más" = "#2E86AB", "Menos de 100" = "#F26419")) +
+  scale_y_continuous(expand = expansion(mult = c(0, 0.18))) +
+  coord_flip() +
+  labs(x = NULL, y = "Número de alimentos", fill = NULL) +
+  theme_minimal(base_size = 10) +
+  theme(
+    legend.position  = "bottom",
+    panel.grid.major.y = element_blank(),
+    panel.grid.minor   = element_blank()
+  )
+```
+
+Cinco ciudades quedan por debajo de los 100 alimentos: `r paste(sort(ciudades_problema), collapse = ", ")`. La sección siguiente analiza en detalle qué está ocurriendo en cada una de ellas.
+
+# Diagnóstico por ciudad
+
+Como se muestra a continuación, el problema de los pocos alimentos en las ciudades es porque en estas ciudades tiene apenas 1 a 10 fechas de observación a lo largo de todo el período, por lo cual, los excluye del análisis de precios. Esto podría reflejarse en una disponibilidad limitada en las tiendas Éxito de esas ciudades durante julio--septiembre.
+
+```{r loop-ciudades, results='asis', fig.height=3.8}
+for (cd in sort(ciudades_problema)) {
+
+  cat(sprintf("\n## %s\n\n", cd))
+
+  datos_ciudad <- panel_filtrado %>%
+    filter(city == cd) %>%
+    group_by(sipsa_name) %>%
+    summarise(n_fechas = n_distinct(fecha), .groups = "drop") %>%
+    arrange(n_fechas)
+
+  umbral_cd <- umbral_por_ciudad %>% filter(city == cd) %>% pull(umbral)
+  fechas_cd <- umbral_por_ciudad %>% filter(city == cd) %>% pull(fechas_disponibles)
+  n_pasan   <- sum(datos_ciudad$n_fechas >= umbral_cd)
+  n_total   <- nrow(datos_ciudad)
+  n_baja    <- sum(datos_ciudad$n_fechas <= 10)
+
+  cat(sprintf(
+    "El scraping registró **%d fechas únicas** en %s, lo que fija el umbral en **%d observaciones**.
+De los **%d alimentos** disponibles en la ciudad, **%d cumplen** el criterio de cobertura.
+Los **%d restantes** tienen 10 o menos fechas de observación.\n\n",
+    fechas_cd, cd, umbral_cd, n_total, n_pasan, n_baja
+  ))
+
+  no_pasan_tabla <- datos_ciudad %>%
+    filter(n_fechas < umbral_cd) %>%
+    arrange(n_fechas) %>%
+    rename(Alimento = sipsa_name, `Fechas observadas` = n_fechas)
+
+  if (nrow(no_pasan_tabla) > 0) {
+    cat("Los alimentos que no alcanzan el umbral son los siguientes:\n\n")
+    print(
+      kable(no_pasan_tabla, booktabs = TRUE,
+            caption = paste("Alimentos excluidos por baja cobertura —", cd)) %>%
+        kable_styling(latex_options = c("striped", "hold_position"), font_size = 9)
+    )
+    cat("\n\n")
+  }
+
+  p <- datos_ciudad %>%
+    mutate(cumple = ifelse(n_fechas >= umbral_cd, "Cumple el umbral", "No cumple")) %>%
+    ggplot(aes(x = n_fechas, fill = cumple)) +
+    geom_histogram(binwidth = 5, color = "white", boundary = 0) +
+    geom_vline(xintercept = umbral_cd, linetype = "dashed",
+               color = "#F26419", linewidth = 0.8) +
+    annotate("text", x = umbral_cd + 1, y = Inf, vjust = 1.8,
+             label = paste("Umbral =", umbral_cd),
+             color = "#F26419", size = 3, hjust = 0) +
+    scale_fill_manual(values = c("Cumple el umbral" = "#2E86AB", "No cumple" = "#F26419")) +
+    labs(
+      x = "Fechas de observación por alimento",
+      y = "Número de alimentos",
+      title = paste("Distribución de cobertura temporal —", cd),
+      fill = NULL
+    ) +
+    theme_minimal(base_size = 10) +
+    theme(
+      legend.position    = "bottom",
+      panel.grid.minor   = element_blank(),
+      panel.grid.major.x = element_blank()
+    )
+
+  print(p)
+  cat("\n\\newpage\n\n")
+}
+```

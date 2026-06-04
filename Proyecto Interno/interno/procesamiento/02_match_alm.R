@@ -85,16 +85,33 @@ panel_filtrado <- panel_final %>%
   select(-sipsa_name_norm)
 
 # ============================================================
-# Lista de alimentos con mínimo 70 fechas POR CIUDAD
+# Umbral relativo: 85% de las fechas únicas disponibles por ciudad
+# ============================================================
+
+umbral_por_ciudad <- panel_filtrado %>%
+  group_by(city) %>%
+  summarise(
+    fechas_disponibles = n_distinct(fecha),
+    umbral             = floor(0.85 * fechas_disponibles),
+    .groups = "drop"
+  )
+
+cat("\n====== Umbral por ciudad ======\n")
+print(umbral_por_ciudad %>% arrange(umbral))
+
+# ============================================================
+# Lista de alimentos que cumplen el umbral relativo POR CIUDAD
 # ============================================================
 
 lista_por_ciudad <- panel_filtrado %>%
   group_by(city, sku_code, sipsa_name) %>%
   summarise(n_fechas = n_distinct(fecha), .groups = "drop") %>%
-  filter(n_fechas >= 70)
+  left_join(umbral_por_ciudad, by = "city") %>%
+  filter(n_fechas >= umbral) %>%
+  select(city, sku_code, sipsa_name, n_fechas, fechas_disponibles, umbral)
 
 # ============================================================
-# Panel balanceado: cada combinación ciudad-alimento cumple el criterio
+# Panel balanceado
 # ============================================================
 
 panel_balanceado <- panel_filtrado %>%
@@ -133,29 +150,25 @@ cat("\nTotal ciudades:          ", total_ciudades, "\n")
 cat("Alimentos únicos totales:", nrow(lista_total), "\n\n")
 
 print(alimentos_por_ciudad)
-print(lista_total, n = Inf)
 
 # ============================================================
 # Guardar outputs
 # ============================================================
 
-# 1. Conteo de alimentos por ciudad
 write.xlsx(alimentos_por_ciudad,
            file.path(ruta_lista, "conteo_alimentos.xlsx"),
            overwrite = TRUE)
 
-# 2. Lista total de alimentos únicos (unión de todas las ciudades)
 write.xlsx(lista_total,
            file.path(ruta_lista, "lista_total_alimentos.xlsx"),
            overwrite = TRUE)
 
-# 3. Excel con una hoja por ciudad
 wb <- createWorkbook()
 
 for (cd in todas_las_ciudades) {
   df_ciudad <- lista_por_ciudad %>%
     filter(city == cd) %>%
-    select(sku_code, sipsa_name, n_fechas) %>%
+    select(sku_code, sipsa_name, n_fechas, umbral) %>%
     arrange(sipsa_name)
   addWorksheet(wb, sheetName = cd)
   writeData(wb, sheet = cd, df_ciudad)
@@ -165,6 +178,5 @@ saveWorkbook(wb,
              file.path(ruta_lista, "alimentos_por_ciudad_detalle.xlsx"),
              overwrite = TRUE)
 
-# 4. Panel balanceado
 saveRDS(panel_balanceado,
         file.path(ruta_panel, "panel_balanceado.rds"))
