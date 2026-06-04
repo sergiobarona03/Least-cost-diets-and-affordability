@@ -1,4 +1,4 @@
-This is XeTeX, Version 3.141592653-2.6-0.999997 (TeX Live 2025) (preloaded format=xelatex 2026.1.29)  12 FEB 2026 18:21
+This is XeTeX, Version 3.141592653-2.6-0.999997 (TeX Live 2025) (preloaded format=xelatex 2026.1.29)  4 JUN 2026 09:53
 entering extended mode
  restricted \write18 enabled.
  %&-line parsing enabled.
@@ -939,59 +939,36 @@ LaTeX Font Info:    Font shape `TU/latinmodern-math.otf(2)/m/n' will be
 (Font)              scaled to size 5.00046pt on input line 122.
 LaTeX Font Info:    Font shape `TU/latinmodern-math.otf(3)/m/n' will be
 (Font)              scaled to size 4.99947pt on input line 122.
+[1
 
-Overfull \hbox (0.6206pt too wide) in paragraph at lines 165--166
+]
+Overfull \hbox (0.6206pt too wide) in paragraph at lines 175--176
 []\TU/lmr/m/n/12 ciudad  
  []
 
 
-Overfull \hbox (14.29132pt too wide) in paragraph at lines 167--168
+Overfull \hbox (14.29132pt too wide) in paragraph at lines 177--178
 []\TU/lmr/m/n/12 nombre_ciudad  
  []
 
 
-Overfull \hbox (4.77951pt too wide) in paragraph at lines 169--170
+Overfull \hbox (4.77951pt too wide) in paragraph at lines 179--180
 []\TU/lmr/m/n/12 codigo_articulo  
  []
 
 
-Overfull \hbox (0.6206pt too wide) in paragraph at lines 185--186
+Overfull \hbox (0.6206pt too wide) in paragraph at lines 195--196
 []\TU/lmr/m/n/12 ciudad  
  []
 
 
-Overfull \hbox (14.29132pt too wide) in paragraph at lines 187--188
+Overfull \hbox (14.29132pt too wide) in paragraph at lines 197--198
 []\TU/lmr/m/n/12 nombre_ciudad  
  []
 
 
-Overfull \hbox (4.77951pt too wide) in paragraph at lines 189--190
+Overfull \hbox (4.77951pt too wide) in paragraph at lines 199--200
 []\TU/lmr/m/n/12 codigo_articulo  
- []
-
-
-Overfull \hbox (1.21117pt too wide) in paragraph at lines 203--203
-[]|\TU/lmr/m/n/12 500Grs.|  
- []
-
-
-Overfull \hbox (1.21117pt too wide) in paragraph at lines 205--205
-[]|\TU/lmr/m/n/12 500Grs.|  
- []
-
-
-Overfull \hbox (1.21117pt too wide) in paragraph at lines 207--207
-[]|\TU/lmr/m/n/12 500Grs.|  
- []
-
-
-Overfull \hbox (1.21117pt too wide) in paragraph at lines 209--209
-[]|\TU/lmr/m/n/12 500Grs.|  
- []
-
-
-Overfull \hbox (1.21117pt too wide) in paragraph at lines 211--211
-[]|\TU/lmr/m/n/12 500Grs.|  
  []
 
 
@@ -999,96 +976,69 @@ Overfull \hbox (1.21117pt too wide) in paragraph at lines 213--213
 []|\TU/lmr/m/n/12 500Grs.|  
  []
 
-[1
 
-]
-Overfull \hbox (6.00339pt too wide) in paragraph at lines 264--265
+Overfull \hbox (1.21117pt too wide) in paragraph at lines 215--215
+[]|\TU/lmr/m/n/12 500Grs.|  
+ []
+
+
+Overfull \hbox (1.21117pt too wide) in paragraph at lines 217--217
+[]|\TU/lmr/m/n/12 500Grs.|  
+ []
+
+
+Overfull \hbox (1.21117pt too wide) in paragraph at lines 219--219
+[]|\TU/lmr/m/n/12 500Grs.|  
+ []
+
+
+Overfull \hbox (1.21117pt too wide) in paragraph at lines 221--221
+[]|\TU/lmr/m/n/12 500Grs.|  
+ []
+
+
+Overfull \hbox (1.21117pt too wide) in paragraph at lines 223--223
+[]|\TU/lmr/m/n/12 500Grs.|  
+ []
+
+[2]
+Overfull \hbox (6.00339pt too wide) in paragraph at lines 274--275
 []\TU/lmr/m/n/12 Grupo  
  []
 
 
-Overfull \hbox (14.41525pt too wide) in paragraph at lines 270--271
+Overfull \hbox (14.41525pt too wide) in paragraph at lines 280--281
  []\TU/lmr/m/n/12 Precio_kg
  []
 
 
-Overfull \hbox (10.75737pt too wide) in paragraph at lines 272--273
+Overfull \hbox (10.75737pt too wide) in paragraph at lines 282--283
  []\TU/lmr/m/n/12 Month
  []
 
 
-Overfull \hbox (4.2079pt too wide) in paragraph at lines 274--275
+Overfull \hbox (4.2079pt too wide) in paragraph at lines 284--285
  []\TU/lmr/m/n/12 Year
  []
 
 
-Overfull \hbox (6.00339pt too wide) in paragraph at lines 282--283
+Overfull \hbox (6.00339pt too wide) in paragraph at lines 292--293
 []\TU/lmr/m/n/12 Grupo  
  []
 
 
-Overfull \hbox (14.41525pt too wide) in paragraph at lines 288--289
+Overfull \hbox (14.41525pt too wide) in paragraph at lines 298--299
  []\TU/lmr/m/n/12 Precio_kg
  []
 
 
-Overfull \hbox (10.75737pt too wide) in paragraph at lines 290--291
+Overfull \hbox (10.75737pt too wide) in paragraph at lines 300--301
  []\TU/lmr/m/n/12 Month
  []
 
 
-Overfull \hbox (4.2079pt too wide) in paragraph at lines 292--293
+Overfull \hbox (4.2079pt too wide) in paragraph at lines 302--303
  []\TU/lmr/m/n/12 Year
- []
-
-
-Overfull \hbox (22.22739pt too wide) in paragraph at lines 298--298
-[]|\TU/lmr/m/n/12 CARNES|  
- []
-
-
-Overfull \hbox (4.2319pt too wide) in paragraph at lines 299--300
- []|\TU/lmr/m/n/12 2013|
- []
-
-
-Overfull \hbox (22.22739pt too wide) in paragraph at lines 300--300
-[]|\TU/lmr/m/n/12 CARNES|  
- []
-
-
-Overfull \hbox (4.2319pt too wide) in paragraph at lines 301--302
- []|\TU/lmr/m/n/12 2013|
- []
-
-
-Overfull \hbox (22.22739pt too wide) in paragraph at lines 302--302
-[]|\TU/lmr/m/n/12 CARNES|  
- []
-
-
-Overfull \hbox (4.2319pt too wide) in paragraph at lines 303--304
- []|\TU/lmr/m/n/12 2013|
- []
-
-
-Overfull \hbox (22.22739pt too wide) in paragraph at lines 304--304
-[]|\TU/lmr/m/n/12 CARNES|  
- []
-
-
-Overfull \hbox (4.2319pt too wide) in paragraph at lines 305--306
- []|\TU/lmr/m/n/12 2013|
- []
-
-
-Overfull \hbox (22.22739pt too wide) in paragraph at lines 306--306
-[]|\TU/lmr/m/n/12 CARNES|  
- []
-
-
-Overfull \hbox (4.2319pt too wide) in paragraph at lines 307--308
- []|\TU/lmr/m/n/12 2013|
  []
 
 
@@ -1101,106 +1051,127 @@ Overfull \hbox (4.2319pt too wide) in paragraph at lines 309--310
  []|\TU/lmr/m/n/12 2013|
  []
 
-[2] [3]
-Overfull \hbox (7.61433pt too wide) in paragraph at lines 374--375
+
+Overfull \hbox (22.22739pt too wide) in paragraph at lines 310--310
+[]|\TU/lmr/m/n/12 CARNES|  
+ []
+
+
+Overfull \hbox (4.2319pt too wide) in paragraph at lines 311--312
+ []|\TU/lmr/m/n/12 2013|
+ []
+
+
+Overfull \hbox (22.22739pt too wide) in paragraph at lines 312--312
+[]|\TU/lmr/m/n/12 CARNES|  
+ []
+
+
+Overfull \hbox (4.2319pt too wide) in paragraph at lines 313--314
+ []|\TU/lmr/m/n/12 2013|
+ []
+
+
+Overfull \hbox (22.22739pt too wide) in paragraph at lines 314--314
+[]|\TU/lmr/m/n/12 CARNES|  
+ []
+
+
+Overfull \hbox (4.2319pt too wide) in paragraph at lines 315--316
+ []|\TU/lmr/m/n/12 2013|
+ []
+
+
+Overfull \hbox (22.22739pt too wide) in paragraph at lines 316--316
+[]|\TU/lmr/m/n/12 CARNES|  
+ []
+
+
+Overfull \hbox (4.2319pt too wide) in paragraph at lines 317--318
+ []|\TU/lmr/m/n/12 2013|
+ []
+
+
+Overfull \hbox (22.22739pt too wide) in paragraph at lines 318--318
+[]|\TU/lmr/m/n/12 CARNES|  
+ []
+
+
+Overfull \hbox (4.2319pt too wide) in paragraph at lines 319--320
+ []|\TU/lmr/m/n/12 2013|
+ []
+
+ignored error: Infinite glue shrinkage found in box being split [3]
+Overfull \hbox (7.61433pt too wide) in paragraph at lines 384--385
 []\TU/lmr/m/n/12 cod_mun  
  []
 
 
-Overfull \hbox (7.78532pt too wide) in paragraph at lines 376--377
+Overfull \hbox (7.78532pt too wide) in paragraph at lines 386--387
  []\TU/lmr/m/n/12 months_both
  []
 
 
-Overfull \hbox (7.42833pt too wide) in paragraph at lines 378--379
+Overfull \hbox (7.42833pt too wide) in paragraph at lines 388--389
  []\TU/lmr/m/n/12 months_any
  []
 
 
-Overfull \hbox (7.61433pt too wide) in paragraph at lines 388--389
+Overfull \hbox (7.61433pt too wide) in paragraph at lines 398--399
 []\TU/lmr/m/n/12 cod_mun  
  []
 
 
-Overfull \hbox (7.78532pt too wide) in paragraph at lines 390--391
+Overfull \hbox (7.78532pt too wide) in paragraph at lines 400--401
  []\TU/lmr/m/n/12 months_both
  []
 
 
-Overfull \hbox (7.42833pt too wide) in paragraph at lines 392--393
+Overfull \hbox (7.42833pt too wide) in paragraph at lines 402--403
  []\TU/lmr/m/n/12 months_any
  []
 
-[4]
+ignored error: Infinite glue shrinkage found in box being split [4]
 LaTeX Font Info:    Font shape `TU/latinmodern-math.otf(1)/m/n' will be
-(Font)              scaled to size 8.4pt on input line 442.
+(Font)              scaled to size 8.4pt on input line 452.
 LaTeX Font Info:    Font shape `TU/latinmodern-math.otf(1)/m/n' will be
-(Font)              scaled to size 6.0pt on input line 442.
+(Font)              scaled to size 6.0pt on input line 452.
 LaTeX Font Info:    Font shape `TU/latinmodern-math.otf(2)/m/n' will be
-(Font)              scaled to size 12.0011pt on input line 442.
+(Font)              scaled to size 12.0011pt on input line 452.
 LaTeX Font Info:    Font shape `TU/latinmodern-math.otf(2)/m/n' will be
-(Font)              scaled to size 8.40076pt on input line 442.
+(Font)              scaled to size 8.40076pt on input line 452.
 LaTeX Font Info:    Font shape `TU/latinmodern-math.otf(2)/m/n' will be
-(Font)              scaled to size 6.00055pt on input line 442.
+(Font)              scaled to size 6.00055pt on input line 452.
 LaTeX Font Info:    Font shape `TU/latinmodern-math.otf(3)/m/n' will be
-(Font)              scaled to size 11.99872pt on input line 442.
+(Font)              scaled to size 11.99872pt on input line 452.
 LaTeX Font Info:    Font shape `TU/latinmodern-math.otf(3)/m/n' will be
-(Font)              scaled to size 8.3991pt on input line 442.
+(Font)              scaled to size 8.3991pt on input line 452.
 LaTeX Font Info:    Font shape `TU/latinmodern-math.otf(3)/m/n' will be
-(Font)              scaled to size 5.99936pt on input line 442.
+(Font)              scaled to size 5.99936pt on input line 452.
 [5]
 File: output/ts-output/log-levels-plots/261225_log_retail_vs_wholesale_7x3.png Graphic file (type bmp)
 <output/ts-output/log-levels-plots/261225_log_retail_vs_wholesale_7x3.png>
 
-Overfull \hbox (325.21465pt too wide) in paragraph at lines 542--543
+Overfull \hbox (325.21465pt too wide) in paragraph at lines 552--553
  [][] 
  []
 
 
-LaTeX Warning: Float too large for page by 316.59158pt on input line 544.
+LaTeX Warning: Float too large for page by 316.59158pt on input line 554.
 
+[6]
 File: output/ts-output/seasonal-plots/261225_seasonal_retail_vs_wholesale_7x3_x13.png Graphic file (type bmp)
 <output/ts-output/seasonal-plots/261225_seasonal_retail_vs_wholesale_7x3_x13.png>
 
-Overfull \hbox (325.21465pt too wide) in paragraph at lines 548--549
+Overfull \hbox (325.21465pt too wide) in paragraph at lines 558--559
  [][] 
  []
 
 
-LaTeX Warning: Float too large for page by 316.59158pt on input line 550.
+LaTeX Warning: Float too large for page by 316.59158pt on input line 560.
 
 
-Overfull \hbox (1.16412pt too wide) in paragraph at lines 611--611
-[]|\TU/lmr/m/n/12 05001|  
- []
-
-
-Overfull \hbox (1.16412pt too wide) in paragraph at lines 613--613
-[]|\TU/lmr/m/n/12 05001|  
- []
-
-
-Overfull \hbox (1.16412pt too wide) in paragraph at lines 615--615
-[]|\TU/lmr/m/n/12 05001|  
- []
-
-
-Overfull \hbox (1.16412pt too wide) in paragraph at lines 617--617
-[]|\TU/lmr/m/n/12 05001|  
- []
-
-
-Overfull \hbox (1.16412pt too wide) in paragraph at lines 619--619
-[]|\TU/lmr/m/n/12 05001|  
- []
-
-
-Overfull \hbox (1.16412pt too wide) in paragraph at lines 620--620
-[]|\TU/lmr/m/n/12 05001|  
- []
-
-
-Overfull \hbox (1.16412pt too wide) in paragraph at lines 622--622
+Overfull \hbox (1.16412pt too wide) in paragraph at lines 621--621
 []|\TU/lmr/m/n/12 05001|  
  []
 
@@ -1235,42 +1206,42 @@ Overfull \hbox (1.16412pt too wide) in paragraph at lines 632--632
  []
 
 
-Overfull \hbox (1.16412pt too wide) in paragraph at lines 634--634
+Overfull \hbox (1.16412pt too wide) in paragraph at lines 633--633
 []|\TU/lmr/m/n/12 05001|  
  []
 
 
-Overfull \hbox (1.16412pt too wide) in paragraph at lines 636--636
-[]|\TU/lmr/m/n/12 11001|  
+Overfull \hbox (1.16412pt too wide) in paragraph at lines 635--635
+[]|\TU/lmr/m/n/12 05001|  
  []
 
 
-Overfull \hbox (1.16412pt too wide) in paragraph at lines 638--638
-[]|\TU/lmr/m/n/12 11001|  
+Overfull \hbox (1.16412pt too wide) in paragraph at lines 637--637
+[]|\TU/lmr/m/n/12 05001|  
+ []
+
+
+Overfull \hbox (1.16412pt too wide) in paragraph at lines 639--639
+[]|\TU/lmr/m/n/12 05001|  
  []
 
 
 Overfull \hbox (1.16412pt too wide) in paragraph at lines 640--640
-[]|\TU/lmr/m/n/12 11001|  
+[]|\TU/lmr/m/n/12 05001|  
  []
 
 
 Overfull \hbox (1.16412pt too wide) in paragraph at lines 642--642
-[]|\TU/lmr/m/n/12 11001|  
+[]|\TU/lmr/m/n/12 05001|  
  []
 
 
 Overfull \hbox (1.16412pt too wide) in paragraph at lines 644--644
-[]|\TU/lmr/m/n/12 11001|  
+[]|\TU/lmr/m/n/12 05001|  
  []
 
 
-Overfull \hbox (1.16412pt too wide) in paragraph at lines 645--645
-[]|\TU/lmr/m/n/12 11001|  
- []
-
-
-Overfull \hbox (1.16412pt too wide) in paragraph at lines 647--647
+Overfull \hbox (1.16412pt too wide) in paragraph at lines 646--646
 []|\TU/lmr/m/n/12 11001|  
  []
 
@@ -1305,42 +1276,42 @@ Overfull \hbox (1.16412pt too wide) in paragraph at lines 657--657
  []
 
 
-Overfull \hbox (1.16412pt too wide) in paragraph at lines 659--659
+Overfull \hbox (1.16412pt too wide) in paragraph at lines 658--658
 []|\TU/lmr/m/n/12 11001|  
  []
 
 
-Overfull \hbox (1.16412pt too wide) in paragraph at lines 661--661
-[]|\TU/lmr/m/n/12 76001|  
+Overfull \hbox (1.16412pt too wide) in paragraph at lines 660--660
+[]|\TU/lmr/m/n/12 11001|  
  []
 
 
-Overfull \hbox (1.16412pt too wide) in paragraph at lines 663--663
-[]|\TU/lmr/m/n/12 76001|  
+Overfull \hbox (1.16412pt too wide) in paragraph at lines 662--662
+[]|\TU/lmr/m/n/12 11001|  
+ []
+
+
+Overfull \hbox (1.16412pt too wide) in paragraph at lines 664--664
+[]|\TU/lmr/m/n/12 11001|  
  []
 
 
 Overfull \hbox (1.16412pt too wide) in paragraph at lines 665--665
-[]|\TU/lmr/m/n/12 76001|  
+[]|\TU/lmr/m/n/12 11001|  
  []
 
 
 Overfull \hbox (1.16412pt too wide) in paragraph at lines 667--667
-[]|\TU/lmr/m/n/12 76001|  
+[]|\TU/lmr/m/n/12 11001|  
  []
 
 
 Overfull \hbox (1.16412pt too wide) in paragraph at lines 669--669
-[]|\TU/lmr/m/n/12 76001|  
+[]|\TU/lmr/m/n/12 11001|  
  []
 
 
-Overfull \hbox (1.16412pt too wide) in paragraph at lines 670--670
-[]|\TU/lmr/m/n/12 76001|  
- []
-
-
-Overfull \hbox (1.16412pt too wide) in paragraph at lines 672--672
+Overfull \hbox (1.16412pt too wide) in paragraph at lines 671--671
 []|\TU/lmr/m/n/12 76001|  
  []
 
@@ -1375,37 +1346,41 @@ Overfull \hbox (1.16412pt too wide) in paragraph at lines 682--682
  []
 
 
-Overfull \hbox (1.16412pt too wide) in paragraph at lines 684--684
+Overfull \hbox (1.16412pt too wide) in paragraph at lines 683--683
 []|\TU/lmr/m/n/12 76001|  
  []
 
-[6] [7] [8]
-ignored error: Infinite glue shrinkage found in box being split [9]
-Overfull \hbox (5.79063pt too wide) in paragraph at lines 744--744
-[]|\TU/lmr/m/n/12 05001|  
+
+Overfull \hbox (1.16412pt too wide) in paragraph at lines 685--685
+[]|\TU/lmr/m/n/12 76001|  
  []
 
 
-Overfull \hbox (5.79063pt too wide) in paragraph at lines 746--746
-[]|\TU/lmr/m/n/12 05001|  
+Overfull \hbox (1.16412pt too wide) in paragraph at lines 687--687
+[]|\TU/lmr/m/n/12 76001|  
  []
 
 
-Overfull \hbox (5.79063pt too wide) in paragraph at lines 748--748
-[]|\TU/lmr/m/n/12 05001|  
+Overfull \hbox (1.16412pt too wide) in paragraph at lines 689--689
+[]|\TU/lmr/m/n/12 76001|  
  []
 
 
-Overfull \hbox (5.79063pt too wide) in paragraph at lines 750--750
-[]|\TU/lmr/m/n/12 05001|  
+Overfull \hbox (1.16412pt too wide) in paragraph at lines 690--690
+[]|\TU/lmr/m/n/12 76001|  
  []
 
 
-Overfull \hbox (5.79063pt too wide) in paragraph at lines 752--752
-[]|\TU/lmr/m/n/12 05001|  
+Overfull \hbox (1.16412pt too wide) in paragraph at lines 692--692
+[]|\TU/lmr/m/n/12 76001|  
  []
 
 
+Overfull \hbox (1.16412pt too wide) in paragraph at lines 694--694
+[]|\TU/lmr/m/n/12 76001|  
+ []
+
+ignored error: Infinite glue shrinkage found in box being split [7] [8] [9] [10]
 Overfull \hbox (5.79063pt too wide) in paragraph at lines 754--754
 []|\TU/lmr/m/n/12 05001|  
  []
@@ -1436,43 +1411,43 @@ Overfull \hbox (5.79063pt too wide) in paragraph at lines 764--764
  []
 
 
-Overfull \hbox (5.79063pt too wide) in paragraph at lines 765--765
+Overfull \hbox (5.79063pt too wide) in paragraph at lines 766--766
 []|\TU/lmr/m/n/12 05001|  
  []
 
 
-Overfull \hbox (5.79063pt too wide) in paragraph at lines 767--767
+Overfull \hbox (5.79063pt too wide) in paragraph at lines 768--768
 []|\TU/lmr/m/n/12 05001|  
  []
 
 
-Overfull \hbox (5.79063pt too wide) in paragraph at lines 769--769
+Overfull \hbox (5.79063pt too wide) in paragraph at lines 770--770
 []|\TU/lmr/m/n/12 05001|  
  []
 
 
-Overfull \hbox (5.79063pt too wide) in paragraph at lines 771--771
-[]|\TU/lmr/m/n/12 11001|  
+Overfull \hbox (5.79063pt too wide) in paragraph at lines 772--772
+[]|\TU/lmr/m/n/12 05001|  
  []
 
 
-Overfull \hbox (5.79063pt too wide) in paragraph at lines 773--773
-[]|\TU/lmr/m/n/12 11001|  
+Overfull \hbox (5.79063pt too wide) in paragraph at lines 774--774
+[]|\TU/lmr/m/n/12 05001|  
  []
 
 
 Overfull \hbox (5.79063pt too wide) in paragraph at lines 775--775
-[]|\TU/lmr/m/n/12 11001|  
+[]|\TU/lmr/m/n/12 05001|  
  []
 
 
 Overfull \hbox (5.79063pt too wide) in paragraph at lines 777--777
-[]|\TU/lmr/m/n/12 11001|  
+[]|\TU/lmr/m/n/12 05001|  
  []
 
 
 Overfull \hbox (5.79063pt too wide) in paragraph at lines 779--779
-[]|\TU/lmr/m/n/12 11001|  
+[]|\TU/lmr/m/n/12 05001|  
  []
 
 
@@ -1522,27 +1497,27 @@ Overfull \hbox (5.79063pt too wide) in paragraph at lines 797--797
 
 
 Overfull \hbox (5.79063pt too wide) in paragraph at lines 799--799
-[]|\TU/lmr/m/n/12 76001|  
+[]|\TU/lmr/m/n/12 11001|  
  []
 
 
 Overfull \hbox (5.79063pt too wide) in paragraph at lines 801--801
-[]|\TU/lmr/m/n/12 76001|  
+[]|\TU/lmr/m/n/12 11001|  
  []
 
 
 Overfull \hbox (5.79063pt too wide) in paragraph at lines 803--803
-[]|\TU/lmr/m/n/12 76001|  
+[]|\TU/lmr/m/n/12 11001|  
  []
 
 
 Overfull \hbox (5.79063pt too wide) in paragraph at lines 805--805
-[]|\TU/lmr/m/n/12 76001|  
+[]|\TU/lmr/m/n/12 11001|  
  []
 
 
 Overfull \hbox (5.79063pt too wide) in paragraph at lines 807--807
-[]|\TU/lmr/m/n/12 76001|  
+[]|\TU/lmr/m/n/12 11001|  
  []
 
 
@@ -1576,39 +1551,63 @@ Overfull \hbox (5.79063pt too wide) in paragraph at lines 819--819
  []
 
 
-Overfull \hbox (5.79063pt too wide) in paragraph at lines 820--820
+Overfull \hbox (5.79063pt too wide) in paragraph at lines 821--821
 []|\TU/lmr/m/n/12 76001|  
  []
 
 
-Overfull \hbox (5.79063pt too wide) in paragraph at lines 822--822
+Overfull \hbox (5.79063pt too wide) in paragraph at lines 823--823
 []|\TU/lmr/m/n/12 76001|  
  []
 
 
-Overfull \hbox (5.79063pt too wide) in paragraph at lines 824--824
+Overfull \hbox (5.79063pt too wide) in paragraph at lines 825--825
 []|\TU/lmr/m/n/12 76001|  
  []
 
-[10]
+
+Overfull \hbox (5.79063pt too wide) in paragraph at lines 827--827
+[]|\TU/lmr/m/n/12 76001|  
+ []
+
+
+Overfull \hbox (5.79063pt too wide) in paragraph at lines 829--829
+[]|\TU/lmr/m/n/12 76001|  
+ []
+
+
+Overfull \hbox (5.79063pt too wide) in paragraph at lines 830--830
+[]|\TU/lmr/m/n/12 76001|  
+ []
+
+
+Overfull \hbox (5.79063pt too wide) in paragraph at lines 832--832
+[]|\TU/lmr/m/n/12 76001|  
+ []
+
+
+Overfull \hbox (5.79063pt too wide) in paragraph at lines 834--834
+[]|\TU/lmr/m/n/12 76001|  
+ []
+
 ignored error: Infinite glue shrinkage found in box being split [11]
 ignored error: Infinite glue shrinkage found in box being split [12]
-Overfull \hbox (7.335pt too wide) in alignment at lines 846--902
+Overfull \hbox (7.335pt too wide) in alignment at lines 856--912
  [] [] [] [] [] [] 
  []
 
 ignored error: Infinite glue shrinkage found in box being split [13]
-Overfull \hbox (7.335pt too wide) in alignment at lines 907--963
+Overfull \hbox (7.335pt too wide) in alignment at lines 917--973
  [] [] [] [] [] [] 
  []
 
 ignored error: Infinite glue shrinkage found in box being split [14]
 LaTeX Font Info:    Font shape `TU/latinmodern-math.otf(1)/m/n' will be
-(Font)              scaled to size 9.0pt on input line 1009.
+(Font)              scaled to size 9.0pt on input line 1019.
 LaTeX Font Info:    Font shape `TU/latinmodern-math.otf(2)/m/n' will be
-(Font)              scaled to size 9.00082pt on input line 1009.
+(Font)              scaled to size 9.00082pt on input line 1019.
 LaTeX Font Info:    Font shape `TU/latinmodern-math.otf(3)/m/n' will be
-(Font)              scaled to size 8.99904pt on input line 1009.
+(Font)              scaled to size 8.99904pt on input line 1019.
 
 LaTeX Warning: `!h' float specifier changed to `!ht'.
 
@@ -1621,63 +1620,63 @@ LaTeX Warning: `!h' float specifier changed to `!ht'.
 
 LaTeX Warning: `!h' float specifier changed to `!ht'.
 
-[15] [16] [17]
-Overfull \hbox (59.565pt too wide) in alignment at lines 1227--1240
- [] [] [] [] [] 
- []
-
-[18]
-Overfull \hbox (59.565pt too wide) in alignment at lines 1245--1258
+[15] [16] [17] [18]
+Overfull \hbox (59.565pt too wide) in alignment at lines 1237--1250
  [] [] [] [] [] 
  []
 
 
-Overfull \hbox (59.565pt too wide) in alignment at lines 1263--1276
+Overfull \hbox (59.565pt too wide) in alignment at lines 1255--1268
  [] [] [] [] [] 
  []
 
 
-Overfull \hbox (59.565pt too wide) in alignment at lines 1281--1294
- [] [] [] [] [] 
- []
-
-ignored error: Infinite glue shrinkage found in box being split [19]
-Overfull \hbox (59.565pt too wide) in alignment at lines 1299--1312
+Overfull \hbox (59.565pt too wide) in alignment at lines 1273--1286
  [] [] [] [] [] 
  []
 
 
-Overfull \hbox (59.565pt too wide) in alignment at lines 1317--1330
+Overfull \hbox (59.565pt too wide) in alignment at lines 1291--1304
+ [] [] [] [] [] 
+ []
+
+[19]
+Overfull \hbox (59.565pt too wide) in alignment at lines 1309--1322
  [] [] [] [] [] 
  []
 
 
-Overfull \hbox (59.565pt too wide) in alignment at lines 1334--1347
+Overfull \hbox (59.565pt too wide) in alignment at lines 1327--1340
+ [] [] [] [] [] 
+ []
+
+
+Overfull \hbox (59.565pt too wide) in alignment at lines 1344--1357
  [] [] [] [] [] 
  []
 
 ignored error: Infinite glue shrinkage found in box being split [20]
-Overfull \hbox (59.565pt too wide) in alignment at lines 1352--1365
+Overfull \hbox (59.565pt too wide) in alignment at lines 1362--1375
  [] [] [] [] [] 
  []
 
 
-Overfull \hbox (59.565pt too wide) in alignment at lines 1370--1383
+Overfull \hbox (59.565pt too wide) in alignment at lines 1380--1393
  [] [] [] [] [] 
  []
 
 
-Overfull \hbox (59.565pt too wide) in alignment at lines 1388--1401
+Overfull \hbox (59.565pt too wide) in alignment at lines 1398--1411
+ [] [] [] [] [] 
+ []
+
+ignored error: Infinite glue shrinkage found in box being split [21]
+Overfull \hbox (59.565pt too wide) in alignment at lines 1415--1428
  [] [] [] [] [] 
  []
 
 
-Overfull \hbox (59.565pt too wide) in alignment at lines 1405--1418
- [] [] [] [] [] 
- []
-
-[21]
-Overfull \hbox (59.565pt too wide) in alignment at lines 1423--1436
+Overfull \hbox (59.565pt too wide) in alignment at lines 1433--1446
  [] [] [] [] [] 
  []
 
@@ -1755,11 +1754,11 @@ LaTeX Warning: There were multiply-defined labels.
 
  ) 
 Here is how much of TeX's memory you used:
- 18991 strings out of 470190
- 345965 string characters out of 5477129
- 986114 words of memory out of 5000000
- 47294 multiletter control sequences out of 15000+600000
- 636232 words of font info for 110 fonts, out of 8000000 for 9000
+ 18984 strings out of 470190
+ 345767 string characters out of 5477129
+ 968886 words of memory out of 5000000
+ 47290 multiletter control sequences out of 15000+600000
+ 636216 words of font info for 108 fonts, out of 8000000 for 9000
  14 hyphenation exceptions out of 8191
  90i,12n,114p,433b,509s stack positions out of 10000i,1000n,20000p,200000b,200000s
 

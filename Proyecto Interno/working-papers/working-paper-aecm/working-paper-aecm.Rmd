@@ -1,9 +1,7 @@
 ---
-title: "**Transmisión de precios y ajuste asimétrico al equilibrio: evidencia para las principales ciudades de Colombia mediante modelos de corrección de error [Documento de Trabajo 26/01]**"
+title: "**Transmisión de precios y ajuste asimétrico al equilibrio: evidencia para las principales ciudades de Colombia mediante modelos de corrección de error**"
 author:
   - Sergio A. Barona-Montoya^[Department of Economics and Finance, Pontificia Universidad Javeriana, Cali, Colombia. ORCID 0000-0001-8390-6673]
-abstract: |
-  [Abstract text to be added]
 output:
   pdf_document:
     citation_package: natbib
@@ -42,6 +40,8 @@ knitr::opts_knit$set(root.dir = wd_path)
 ```
 
 # Introducción
+
+La transmisión de precios entre el nivel mayorista y el minorista ha sido ampliamente estudiada en la literatura de organización industrial y economía agrícola, pero la evidencia para Colombia sigue siendo limitada, especialmente a nivel de ciudades y productos específicos. Este documento estima modelos de corrección de error simétricos y asimétricos para siete alimentos básicos en Bogotá, Medellín y Cali durante el período 2013–2024, combinando datos de precios minoristas del IPC (DANE) y precios mayoristas del SIPSA. El objetivo es identificar si los ajustes al equilibrio de largo plazo entre ambos niveles de precios difieren según el signo y la dirección del desequilibrio, lo que constituiría evidencia de asimetría en la transmisión de precios.
 
 # Datos
 
