@@ -179,4 +179,4 @@ saveWorkbook(wb,
              overwrite = TRUE)
 
 saveRDS(panel_balanceado,
-        file.path(ruta_panel, "panel_balanceado.rds"))
+        file.path(ruta_panel, "panel_v2.rds"))

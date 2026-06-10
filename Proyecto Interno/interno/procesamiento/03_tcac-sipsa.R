@@ -5,6 +5,7 @@
 library(tidyverse)
 library(openxlsx)
 library(stringi)
+library(janitor)
 
 # ============================================================
 # Rutas
@@ -14,7 +15,7 @@ base_dir <- "C:/Users/danie/OneDrive/Escritorio/Least-cost-diets-and-affordabili
 
 ruta_lista  <- file.path(base_dir, "interno/output/lista alimentos")
 ruta_tcac   <- file.path(base_dir, "composicion-nut/1823_mapeo_sipsa_tcac v1.0_2025.xlsx")
-ruta_output <- ruta_lista
+ruta_output <- file.path(base_dir, "interno/output/tcac")
 
 # ============================================================
 # Cargar lista total de alimentos
@@ -37,7 +38,18 @@ tcac <- read.xlsx(ruta_tcac, sheet = "Imputada") %>%
 lista_total <- lista_total %>%
   mutate(
     sipsa_name_join = case_when(
-      sku_code == "1519" & sipsa_name == "Ajo importado" ~ "Ajo",
+      # Corrección preexistente
+      sku_code == "1519"    & sipsa_name == "Ajo importado"                  ~ "Ajo",
+      
+      # Correcciones nuevas — mapeadas por sku_code al nombre exacto en TCAC
+      sku_code == "869594"  & sipsa_name == "Almejas con concha"             ~ "Almejas",
+      sku_code == "871595"  & sipsa_name == "Bagre rayado en postas congelado" ~ "Bagre rayado",
+      sku_code == "855053"  & sipsa_name == "Carne de cerdo, lomo sin hueso" ~ "Carne de cerdo, lomo",
+      sku_code == "1523894" & sipsa_name == "Carne de cerdo, pernil sin hueso" ~ "Carne de cerdo, lomo",
+      sku_code == "723282"  & sipsa_name == "Trucha en corte mariposa"       ~ "Trucha",
+      sku_code == "1101"    & sipsa_name == "Uva roja"                       ~ "Uva comun",
+      sku_code == "1601993" & sipsa_name == "Yuca ICA"                       ~ "Yuca",
+      
       TRUE ~ sipsa_name
     )
   )
@@ -89,6 +101,15 @@ cat("Alimentos SIN match en TCAC:   ", nrow(sin_match), "\n\n")
 # Guardar outputs
 # ============================================================
 
-write.xlsx(lista_con_nut,
+# Limpiar nombres de columnas
+lista_con_nut_clean <- lista_con_nut %>%
+  clean_names()
+
+# Excel 
+write.xlsx(lista_con_nut_clean,
            file.path(ruta_output, "composicion_310526.xlsx"),
            overwrite = TRUE)
+
+# RDS 
+saveRDS(lista_con_nut_clean,
+        file.path(ruta_output, "composicion_310526.rds"))

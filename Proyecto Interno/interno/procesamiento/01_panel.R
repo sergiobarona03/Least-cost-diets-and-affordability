@@ -239,4 +239,4 @@ write.xlsx(
 saveRDS(panel_julio, file.path(ruta_salida, "panel_julio.rds"))
 saveRDS(panel_agosto, file.path(ruta_salida, "panel_agosto.rds"))
 saveRDS(panel_septiembre, file.path(ruta_salida, "panel_septiembre.rds"))
-saveRDS(panel_final, file.path(ruta_salida, "panel.rds"))
+saveRDS(panel_final, file.path(ruta_salida, "panel_v1.rds"))
