@@ -1,0 +1,203 @@
+---
+title: "Pronostico de precios vs Web Scraping"
+output: pdf_document
+date: "`r Sys.Date()`"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, warning = FALSE, message = FALSE,
+                      fig.width = 10, fig.height = 4)
+```
+
+```{r packages}
+library(tidyverse)
+library(readxl)
+library(janitor)
+library(lubridate)
+library(knitr)
+library(stringi)
+```
+
+```{r dirs}
+dirs <- c(
+  "C:/Users/Portatil/Desktop/Least-cost-diets-and-affordability/Proyecto Interno",
+  "C:/Users/danie/OneDrive/Escritorio/Least-cost-diets-and-affordability/Proyecto Interno"
+)
+base_dir <- dirs[dir.exists(dirs)][1]
+if (is.na(base_dir)) stop("Ninguno de los directorios existe")
+```
+
+```{r load-data}
+forecast <- readRDS(file.path(
+  base_dir,
+  "food-security-paper/output/forecasting_fullsample/prices_extended_city_article_month.rds"
+))
+
+panel <- readRDS(file.path(
+  base_dir,
+  "interno/output/paneles/panel_mensual_cities_tcac.rds"
+))
+
+mapeo <- read_excel(file.path(
+  base_dir,
+  "Time-series/mapeo_retail_sipsa_v3.xlsx"
+)) %>%
+  janitor::clean_names() %>%
+  rename(articulo_dane = retail, articulo_sipsa = sipsa) %>%
+  mutate(across(everything(), ~ stri_trans_general(str_to_title(.x), "Latin-ASCII"))) %>%
+  distinct()
+```
+
+```{r prep}
+limpiar <- function(x) stri_trans_general(str_to_title(trimws(x)), "Latin-ASCII")
+
+# Mapeo explicito: nombre en cada base -> etiqueta comun para el join
+ciudades_fc    <- c("BOGOTA D.C.", "CALI",  "MEDELLIN")
+ciudades_ws    <- c("Bogotá",      "Cali",  "Medellín")
+ciudades_label <- c("Bogota",      "Cali",  "Medellin")
+
+fc <- forecast %>%
+  janitor::clean_names() %>%
+  mutate(
+    fecha    = as.Date(fecha),
+    ciudad   = ciudades_label[match(ciudad, ciudades_fc)],
+    articulo = limpiar(articulo)
+  ) %>%
+  filter(!is.na(ciudad)) %>%
+  select(ciudad, articulo_dane = articulo, fecha, precio_final)
+
+ws <- panel %>%
+  janitor::clean_names() %>%
+  mutate(
+    fecha    = as.Date(fecha),
+    ciudad   = ciudades_label[match(ciudad, ciudades_ws)],
+    articulo = limpiar(articulo)
+  ) %>%
+  filter(!is.na(ciudad)) %>%
+  select(ciudad, articulo_sipsa = articulo, fecha, precio_ws = precio_500g)
+
+ciudades_sel <- ciudades_label
+
+# Periodo de comparacion
+fecha_ini <- as.Date("2025-07-01")
+fecha_fin <- as.Date("2025-09-01")
+
+datos <- fc %>%
+  inner_join(mapeo, by = "articulo_dane", relationship = "many-to-many") %>%
+  inner_join(ws, by = c("ciudad", "articulo_sipsa", "fecha")) %>%
+  filter(fecha >= fecha_ini, fecha <= fecha_fin)
+```
+
+# Tablas resumen
+
+Las tablas muestran, por alimento, la diferencia media en COP entre el pronostico
+y el web scraping en el periodo solapado. El web scraping es la referencia:
+un valor positivo indica que el pronostico esta por encima del precio observado
+en tienda; negativo que lo subestima.
+
+```{r tabla, results='asis'}
+for (cd in ciudades_sel) {
+  
+  df_ciudad <- datos %>% filter(ciudad == cd)
+  if (nrow(df_ciudad) == 0) next
+  
+  cat(sprintf("\n\n## %s\n\n", cd))
+  
+  df_ciudad %>%
+    mutate(dif = precio_final - precio_ws) %>%
+    group_by(articulo_sipsa, articulo_dane) %>%
+    summarise(
+      dif_cop = round(mean(dif, na.rm = TRUE)),
+      .groups = "drop"
+    ) %>%
+    mutate(direccion = ifelse(dif_cop > 0, "Sobreestima", "Subestima")) %>%
+    arrange(desc(abs(dif_cop))) %>%
+    rename(
+      `Alimento (SIPSA)` = articulo_sipsa,
+      `Alimento (DANE)`  = articulo_dane,
+      `Dif. media (COP)` = dif_cop,
+      `Direccion`        = direccion
+    ) %>%
+    kable(caption = sprintf("%s: pronostico vs web scraping", cd)) %>%
+    print()
+}
+```
+
+\newpage
+
+# Graficas por ciudad y alimento
+
+Linea azul solida = pronostico. Linea coral punteada = web scraping.
+El recuadro en la esquina superior derecha indica la diferencia media en COP
+(pronostico menos web scraping).
+
+```{r plots, results='asis', fig.height=4}
+out_base <- file.path(base_dir, "interno/output/forecasting_vs_webscrap")
+
+for (cd in ciudades_sel) {
+  
+  df_ciudad <- datos %>% filter(ciudad == cd)
+  if (nrow(df_ciudad) == 0) next
+  
+  out_dir <- file.path(out_base, cd)
+  dir.create(out_dir, showWarnings = FALSE, recursive = TRUE)
+  
+  cat(sprintf("\n\n## %s\n\n", cd))
+  
+  for (al in sort(unique(df_ciudad$articulo_sipsa))) {
+    
+    df_al       <- df_ciudad %>% filter(articulo_sipsa == al)
+    nombre_dane <- df_al$articulo_dane[1]
+    
+    dif_cop <- mean(df_al$precio_final - df_al$precio_ws, na.rm = TRUE)
+    signo   <- ifelse(dif_cop >= 0, "+", "")
+    badge   <- sprintf("%s%.0f COP", signo, dif_cop)
+    
+    x_badge <- max(df_al$fecha, na.rm = TRUE)
+    y_badge <- max(c(df_al$precio_final, df_al$precio_ws), na.rm = TRUE)
+    
+    p <- df_al %>%
+      pivot_longer(c(precio_final, precio_ws), names_to = "fuente", values_to = "precio") %>%
+      mutate(fuente = recode(fuente,
+        precio_final = "Pronostico",
+        precio_ws    = "Web scraping"
+      )) %>%
+      ggplot(aes(x = fecha, y = precio, colour = fuente, linetype = fuente)) +
+      geom_line(linewidth = 0.7) +
+      annotate("label",
+               x = x_badge, y = y_badge,
+               label = badge,
+               hjust = 1, vjust = 1,
+               size = 3, fill = "white", colour = "grey30",
+               label.size = 0.3) +
+      scale_colour_manual(values = c("Pronostico" = "#2A5FA5", "Web scraping" = "#C04B22")) +
+      scale_linetype_manual(values = c("Pronostico" = "solid", "Web scraping" = "dashed")) +
+      scale_x_date(date_labels = "%b %Y", date_breaks = "3 months") +
+      scale_y_continuous(labels = scales::comma_format(big.mark = ".", decimal.mark = ",")) +
+      labs(
+        title    = al,
+        subtitle = sprintf("DANE: %s  |  SIPSA: %s", nombre_dane, al),
+        x        = NULL,
+        y        = "COP / 500 g",
+        colour   = NULL,
+        linetype = NULL
+      ) +
+      theme_bw(base_size = 11) +
+      theme(
+        panel.grid.major.x = element_blank(),
+        panel.grid.minor   = element_blank(),
+        axis.text.x        = element_text(angle = 45, hjust = 1, size = 8),
+        legend.position    = "bottom",
+        plot.title         = element_text(face = "bold"),
+        plot.subtitle      = element_text(colour = "grey40", size = 9)
+      )
+    
+    print(p)
+    
+    ggsave(
+      filename = file.path(out_dir, paste0(janitor::make_clean_names(al), ".png")),
+      plot = p, width = 10, height = 4.5, dpi = 180
+    )
+  }
+}
+```

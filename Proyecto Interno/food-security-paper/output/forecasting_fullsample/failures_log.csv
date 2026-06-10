@@ -1,8 +1,29 @@
 ciudad,articulo,motivo,subclase,method
+BOGOTA D.C.,AGUA  MINERAL,No observed prices in DANE series,NA,NA
+BOGOTA D.C.,CAMARONES O VARIEDAD DISPONIBL,IPC missing at anchor month,011303,gasto_basico
+BOGOTA D.C.,CEBADA,No se logrÛ asignar una ˙nica clase del IPC,NA,NA
+BOGOTA D.C.,CUCHUCO  DE MA√çZ,No se logrÛ asignar una ˙nica clase del IPC,NA,NA
+BOGOTA D.C.,CUCHUCO  DE TRIGO,IPC missing at anchor month,011106,producto
+BOGOTA D.C.,MANGOS,No se logrÛ asignar una ˙nica clase del IPC,NA,NA
+BOGOTA D.C.,MANTEQUILLA,No se logrÛ asignar una ˙nica clase del IPC,NA,NA
+BOGOTA D.C.,MELOCOTONES O VARIEDAD DISPONI,No se logrÛ asignar una ˙nica clase del IPC,NA,NA
+BOGOTA D.C.,MELOCOTONES O VARIEDAD DISPONIBLE,No se logrÛ asignar una ˙nica clase del IPC,NA,NA
 CALI,AGUA  MINERAL,No observed prices in DANE series,NA,NA
 CALI,CAMARONES O VARIEDAD DISPONIBL,IPC missing at anchor month,011303,gasto_basico
 CALI,FECULA DE MA√çZ,IPC missing at anchor month,011105,producto
-CALI,MANGOS,No se logrs asignar una znica clase del IPC,NA,NA
-CALI,MANTEQUILLA,No se logrs asignar una znica clase del IPC,NA,NA
-CALI,MELOCOTONES O VARIEDAD DISPONI,No se logrs asignar una znica clase del IPC,NA,NA
-CALI,MELOCOTONES O VARIEDAD DISPONIBLE,No se logrs asignar una znica clase del IPC,NA,NA
+CALI,MANGOS,No se logrÛ asignar una ˙nica clase del IPC,NA,NA
+CALI,MANTEQUILLA,No se logrÛ asignar una ˙nica clase del IPC,NA,NA
+CALI,MELOCOTONES O VARIEDAD DISPONI,No se logrÛ asignar una ˙nica clase del IPC,NA,NA
+CALI,MELOCOTONES O VARIEDAD DISPONIBLE,No se logrÛ asignar una ˙nica clase del IPC,NA,NA
+MEDELLIN,AGUA  MINERAL,No observed prices in DANE series,NA,NA
+MEDELLIN,ARROZ PARA SOPA,IPC missing at anchor month,011101,gasto_basico
+MEDELLIN,CAMARONES O VARIEDAD DISPONIBL,IPC missing at anchor month,011303,gasto_basico
+MEDELLIN,CEBADA,No se logrÛ asignar una ˙nica clase del IPC,NA,NA
+MEDELLIN,COLICERO O GUINEO,IPC missing at anchor month,011704,gasto_basico
+MEDELLIN,MANGOS,No se logrÛ asignar una ˙nica clase del IPC,NA,NA
+MEDELLIN,MANTEQUILLA,No se logrÛ asignar una ˙nica clase del IPC,NA,NA
+MEDELLIN,MA√çZ  PETO O TRILLADO,IPC missing at anchor month,011105,producto
+MEDELLIN,MELOCOTONES O VARIEDAD DISPONI,No se logrÛ asignar una ˙nica clase del IPC,NA,NA
+MEDELLIN,MELOCOTONES O VARIEDAD DISPONIBLE,No se logrÛ asignar una ˙nica clase del IPC,NA,NA
+MEDELLIN,TOCINO,IPC missing at anchor month,011202,gasto_basico
+MEDELLIN,VISCERAS - HIGADO,IPC missing at anchor month,011201,gasto_basico

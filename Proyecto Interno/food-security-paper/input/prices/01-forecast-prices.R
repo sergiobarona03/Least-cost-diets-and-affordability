@@ -51,6 +51,7 @@ safe_name <- function(x) {
   x <- gsub("^_|_$", "", x)
   x
 }
+strip_accents <- function(x) iconv(x, from = "UTF-8", to = "ASCII//TRANSLIT")
 
 # Vector de meses
 meses_esp <- c("Ene","Feb","Mar","Abr",
@@ -94,9 +95,10 @@ ipc_raw <- bind_rows(ipc_raw1, ipc_raw2)
 # Limpiar la base de datos y recodificar variables
 ipc <- ipc_raw %>%
   mutate(
-    ciudad = case_when(
+    ciudad = strip_accents(ciudad),          
+    ciudad = case_when(                      
       ciudad == "CARTAGENA DE INDIAS" ~ "CARTAGENA",
-      ciudad == "BOGOTÁ, D.C." ~ "BOGOTÁ D.C.",
+      ciudad == "BOGOTA, D.C."        ~ "BOGOTA D.C.",
       TRUE ~ ciudad
     ),
     cod_subclase = substr(subclase, 1, 8),
@@ -106,8 +108,8 @@ ipc <- ipc_raw %>%
     fecha = make_date(ano, mes_num)
   ) %>%
   select(ciudad, cod_subclase, fecha, ano, mes_num, ipc) %>%
-  filter(!is.na(fecha), !is.na(ipc), 
-         !is.na(cod_subclase), 
+  filter(!is.na(fecha), !is.na(ipc),
+         !is.na(cod_subclase),
          !is.na(ciudad)) %>%
   arrange(ciudad, cod_subclase, fecha)
 
@@ -131,9 +133,10 @@ corr_producto <- read_excel(in_corr2) %>%
 # -----------------------------
 # 4. Ciudades y horizontes de tiempo
 # -----------------------------
-cities_use <- c("CALI", "BOGOTÁ D.C.", "MEDELLÍN")
+cities_use <- c("CALI", "BOGOTA D.C.", "MEDELLIN")  
 
 dane_use <- dane %>%
+  mutate(nombre_ciudad = strip_accents(nombre_ciudad)) %>%  
   filter(nombre_ciudad %in% cities_use) %>%
   arrange(nombre_ciudad, articulo, fecha)
 
