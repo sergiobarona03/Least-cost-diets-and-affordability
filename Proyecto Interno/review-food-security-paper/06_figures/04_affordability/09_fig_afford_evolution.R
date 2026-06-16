@@ -20,8 +20,7 @@ library(lubridate)
 # -----------------------------------------------------------------------
 # 1. Load and clean
 # -----------------------------------------------------------------------
-afford <- read_excel(file.path(AFFORD_DIR, "afford_results.xlsx"),
-                     sheet = 1) %>%
+afford <- read_excel(file.path(AFFORD_DIR, "afford_results.xlsx")) %>%
   mutate(
     fecha      = as.Date(fecha),
     ciudad_lbl = case_when(
@@ -62,7 +61,9 @@ fig9 <- ggplot(afford_monthly,
                aes(x = fecha, y = deciles,
                    fill = rate_cat)) +
   geom_tile(color = "white", linewidth = 0.3) +
-  facet_grid(model ~ ciudad_lbl)  +
+  facet_grid(model ~ ciudad_lbl) +
+  scale_x_date(date_breaks = "1 year", date_labels = "%Y",
+               expand = c(0, 0)) +
   scale_fill_manual(
     values = c(
       "0"          = "#F7F7F7",
@@ -78,8 +79,8 @@ fig9 <- ggplot(afford_monthly,
     subtitle = paste0("Monthly share of households unable to afford each diet. ",
                       "Darker fill indicates higher unaffordability."),
     caption  = paste0(
-      "Note: Annual mean of monthly unaffordability rates. ",
-      "Unaffordability = per capita income below daily diet cost.\n",
+      "Note: Monthly unaffordability rate (FGT0) = share of households ",
+      "whose annual food expenditure per capita is below the annual diet cost.\n",
       "CoCA = Cost of Caloric Adequacy; CoNA = Cost of Nutritional Adequacy; ",
       "CoRD = Cost of Recommended Diet."),
     x = NULL,

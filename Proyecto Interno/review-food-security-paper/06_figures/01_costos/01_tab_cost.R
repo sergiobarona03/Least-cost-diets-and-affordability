@@ -18,7 +18,7 @@
 ########################################################
 
 source("00_config.R")
-source(file.path(REVIEW_DIR, "06_figures", "00_fig_config.R"))
+source(file.path(REVIEW_DIR, "05_figures", "00_fig_config.R"))
 library(tidyverse)
 library(scales)
 library(lubridate)
@@ -39,12 +39,18 @@ cost_monthly <- hcost %>%
   dplyr::summarise(cost_pc = mean(per_capita, na.rm = TRUE), .groups = "drop") %>%
   left_join(deflator, by = c("ciudad", "fecha")) %>%
   mutate(
-    cost_real  = cost_pc * deflator,
-    year       = year(fecha),
-    ciudad_lbl = CITY_LABS[ciudad]) %>%
+    cost_nominal = cost_pc,
+    cost_real    = cost_pc * deflator,
+    year         = year(fecha),
+    ciudad_lbl   = CITY_LABS[ciudad]) %>%
   filter(fecha >= PAPER_START, fecha <= PAPER_END, !is.na(cost_real))
 
-# Wide format for premiums
+# Wide format — nominal
+cost_wide_nom <- cost_monthly %>%
+  select(ciudad_lbl, fecha, year, model, cost_nominal) %>%
+  pivot_wider(names_from = model, values_from = cost_nominal)
+
+# Wide format — real + premiums (adimensional)
 cost_wide <- cost_monthly %>%
   select(ciudad_lbl, fecha, year, model, cost_real) %>%
   pivot_wider(names_from = model, values_from = cost_real) %>%
@@ -76,15 +82,15 @@ PERIODS  <- c("2019–2024", as.character(2019:2024))
 COSTS    <- c("CoCA", "CoNA", "CoRD")
 PREMS    <- c("CoNA/CoCA", "CoRD/CoCA", "CoRD/CoNA")
 
-make_panel <- function(vars, digits_mean, digits_sd) {
+# make_panel now needs a data argument
+make_panel <- function(data_wide, vars, digits_mean, digits_sd) {
   rows <- list()
   for (city in CITIES) {
     for (period in PERIODS) {
-      # Filter data
       df <- if (period == "2019–2024") {
-        cost_wide %>% filter(ciudad_lbl == city)
+        data_wide %>% filter(ciudad_lbl == city)
       } else {
-        cost_wide %>% filter(ciudad_lbl == city,
+        data_wide %>% filter(ciudad_lbl == city,
                              year == as.integer(period))
       }
       row <- tibble(City = city, Period = period)
@@ -97,11 +103,16 @@ make_panel <- function(vars, digits_mean, digits_sd) {
   bind_rows(rows)
 }
 
-panel_costs <- make_panel(COSTS, digits_mean = 0, digits_sd = 0)
-panel_prems <- make_panel(PREMS, digits_mean = 3, digits_sd = 3)
+panel_costs_nom <- make_panel(cost_wide_nom, COSTS,
+                              digits_mean = 0, digits_sd = 0)
+panel_costs_real <- make_panel(cost_wide,     COSTS,
+                               digits_mean = 0, digits_sd = 0)
+panel_prems      <- make_panel(cost_wide,     PREMS,
+                               digits_mean = 3, digits_sd = 3)
 
-message("Panel costs: ", nrow(panel_costs), " rows")
-message("Panel prems: ", nrow(panel_prems), " rows")
+message("Panel nominal:  ", nrow(panel_costs_nom),  " rows")
+message("Panel real:     ", nrow(panel_costs_real), " rows")
+message("Panel premiums: ", nrow(panel_prems),       " rows")
 
 # -----------------------------------------------------------------------
 # 4. LaTeX output
@@ -153,11 +164,17 @@ write_latex_panel <- function(panel, vars, panel_title, label_suffix) {
   lines
 }
 
-tex_costs <- write_latex_panel(
-  panel_costs, COSTS,
+tex_nom <- write_latex_panel(
+  panel_costs_nom, COSTS,
+  paste0("Mean annual nominal per capita daily diet costs by city, ",
+         "2019\\textendash{}2024 (nominal COP/day)"),
+  "nominal")
+
+tex_real <- write_latex_panel(
+  panel_costs_real, COSTS,
   paste0("Mean annual real per capita daily diet costs by city, ",
-         "2019\\textendash{}2024 (real COP/day)"),
-  "levels")
+         "2019\\textendash{}2024 (real COP/day, base: December 2018)"),
+  "real")
 
 tex_prems <- write_latex_panel(
   panel_prems, PREMS,
@@ -165,10 +182,12 @@ tex_prems <- write_latex_panel(
          "2019\\textendash{}2024"),
   "premiums")
 
-writeLines(tex_costs,
-           file.path(TAB_DIR, "final", "tab01a_cost_levels.tex"))
+writeLines(tex_nom,
+           file.path(TAB_DIR, "final", "tab01a_cost_nominal.tex"))
+writeLines(tex_real,
+           file.path(TAB_DIR, "final", "tab01b_cost_real.tex"))
 writeLines(tex_prems,
-           file.path(TAB_DIR, "final", "tab01b_cost_premiums.tex"))
+           file.path(TAB_DIR, "final", "tab01c_cost_premiums.tex"))
 
 # -----------------------------------------------------------------------
 # 5. Excel output — two sheets
@@ -247,14 +266,19 @@ write_panel_sheet <- function(wb, sheet_name, panel, vars, title) {
 wb <- createWorkbook()
 
 write_panel_sheet(
-  wb, "A. Costs",
-  panel_costs, COSTS,
-  "Table 1A. Mean real per capita daily diet costs (real COP/day, base: December 2018)")
+  wb, "A. Nominal costs",
+  panel_costs_nom, COSTS,
+  "Table 1A. Mean nominal per capita daily diet costs (COP/day)")
 
 write_panel_sheet(
-  wb, "B. Premiums",
+  wb, "B. Real costs",
+  panel_costs_real, COSTS,
+  "Table 1B. Mean real per capita daily diet costs (real COP/day, base: December 2018)")
+
+write_panel_sheet(
+  wb, "C. Premiums",
   panel_prems, PREMS,
-  "Table 1B. Nutritional quality premiums (cost ratios)")
+  "Table 1C. Nutritional quality premiums (cost ratios, adimensional)")
 
 saveWorkbook(wb,
              file.path(TAB_DIR, "final", "tab01_cost_annual.xlsx"),

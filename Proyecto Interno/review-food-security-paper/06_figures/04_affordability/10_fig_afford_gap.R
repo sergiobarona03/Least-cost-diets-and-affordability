@@ -69,7 +69,7 @@ base_theme <- paper_theme() +
 fig10 <- ggplot(afford_agg,
                 aes(x = fecha, y = rate, color = ciudad_lbl)) +
   geom_line(linewidth = 0.85) +
-  facet_wrap(~ model, nrow = 3, scales = "free_y") +
+  facet_wrap(~ model, nrow = 1) +
   city_scale +
   date_axis() +
   scale_y_continuous(labels = function(x) sprintf("%.0f%%", x),
@@ -78,8 +78,9 @@ fig10 <- ggplot(afford_agg,
     title   = paste0("Figure 10. Aggregate monthly unaffordability rate ",
                      "by city and diet model, 2019\u20132024"),
     caption = paste0(
-      "Note: Unaffordability rate = share of households whose per capita ",
-      "income is below the daily diet cost, averaged across all income deciles.\n",
+      "Note: Unaffordability rate (FGT0) = share of households whose annual ",
+      "food expenditure per capita is below the annual diet cost, ",
+      "averaged across all income deciles (unweighted mean).\n",
       "CoCA = Cost of Caloric Adequacy; CoNA = Cost of Nutritional Adequacy; ",
       "CoRD = Cost of Recommended Diet."),
     x = NULL,
@@ -95,8 +96,51 @@ fig10 <- ggplot(afford_agg,
     legend.margin     = margin(3, 8, 3, 8))
 
 ggsave(file.path(FIG_DIR, "final", "fig10_afford_gap.png"),
-       fig10, width = 8, height = 12, dpi = 300, bg = "white")
+       fig10, width = 12, height = 8, dpi = 300, bg = "white")
 ggsave(file.path(FIG_DIR, "final", "fig10_afford_gap.pdf"),
-       fig10, width = 8, height = 12)
+       fig10, width = 12, height = 8)
 
-message("Figure 10 saved.")
+# -----------------------------------------------------------------------
+# Panel B: aggregate monthly gap (FGT1) by city × model
+# -----------------------------------------------------------------------
+afford_gap_agg <- afford %>%
+  group_by(ciudad_lbl, model, fecha) %>%
+  dplyr::summarise(gap = mean(gap, na.rm = TRUE),
+                   .groups = "drop")
+
+fig10b <- ggplot(afford_gap_agg,
+                 aes(x = fecha, y = gap, color = ciudad_lbl)) +
+  geom_line(linewidth = 0.85) +
+  facet_wrap(~ model, nrow = 3, scales = "free_y") +
+  city_scale +
+  date_axis() +
+  scale_y_continuous(
+    labels = function(x) sprintf("%.3f", x),
+    limits = c(0, NA)) +
+  labs(
+    title   = paste0("Figure 10B. Aggregate monthly affordability gap (FGT1) ",
+                     "by city and diet model, 2019–2024"),
+    caption = paste0(
+      "Note: Affordability gap (FGT1) = mean proportional deficit of food budget ",
+      "relative to diet cost, averaged across all income deciles.\n",
+      "Scale: 0 = no gap; values closer to 1 indicate deeper unaffordability. ",
+      "CoCA = Cost of Caloric Adequacy; CoNA = Cost of Nutritional Adequacy; ",
+      "CoRD = Cost of Recommended Diet."),
+    x = NULL,
+    y = "Affordability gap (FGT1, 0–1)") +
+  base_theme +
+  theme(
+    legend.position   = "top",
+    legend.direction  = "horizontal",
+    legend.text       = element_text(family = "serif", size = 10),
+    legend.key.width  = unit(1.4, "cm"),
+    legend.background = element_rect(color = "black", fill = "white",
+                                     linewidth = 0.5),
+    legend.margin     = margin(3, 8, 3, 8))
+
+ggsave(file.path(FIG_DIR, "final", "fig10b_afford_gap_series.png"),
+       fig10b, width = 8, height = 12, dpi = 300, bg = "white")
+ggsave(file.path(FIG_DIR, "final", "fig10b_afford_gap_series.pdf"),
+       fig10b, width = 8, height = 12)
+
+message("Figure 10 saved (rate + gap).")

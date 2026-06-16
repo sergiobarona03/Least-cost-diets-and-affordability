@@ -80,7 +80,7 @@ fig8 <- ggplot(afford_compare,
                       "Comparison before and after the inflationary episode."),
     caption  = paste0(
       "Note: Unaffordability rate = share of households in each decile ",
-      "whose per capita income is below the daily diet cost.\n",
+      "whose annual food expenditure per capita is below the annual diet cost (FGT0).\n",
       "CoCA = Cost of Caloric Adequacy; CoNA = Cost of Nutritional Adequacy; ",
       "CoRD = Cost of Recommended Diet.\n",
       "Annual mean computed over monthly observations within each year."),
@@ -104,4 +104,52 @@ ggsave(file.path(FIG_DIR, "final", "fig08_afford_deciles.png"),
 ggsave(file.path(FIG_DIR, "final", "fig08_afford_deciles.pdf"),
        fig8, width = 12, height = 9)
 
-message("Figure 8 saved.")
+# -----------------------------------------------------------------------
+# Panel B: affordability gap (FGT1) by decile × city × model
+# 2019 vs 2024 — mirrors structure of fig8 but shows gap
+# -----------------------------------------------------------------------
+fig8b <- ggplot(afford_compare,
+                aes(x = deciles, y = gap,
+                    color = year_lbl,
+                    group = year_lbl)) +
+  geom_line(linewidth = 0.8) +
+  geom_point(size = 2) +
+  facet_grid(ciudad_lbl ~ model) +
+  scale_color_manual(values = year_cols, name = NULL) +
+  scale_y_continuous(
+    labels = function(x) sprintf("%.2f", x),
+    limits = c(0, NA)) +
+  scale_x_discrete(labels = 1:10) +
+  labs(
+    title    = paste0("Figure 8B. Affordability gap (FGT1) by income decile ",
+                      "and city, 2019 vs 2024"),
+    subtitle = paste0("Mean proportional deficit of food budget relative to diet cost. ",
+                      "Averaged across all households in the decile (including affordable ones)."),
+    caption  = paste0(
+      "Note: Gap (FGT1) = mean of (diet cost - food expenditure) / diet cost ",
+      "across all households in the decile,\n",
+      "where the numerator is set to zero for households above the threshold. ",
+      "Scale: 0 = no gap; 1 = food budget covers 0%% of diet cost.\n",
+      "CoCA = Cost of Caloric Adequacy; CoNA = Cost of Nutritional Adequacy; ",
+      "CoRD = Cost of Recommended Diet."),
+    x = "Income decile",
+    y = "Affordability gap (FGT1, 0–1)") +
+  paper_theme() +
+  theme(
+    legend.position   = "top",
+    legend.direction  = "horizontal",
+    legend.text       = element_text(family = "serif", size = 10),
+    legend.key.width  = unit(1.2, "cm"),
+    legend.background = element_rect(color = "black", fill = "white",
+                                     linewidth = 0.5),
+    legend.margin     = margin(3, 8, 3, 8),
+    axis.text.x       = element_text(angle = 0, size = 8),
+    strip.text        = element_text(face = "bold", size = 9),
+    panel.spacing     = unit(0.3, "cm"))
+
+ggsave(file.path(FIG_DIR, "final", "fig08b_afford_gap_deciles.png"),
+       fig8b, width = 12, height = 9, dpi = 300, bg = "white")
+ggsave(file.path(FIG_DIR, "final", "fig08b_afford_gap_deciles.pdf"),
+       fig8b, width = 12, height = 9)
+
+message("Figure 8 saved (rate + gap).")

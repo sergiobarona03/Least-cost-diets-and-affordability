@@ -44,9 +44,11 @@ afford <- read_excel(file.path(AFFORD_DIR, "afford_results.xlsx")) %>%
 fmt_rate <- function(x) sprintf("%.1f (%.1f)",
                                 mean(x, na.rm=TRUE), sd(x, na.rm=TRUE))
 
-fmt_gap <- function(x) sprintf("%s (%s)",
-                               scales::comma(round(mean(x, na.rm=TRUE), 0), big.mark=","),
-                               scales::comma(round(sd(x,   na.rm=TRUE), 0), big.mark=","))
+fmt_gap <- function(x) sprintf("%.3f (%.3f)",
+                               mean(x, na.rm=TRUE), sd(x, na.rm=TRUE))
+
+fmt_sev <- function(x) sprintf("%.3f (%.3f)",
+                               mean(x, na.rm=TRUE), sd(x, na.rm=TRUE))
 
 DECILES <- paste0("Decil ", 1:10)
 CITIES  <- c("Bogotá", "Medellín", "Cali")
@@ -85,6 +87,7 @@ make_panel <- function(fmt_fn, value_col) {
 
 panel_rate <- make_panel(fmt_rate, "rate")
 panel_gap  <- make_panel(fmt_gap,  "gap")
+panel_sev  <- make_panel(fmt_sev,  "severity")
 
 message(sprintf("  Table: %d rows × %d columns",
                 nrow(panel_rate), ncol(panel_rate)))
@@ -155,9 +158,16 @@ writeLines(
 writeLines(
   write_latex(panel_gap,
               paste0("Affordability gap by income decile, city and diet model, ",
-                     "2019\\textendash{}2024 (nominal COP/day)"),
+                     "2019\\textendash{}2024. Mean proportional deficit of food budget (FGT1, 0\\textendash{}1)."),
               "tab:afford_gap"),
   file.path(TAB_DIR, "final", "tab04b_afford_gap.tex"))
+
+writeLines(
+  write_latex(panel_sev,
+              paste0("Affordability severity (FGT2) by income decile, city and diet model, ",
+                     "2019\textendash{}2024 (proportion 0\textendash{}1)"),
+              "tab:afford_severity"),
+  file.path(TAB_DIR, "final", "tab04c_afford_severity.tex"))
 
 # -----------------------------------------------------------------------
 # 5. Excel
@@ -252,10 +262,16 @@ write_sheet(wb, "A. Rate (%)",
             panel_rate,
             paste0("Table 4A. Unaffordability rate (%) by income decile, ",
                    "city and diet model, 2019\u20132024"))
-write_sheet(wb, "B. Gap (COP/day)",
+write_sheet(wb, "B. Gap (FGT1, 0-1)",
             panel_gap,
-            paste0("Table 4B. Affordability gap (COP/day) by income decile, ",
+            paste0("Table 4B. Affordability gap (FGT1, 0–1) by income decile, ",
                    "city and diet model, 2019\u20132024"))
+
+write_sheet(wb, "C. Severity (FGT2, 0-1)",
+            panel_sev,
+            paste0("Table 4C. Affordability severity (FGT2, 0–1) by income decile, ",
+                   "city and diet model, 2019–2024. ",
+                   "Squared gap, giving greater weight to households furthest from threshold."))
 
 saveWorkbook(wb,
              file.path(TAB_DIR, "final", "tab04_afford_summary.xlsx"),

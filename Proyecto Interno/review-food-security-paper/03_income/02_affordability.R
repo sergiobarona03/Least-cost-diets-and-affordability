@@ -36,7 +36,7 @@ message(sprintf(
   nrow(deciles_final), nrow(hcost_full)))
 
 # -----------------------------------------------------------------------
-# Prepare income data for Afford()
+# Prepare income data for Afford_Exp()
 # Recode city names to match hcost_full (MEDELLÍN, BOGOTÁ D.C., CALI)
 # -----------------------------------------------------------------------
 income_df <- deciles_final %>%
@@ -46,7 +46,7 @@ income_df <- deciles_final %>%
       dominio == "MEDELLIN" ~ "MEDELLÍN",
       dominio == "BOGOTA"   ~ "BOGOTÁ D.C.",
       TRUE                  ~ dominio),
-    # Afford() expected column names
+    # Afford_Exp() expected column names
     ung                      = nug,
     deciles                  = paste0("Decil ", deciles),
     food_exp_per_capita      = food_exp_pc_month,
@@ -89,7 +89,7 @@ cord_df <- hcost_full %>%
   mutate(year = year(fecha), mes = month(fecha))
 
 # -----------------------------------------------------------------------
-# Loop: Afford() for each city × month
+# Loop: Afford_Exp() for each city × month
 # -----------------------------------------------------------------------
 city_vector <- sort(unique(income_df$ciudad))
 date_vector <- income_df %>%
@@ -131,7 +131,7 @@ for (city.x in city_vector) {
         nrow(cord_aux) == 0) next
     
     out <- tryCatch(
-      Afford(
+      Afford_Exp(
         Hexpense   = inc_aux,
         Model_CoCA = coca_aux,
         Model_CoNA = cona_aux,
