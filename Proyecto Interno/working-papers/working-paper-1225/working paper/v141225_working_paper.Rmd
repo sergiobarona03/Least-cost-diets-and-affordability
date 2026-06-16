@@ -13,7 +13,16 @@ knitr::opts_chunk$set(echo = FALSE, message = FALSE, warning = FALSE)
 ```
 
 ```{r, echo = FALSE}
-directorio_base <- "C:/Users/Portatil/Desktop/Least-cost-diets-and-affordability/Proyecto Interno"
+dirs <- c(
+  "C:/Users/Portatil/Desktop/Least-cost-diets-and-affordability/Proyecto Interno",
+  "C:/Users/danie/OneDrive/Escritorio/Least-cost-diets-and-affordability/Proyecto Interno"
+)
+
+directorio_base <- dirs[dir.exists(dirs)][1]
+
+if (is.na(directorio_base)) {
+  stop("Ninguno de los directorios existe")
+}
 ```
 
 ```{r}
@@ -121,12 +130,12 @@ source(
 )
 
 # Cargar datos de composición nutricional
-sipsa_tcac <- readxl::read_excel("composicion-nut/1823_mapeo_sipsa_tcac v1.0_2025.xlsx") %>%
+sipsa_tcac <- readxl::read_excel(file.path(directorio_base,"composicion-nut/1823_mapeo_sipsa_tcac v1.0_2025.xlsx")) %>%
   janitor::clean_names() %>%
   rename(food_sipsa = alimento_nombre_sipsa)
 
 # Cargar mapeo IPC - SIPSA
-ipc_sipsa = readxl::read_excel("composicion-nut\\Copia_DANE_4_DIC_2025act.xlsx") %>%
+ipc_sipsa = readxl::read_excel(file.path(directorio_base,"composicion-nut\\Copia_DANE_4_DIC_2025act.xlsx")) %>%
   janitor::clean_names() %>% 
   mutate(retail = articulo_dane) %>%
   select(retail, mapeo_sipsa, codigo_tcac)
@@ -399,7 +408,6 @@ knitr::include_graphics(c(
 ))
 ```
 
-
 ```{r, echo=FALSE, out.width="100%"}
 
 knitr::include_graphics(c(
@@ -420,9 +428,9 @@ knitr::include_graphics(c(
 ))
 ```
 
-### 5.2. Márgenes de comercialización implícitos
-
-### 5.3. Validación con márgenes implícitos
 
 ## 6. Conclusiones
 
+Los resultados indican que la Metodología I, basada en la variación mensual del IPC a nivel de subclase, presenta el MAPE mediano más bajo entre todas las metodologías evaluadas, y su distribución de errores es la menos dispersa. Este resultado valida su uso para estimar precios minoristas de alimentos en períodos no cubiertos por los datos originales del DANE. El heatmap de precisión muestra que la mayoría de los alimentos se clasifican en las categorías excelente (MAPE menor a 5%) y bueno (MAPE entre 5% y 10%), con errores elevados concentrados en un subconjunto específico de alimentos de alta volatilidad. Adicionalmente, la Metodología I no requiere información de precios mayoristas de SIPSA, lo que la hace aplicable a cualquier ciudad y período para los que se disponga de información del IPC a nivel de subclase, sin depender del mapeo IPC-SIPSA ni de sus limitaciones asociadas.
+
+La comparación con las demás metodologías refuerza esta conclusión. Las Metodologías II a VI, basadas en precios mayoristas de SIPSA, presentan distribuciones de MAPE con mayor dispersión y valores extremos más pronunciados, visibles en el boxplot de validación. En particular, la Metodología VI muestra valores atípicos que superan los 2000%, lo que indica problemas de predicción para alimentos específicos. En todos los casos, los perecederos frescos como aguacate, repollo y lechuga se ubican consistentemente en la categoría de precisión pobre (MAPE mayor a 20%) con independencia de la metodología empleada, lo que refleja una limitación de los datos y no de los métodos.

@@ -9,13 +9,24 @@ library(lubridate)
 library(tidyverse)
 
 # Definir directorio de trabajo
-setwd( "C:/Users/Portatil/Desktop/Least-cost-diets-and-affordability/Proyecto Interno")
+dirs <- c(
+  "C:/Users/Portatil/Desktop/Least-cost-diets-and-affordability/Proyecto Interno",
+  "C:/Users/danie/OneDrive/Escritorio/Least-cost-diets-and-affordability/Proyecto Interno"
+)
+
+base_dir <- dirs[dir.exists(dirs)][1]
+
+if (is.na(base_dir)) {
+  stop("Ninguno de los directorios existe")
+}
 ##-------------------------------------------##
 ## Cargar datos de precios minoristas (2018) ##
 ##-------------------------------------------##
 
 # Cargar datos (13 ciudades principales)
-retail_99_18 = readxl::read_excel("Precios DANE\\OUTPUT_DANE\\precios_IPC_1999_2018.xlsx")
+retail_99_18 <- readxl::read_excel(
+  file.path(base_dir, "Precios DANE/OUTPUT_DANE/precios_IPC_1999_2018.xlsx")
+)
 
 # Eliminar alimentos que son ultraprocesados o preparaciones
 alimentos_excluir <- c(
@@ -114,7 +125,9 @@ whole_list = vector(mode = "list", length = length(2013:2018))
 
 # Cargar series de sipsa
 for (k in 2013:2018) {
-  whole_list[[k]] = readRDS(paste0("Precios al por mayor\\Bases historicas\\", k,".rds"))
+  whole_list[[k]] <- readRDS(
+    file.path(base_dir, "Precios al por mayor/Bases historicas", paste0(k, ".rds"))
+  )
 }
 
 # whole_18 significa whole hasta 2018
