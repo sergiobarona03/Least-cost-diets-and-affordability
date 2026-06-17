@@ -6,6 +6,9 @@
 ## or hardcode the path if running non-interactively.
 ########################################################
 
+options(encoding = "UTF-8")
+Sys.setlocale("LC_ALL", "UTF-8")
+
 # -----------------------------------------------------------------------
 # 1. Base directory (project root — edit only here)
 # -----------------------------------------------------------------------
