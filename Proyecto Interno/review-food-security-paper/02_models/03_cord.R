@@ -11,7 +11,7 @@
 ##         CORD_DIR/cord_results.xlsx
 ########################################################
 
-source("00_config.R")
+source("00_config.R", encoding = "UTF-8")
 library(tidyverse)
 library(writexl)
 
