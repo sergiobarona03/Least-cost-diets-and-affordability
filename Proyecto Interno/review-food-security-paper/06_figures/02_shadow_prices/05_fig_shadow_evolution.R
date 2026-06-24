@@ -11,13 +11,21 @@
 ## Writes: FIG_DIR/final/fig05_shadow_evolution.png / .pdf
 ########################################################
 
-source("00_config.R")
+#source("00_config.R")
 source(file.path(REVIEW_DIR, "06_figures", "00_fig_config.R"))
 library(tidyverse)
 library(lubridate)
 library(scales)
 
 TOP_N <- 20
+
+# -----------------------------------------------------------------------
+# 0. Local city map — avoids relying on CITY_LABS from other config files
+# -----------------------------------------------------------------------
+city_lbl_map <- c(
+  "BOGOTA"   = "Bogotá",
+  "MEDELLIN" = "Medellín",
+  "CALI"     = "Cali")
 
 # -----------------------------------------------------------------------
 # 1. Load data
@@ -30,7 +38,7 @@ spe <- cona$spe %>%
     year       = year(fecha),
     member     = recode(paste0(Sex, "_", Age), !!!MEMBER_LABS),
     member     = factor(member, levels = MEMBER_ORDER),
-    ciudad_lbl = CITY_LABS[ciudad],
+    ciudad_lbl = city_lbl_map[ciudad],
     ciudad_lbl = factor(ciudad_lbl,
                         levels = c("Bogotá", "Medellín", "Cali"))) %>%
   filter(constraint == "Min",
@@ -86,6 +94,8 @@ fig5 <- ggplot(spe_annual,
                aes(x = factor(year), y = Nutrients,
                    fill = SPE_cat)) +
   geom_tile(color = "white", linewidth = 0.3) +
+  geom_text(aes(label = sprintf("%.3f", mean_SPE)),
+            size = 2.1, family = "serif", color = "grey15") +
   facet_grid(member ~ ciudad_lbl) +
   scale_fill_manual(
     values = c(
@@ -99,10 +109,7 @@ fig5 <- ggplot(spe_annual,
   labs(
     title    = " ",
     subtitle = " ",
-    caption  = paste0(
-      "Note: SPE = shadow price as share of total daily diet cost. ",
-      "Top ", TOP_N, " nutrients selected by overall binding frequency.\n",
-      "Grey cells indicate SPE \u2248 0 (non-binding or negligible constraint)."),
+    caption  = " ",
     x = NULL,
     y = NULL) +
   paper_theme() +

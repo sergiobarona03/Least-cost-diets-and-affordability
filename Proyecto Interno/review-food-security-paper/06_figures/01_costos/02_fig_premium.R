@@ -3,15 +3,14 @@
 ##
 ## Figure 2: Nutritional quality premiums
 ##   CoNA / CoCA | CoRD / CoCA | CoRD / CoNA
-##   One panel per premium, color by city
+##   One panel per premium, boxplots by year, grouped by city
 ##
 ## Reads:  HCOST_DIR/hcost_full.rds
 ##         PREP_DIR/deflator_monthly.rds
 ##
 ## Writes: FIG_DIR/final/fig02_quality_premium.png / .pdf
 ########################################################
-
-source("00_config.R")
+#source("00_config.R")
 source(file.path(REVIEW_DIR, "06_figures", "00_fig_config.R"))
 library(tidyverse)
 library(scales)
@@ -44,8 +43,9 @@ premium_long <- hcost %>%
     `CoNA / CoCA` = CoNA / CoCA,
     `CoRD / CoCA` = CoRD / CoCA,
     `CoRD / CoNA` = CoRD / CoNA,
-    ciudad_lbl    = factor(CITY_LABS[ciudad],
-                           levels = c("Bogotá", "Medellín", "Cali"))) %>%
+    ciudad_lbl    = factor(CITY_LABELS[ciudad],
+                           levels = c("Bogotá", "Medellín", "Cali")),
+    anio          = factor(year(fecha))) %>%
   pivot_longer(cols      = all_of(PREM_LEVELS),
                names_to  = "premium",
                values_to = "ratio") %>%
@@ -54,25 +54,24 @@ premium_long <- hcost %>%
 # -----------------------------------------------------------------------
 # 3. Figure
 # -----------------------------------------------------------------------
+n_years <- nlevels(premium_long$anio)
+
 fig2 <- ggplot(premium_long,
-               aes(x = fecha, y = ratio, color = ciudad_lbl)) +
-  geom_hline(yintercept = 1, color = "grey60",
-             linetype = "dotted", linewidth = 0.4) +
-  geom_line(linewidth = 0.85) +
+               aes(x = anio, y = ratio, fill = ciudad_lbl)) +
+  geom_vline(xintercept = seq(1.5, n_years - 0.5, by = 1),
+             color = "grey70", linetype = "dotted", linewidth = 0.4) +
+  geom_boxplot(
+    position     = position_dodge(width = 0.75),
+    width        = 0.65,
+    linewidth     = 0.5,
+    staplewidth   = 0.8,
+    outlier.shape = NA,
+    alpha        = 0.85) +
   facet_wrap(~ premium, nrow = 1, scales = "free_y") +
-  scale_color_manual(
-    values = c(
-      "Bogotá"   = unname(CITY_COLS["BOGOTA"]),
-      "Medellín" = unname(CITY_COLS["MEDELLIN"]),
-      "Cali"     = unname(CITY_COLS["CALI"])),
-    name = NULL) +
-  date_axis() +
-  scale_y_continuous(labels = function(x) sprintf("%.2f\u00d7", x)) +
-  labs(
-    title   = " ",
-    caption = " ",
-    x = NULL,
-    y = "Cost ratio") +
+  scale_fill_manual(
+    values = CITY_COLORS,
+    name = NULL)  +
+  labs(x = NULL, y = "Cost ratio") +
   paper_theme() +
   theme(
     legend.position   = "top",
@@ -82,7 +81,8 @@ fig2 <- ggplot(premium_long,
     legend.background = element_rect(color = "black", fill = "white",
                                      linewidth = 0.5),
     legend.margin     = margin(3, 8, 3, 8),
-    strip.text        = element_text(face = "bold", size = 10))
+    strip.text        = element_text(face = "bold", size = 10),
+    axis.text.x       = element_text(angle = 0, size = 9))
 
 ggsave(file.path(FIG_DIR, "final", "fig02_quality_premium.png"),
        fig2, width = 12, height = 5, dpi = 300, bg = "white")
