@@ -1,7 +1,17 @@
 ---
-title: "**Transmisión de precios y ajuste asimétrico al equilibrio: evidencia para las principales ciudades de Colombia mediante modelos de corrección de error**"
-author:
-  - Sergio A. Barona-Montoya^[Department of Economics and Finance, Pontificia Universidad Javeriana, Cali, Colombia. ORCID 0000-0001-8390-6673]
+title: |
+  **Transmisión de precios y ajuste asimétrico al equilibrio:  
+  evidencia para las principales ciudades de Colombia mediante  
+  modelos de corrección de error**
+
+author: |
+  **Proyecto 5.271**  
+  "Análisis sobre la asequibilidad de los hogares urbanos a dietas  
+  de costo mínimo para tres ciudades principales de Colombia  
+  durante el período 2019--2024"  
+  Fundación para la Promoción de la Investigación y la Tecnología  
+  Banco de la República
+
 output:
   pdf_document:
     citation_package: natbib
@@ -9,9 +19,11 @@ output:
     fig_caption: yes
     number_sections: yes
     latex_engine: xelatex
+
 bibliography: refs-ob-rif-informal.bib
 geometry: margin=1in
 fontsize: 12pt
+
 header-includes:
 - \usepackage{booktabs}
 - \usepackage{longtable}
