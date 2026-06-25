@@ -14,11 +14,20 @@
 ##         HCOST_DIR/hcost_full.rds
 ########################################################
 
-source("00_config.R")
+#source("00_config.R")
 source(file.path(REVIEW_DIR, "06_figures", "00_fig_config.R"))
 library(tidyverse)
 library(lubridate)
 library(scales)
+
+# -----------------------------------------------------------------------
+# 0. Local city label map — defined here to avoid relying on
+#    CITY_LABS / CITY_LABELS from other config files
+# -----------------------------------------------------------------------
+city_lbl_map <- c(
+  "BOGOTA"   = "Bogotá",
+  "MEDELLIN" = "Medellín",
+  "CALI"     = "Cali")
 
 # -----------------------------------------------------------------------
 # 1. Load data
@@ -90,7 +99,7 @@ comp_annual <- cona$comp %>%
   # Complete grid so absent city-food-year cells get NA
   right_join(comp_grid, by = c("ciudad","Food","year")) %>%
   mutate(
-    ciudad_lbl = factor(CITY_LABS[ciudad],
+    ciudad_lbl = factor(city_lbl_map[ciudad],
                         levels = c("Bogotá","Medellín","Cali")),
     Food_en    = food_name_en[Food])
 
@@ -117,14 +126,8 @@ fig2b_i <- ggplot(comp_annual,
     labels   = comma_format(big.mark = ","),
     na.value = "#F5B7B1") +
   labs(
-    title    = paste0("Figure 2B(i). Annual mean daily quantity of all foods ",
-                      "ever selected in the CoNA diet, 2019\u20132024"),
-    subtitle = "Mean quantity among months in which each food was selected (g/day per member).",
-    caption  = paste0(
-      "Note: Values show mean daily quantity (g/day) among months in which ",
-      "each food was selected (quantity > 0). ",
-      "Red cells indicate the food was never selected in that city\u2013year.\n",
-      "CoNA = Cost of Nutritional Adequacy."),
+    title    = " ",
+    subtitle = "" ,
     x = NULL, y = NULL) +
   paper_theme() +
   theme(
@@ -225,7 +228,7 @@ cona_pc_real <- hcost %>%
   left_join(deflator, by = c("ciudad","fecha")) %>%
   mutate(
     cona_pc_real = cona_pc * deflator,
-    ciudad_lbl   = factor(CITY_LABS[ciudad],
+    ciudad_lbl   = factor(city_lbl_map[ciudad],
                           levels = c("Bogotá","Medellín","Cali"))) %>%
   filter(fecha >= PAPER_START, fecha <= PAPER_END)
 
@@ -296,7 +299,7 @@ food_order_contrib <- cost_contrib_all %>%
 
 cost_contrib_all <- cost_contrib_all %>%
   mutate(
-    ciudad_lbl = factor(CITY_LABS[ciudad],
+    ciudad_lbl = factor(city_lbl_map[ciudad],
                         levels = c("Bogotá","Medellín","Cali")),
     Food       = factor(Food, levels = food_order_contrib))
 
@@ -323,16 +326,8 @@ fig2b_iii <- ggplot(cost_contrib_all,
                expand = c(0.01, 0)) +
   scale_y_continuous(labels = comma_format(big.mark = ",")) +
   labs(
-    title    = paste0("Figure 2B(iii). Monthly real cost contribution by food item ",
-                      "in the CoNA diet, 2019\u20132024"),
-    subtitle = paste0("All foods ever selected. Colours grouped by GABAS food category. ",
-                      "Black line = CoNA real per capita from model output (validation). ",
-                      "Dashed vertical lines mark year boundaries."),
-    caption  = paste0(
-      "Note: Cost contribution per capita = real price per 100g \u00d7 ",
-      "(sum of quantities across household members / N) / 100.\n",
-      "N = ", N_MEMBERS, " household members. ",
-      "Real COP (base: December 2018). CoNA = Cost of Nutritional Adequacy."),
+    title    = " ",
+    subtitle = "",
     x = NULL,
     y = "Real cost contribution (COP/day per capita)") +
   paper_theme() +

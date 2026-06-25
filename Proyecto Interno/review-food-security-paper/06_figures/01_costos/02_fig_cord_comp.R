@@ -10,11 +10,25 @@
 ## Writes: FIG_DIR/final/fig02c_cord_composition.png / .pdf
 ########################################################
 
-source("00_config.R")
+#source("00_config.R")
 source(file.path(REVIEW_DIR, "06_figures", "00_fig_config.R"))
 library(tidyverse)
 library(lubridate)
 library(scales)
+
+# -----------------------------------------------------------------------
+# 0. Local city maps — defined here to avoid relying on
+#    CITY_LABS / CITY_LABELS / CITY_COLS from other config files
+# -----------------------------------------------------------------------
+city_lbl_map <- c(
+  "BOGOTA"   = "Bogotá",
+  "MEDELLIN" = "Medellín",
+  "CALI"     = "Cali")
+
+city_col_map <- c(
+  "Bogotá"   = unname(CITY_COLORS["Bogotá"]),
+  "Medellín" = unname(CITY_COLORS["Medellín"]),
+  "Cali"     = unname(CITY_COLORS["Cali"]))
 
 # -----------------------------------------------------------------------
 # 1. Load and prepare
@@ -49,7 +63,7 @@ year_lines <- as.Date(paste0(2020:2024, "-01-01"))
 comp_monthly <- cord$comp %>%
   mutate(
     fecha      = as.Date(fecha),
-    ciudad_lbl = factor(CITY_LABS[ciudad],
+    ciudad_lbl = factor(city_lbl_map[ciudad],
                         levels = c("Bogotá","Medellín","Cali"))) %>%
   filter(fecha >= PAPER_START, fecha <= PAPER_END) %>%
   group_by(ciudad_lbl, Group, fecha) %>%
@@ -78,15 +92,8 @@ fig2c <- ggplot(comp_monthly,
                expand = c(0.01, 0)) +
   scale_y_continuous(labels = number_format(accuracy = 0.1)) +
   labs(
-    title    = paste0("Figure 2C. Monthly mean daily servings by GABA food group ",
-                      "in the CoRD diet by city, 2019\u20132024"),
-    subtitle = paste0("Servings per household member per day. ",
-                      "Dashed vertical lines mark year boundaries."),
-    caption  = paste0(
-      "Note: CoRD = Cost of Recommended Diet. Servings follow GABAS dietary ",
-      "guidelines; the LP minimises cost within each group.\n",
-      "Identical composition across cities confirms that intercity cost differences ",
-      "reflect local food prices, not differences in dietary structure."),
+    title    = " ",
+    subtitle = " ",
     x = NULL,
     y = "Mean daily servings per member") +
   paper_theme() +
@@ -119,7 +126,7 @@ cord_cost <- cord$comp %>%
   left_join(deflator, by = c("ciudad","fecha")) %>%
   mutate(
     cost_contrib  = (precio_100g * deflator) * Serving_g / 100 * Number_Serving,
-    ciudad_lbl    = factor(CITY_LABS[ciudad],
+    ciudad_lbl    = factor(city_lbl_map[ciudad],
                            levels = c("Bogotá","Medellín","Cali")),
     Group_en      = recode(Group, !!!GROUP_LABS),
     Group_en      = factor(Group_en, levels = names(GROUP_COLS))) %>%
@@ -144,17 +151,8 @@ fig2c_cost <- ggplot(cost_contrib_monthly,
                expand = c(0.01, 0)) +
   scale_y_continuous(labels = comma_format(big.mark = ",")) +
   labs(
-    title    = paste0("Figure 2C(ii). Monthly real cost contribution by GABA ",
-                      "food group in the CoRD diet by city, 2019\u20132024"),
-    subtitle = paste0("Real COP/day per member (base: December 2018). ",
-                      "Unlike servings, cost shares shift with relative prices. ",
-                      "Dashed vertical lines mark year boundaries."),
-    caption  = paste0(
-      "Note: Cost contribution = real price per serving \u00d7 number of servings. ",
-      "Fats and dairy dominate by servings but their cost share varies with ",
-      "local price dynamics.\n",
-      "Real COP deflated by city-level food CPI (DANE Divisi\u00f3n 01100000, ",
-      "base: December 2018)."),
+    title    = " ",
+    subtitle = " ",
     x = NULL,
     y = "Real cost contribution (COP/day)") +
   paper_theme() +
@@ -257,7 +255,7 @@ cord_adequacy <- cord_nutri %>%
                    "Sex")) %>%
   mutate(
     adequacy_pct = supply / requirement * 100,
-    ciudad_lbl   = factor(CITY_LABS[ciudad],
+    ciudad_lbl   = factor(city_lbl_map[ciudad],
                           levels = c("Bogotá","Medellín","Cali"))) %>%
   filter(!is.na(requirement))
 
@@ -271,7 +269,7 @@ adequacy_ratio <- cord_adequacy %>%
   mutate(
     ratio      = supply / requirement * 100,
     year       = year(fecha),
-    ciudad_lbl = factor(CITY_LABS[ciudad],
+    ciudad_lbl = factor(city_lbl_map[ciudad],
                         levels = c("Bogotá","Medellín","Cali"))) %>%
   group_by(ciudad_lbl, Nutrients, Demo_Group, Sex, year) %>%
   dplyr::summarise(
@@ -329,27 +327,15 @@ fig2c_adequacy <- ggplot(adequacy_ratio_plot,
             inherit.aes = FALSE) +
   facet_wrap(~ ciudad_lbl, nrow = 1) +
   scale_fill_manual(
-    values = c("Bogotá"   = unname(CITY_COLS["BOGOTA"]),
-               "Medellín" = unname(CITY_COLS["MEDELLIN"]),
-               "Cali"     = unname(CITY_COLS["CALI"])),
+    values = city_col_map,
     guide = "none") +
   scale_y_continuous(
     limits = c(-22, 310),
     breaks = c(0, 50, 100, 150, 200, 250, 300),
     labels = function(x) ifelse(x < 0, "", paste0(x, "%"))) +
   labs(
-    title    = paste0("Figure 2C(iii). Annual distribution of nutritional ",
-                      "adequacy ratios in the CoRD diet, 2019\u20132024"),
-    subtitle = paste0("Each observation = mean annual supply / requirement \u00d7 100 ",
-                      "for one nutrient\u2013member combination. ",
-                      "Red dashed line = 100% (minimum requirement). ",
-                      "Numbers below x-axis = median ratio. ",
-                      "Values capped at 300% for display."),
-    caption  = paste0(
-      "Note: Adequacy ratio = mean annual CoRD supply / minimum requirement \u00d7 100 ",
-      "(CoNA 'Rest' column). Sodium excluded (maximum constraint).\n",
-      "Box = IQR; whiskers = 1.5\u00d7IQR; dots = outliers. ",
-      "CoRD = Cost of Recommended Diet; CoNA = Cost of Nutritional Adequacy."),
+    title    = " ",
+    subtitle = " ",
     x = NULL,
     y = "Adequacy ratio (supply / requirement \u00d7 100)") +
   paper_theme() +
@@ -414,7 +400,7 @@ cord_adequacy_full <- cord_nutri %>%
       !is.na(ul) & supply > ul   ~ "Above maximum",
       TRUE                        ~ "Within range"),
     year       = year(fecha),
-    ciudad_lbl = factor(CITY_LABS[ciudad],
+    ciudad_lbl = factor(city_lbl_map[ciudad],
                         levels = c("Bogotá","Medellín","Cali")))
 
 # 5e. Summary by nutrient × city × year
@@ -466,16 +452,8 @@ fig2c_status <- ggplot(status_plot,
   scale_y_continuous(labels = function(x) paste0(x, "%"),
                      breaks = c(0, 25, 50, 75, 100)) +
   labs(
-    title    = paste0("Figure 2C(iv). Annual nutritional status of the CoRD diet ",
-                      "relative to minimum and maximum requirements, 2019\u20132024"),
-    subtitle = paste0("% of nutrient\u2013member\u2013month observations: ",
-                      "below minimum (red), within safe range (green), ",
-                      "or above maximum (blue)."),
-    caption  = paste0(
-      "Note: Lower limits from CoNA optimisation ('Rest' column); ",
-      "upper limits from household_ul.rds ",
-      "(nutrients with UL = 9,999,999 treated as unbounded).\n",
-      "CoRD = Cost of Recommended Diet; CoNA = Cost of Nutritional Adequacy."),
+    title    = " ",
+    subtitle = " ",
     x = NULL,
     y = "% of nutrient-member-month observations") +
   paper_theme() +
