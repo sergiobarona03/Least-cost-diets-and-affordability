@@ -17,6 +17,11 @@ panel_v2 <- readRDS("C:/Users/danie/OneDrive/Escritorio/Least-cost-diets-and-aff
 lista_representativa <- read.xlsx("C:/Users/danie/OneDrive/Escritorio/Least-cost-diets-and-affordability/Proyecto Interno/interno/output/lista alimentos/lista_alimentos.xlsx")
 tcac_raw <- readRDS("C:/Users/danie/OneDrive/Escritorio/Least-cost-diets-and-affordability/Proyecto Interno/interno/output/tcac/composicion_310526.rds")
 
+# NUEVO: gramos por unidad para productos vendidos como "Unidad" sin objetivo_texto
+gramos_unidad <- read.xlsx("C:/Users/danie/OneDrive/Escritorio/Least-cost-diets-and-affordability/Proyecto Interno/interno/lista_unidades gramos.xlsx") %>%
+  dplyr::select(sipsa_name, city, cantidad_gramos = `cantidad.aproximada.gramos`) %>%
+  distinct(sipsa_name, city, cantidad_gramos)
+
 # ===================================================================
 # Extraer referencia de cantidad desde lista representativa
 # ===================================================================
@@ -42,14 +47,17 @@ panel_mensual <- panel_v2 %>%
 # ============================================================
 
 panel_con_cantidad <- panel_mensual %>%
-  left_join(referencias, by = c("sipsa_name", "city", "sku_code"))
+  left_join(referencias, by = c("sipsa_name", "city", "sku_code")) %>%
+  # NUEVO: pegar gramos por unidad
+  left_join(gramos_unidad, by = c("sipsa_name", "city"))
 
 # ============================================================
-# Lista de alimentos en unidades
+# Lista de alimentos en unidades (se mantiene igual, por si
+# aparecen productos nuevos sin cubrir en gramos_unidad)
 # ============================================================
 
 lista_unidades <- panel_con_cantidad %>%
-  filter(is.na(objetivo_texto) & str_to_lower(measurement_unit) == "unidad") %>%
+  filter(is.na(objetivo_texto) & str_to_lower(measurement_unit) == "unidad" & is.na(cantidad_gramos)) %>%
   distinct(sipsa_name, city, price, measurement_unit) %>%
   arrange(sipsa_name, city)
 
@@ -63,6 +71,7 @@ write.xlsx(
 # Estandarizar precio a 500g o 1000ml
 # Productos con objetivo_texto: fórmula (P / cantidad_extraida) * objetivo
 # Productos vendidos por kg o g sin empaque: (price / 1000) * 500
+# Productos vendidos por unidad sin objetivo_texto: (price / cantidad_gramos) * 500
 # ============================================================
 
 panel_estandar <- panel_con_cantidad %>%
@@ -75,6 +84,8 @@ panel_estandar <- panel_con_cantidad %>%
     precio_500g = case_when(
       !is.na(objetivo_texto)                                          ~ (price / cantidad_extraida) * objetivo,
       str_to_lower(measurement_unit) %in% c("kilogramo", "gramo")    ~ (price / 1000) * 500,
+      # NUEVO
+      is.na(objetivo_texto) & str_to_lower(measurement_unit) == "unidad" & !is.na(cantidad_gramos) ~ (price / cantidad_gramos) * 500,
       TRUE ~ NA_real_
     )
   )
@@ -140,14 +151,28 @@ panel_mensual_cities_tcac <- panel_con_tcac %>%
 # Guardar base
 # ===============
 
-glimpse(panel_mensual_cities_tcac)
+View(panel_mensual_cities_tcac)
 
 saveRDS(
   panel_mensual_cities_tcac,
   "C:/Users/danie/OneDrive/Escritorio/Least-cost-diets-and-affordability/Proyecto Interno/interno/output/paneles/panel_mensual_cities_tcac.rds"
 )
 
-View(panel_con_cantidad %>%
-       filter(is.na(objetivo_texto) | !objetivo_texto %in% c("500 gramos", "1000 mililitros")) %>%
-       distinct(sipsa_name, objetivo_texto, exito_name) %>%
-       arrange(sipsa_name))
+
+# ============================================================
+# Alimentos del panel final sin precio (NA en precio_500g o precio_100g)
+# ============================================================
+
+alimentos_sin_precio <- panel_mensual_cities_tcac %>%
+  filter(is.na(precio_500g) | is.na(precio_100g)) %>%
+  distinct(articulo, ciudad, sku_code, exito_name) %>%
+  arrange(articulo, ciudad)
+
+View(alimentos_sin_precio)
+
+# Si quieres un resumen de cuántos meses/registros les faltan por alimento-ciudad
+resumen_sin_precio <- panel_mensual_cities_tcac %>%
+  filter(is.na(precio_500g) | is.na(precio_100g)) %>%
+  count(articulo, ciudad, sort = TRUE)
+
+View(resumen_sin_precio)
