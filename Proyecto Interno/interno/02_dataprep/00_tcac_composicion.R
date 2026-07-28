@@ -2,12 +2,12 @@
 ## SCRIPT 02_dataprep/00_tcac_composicion.R
 ## Cruza la lista total de alimentos (output de 01_webscrap_prep)
 ## con la tabla TCAC de composición nutricional y guarda la
-## composición nutricional por alimento (sku_code + sipsa_name).
+## composición nutricional por alimento (sipsa_name).
 ##
-## Reads:  output_dir/lista alimentos/lista_total_alimentos.xlsx
+## Reads:  output_dir/lista_alimentos/lista_total_alimentos.xlsx
 ##         proyecto_dir/composicion-nut/1823_mapeo_sipsa_tcac v1.0_2025.xlsx
-## Writes: output_dir/tcac/composicion_310526.xlsx
-##         output_dir/tcac/composicion_310526.rds
+## Writes: output_dir/tcac/composicion_270726.xlsx
+##         output_dir/tcac/composicion_270726.rds
 ########################################################
 
 library(tidyverse)
@@ -24,7 +24,7 @@ interno_dir  <- file.path(proyecto_dir, "interno")
 output_dir   <- file.path(interno_dir, "output")
 
 ruta_lista  <- file.path(output_dir, "lista_alimentos")
-ruta_tcac   <- file.path(proyecto_dir, "composicion-nut/1823_mapeo_sipsa_tcac v1.0_2025.xlsx")
+ruta_tcac   <- file.path(proyecto_dir, "composicion-nut/Mapeo Sipsa TCAC _28.07.26.xlsx")
 ruta_output <- file.path(output_dir, "tcac")
 
 dir.create(ruta_output, recursive = TRUE, showWarnings = FALSE)
@@ -50,15 +50,14 @@ tcac <- read.xlsx(ruta_tcac, sheet = "Imputada") %>%
 lista_total <- lista_total %>%
   mutate(
     sipsa_name_join = case_when(
-      # Correcciones mapeadas por sku_code al nombre exacto en TCAC
-      sku_code == "1519"    & sipsa_name == "Ajo importado"                  ~ "Ajo",
-      sku_code == "869594"  & sipsa_name == "Almejas con concha"             ~ "Almejas",
-      sku_code == "871595"  & sipsa_name == "Bagre rayado en postas congelado" ~ "Bagre rayado",
-      sku_code == "855053"  & sipsa_name == "Carne de cerdo, lomo sin hueso" ~ "Carne de cerdo, lomo",
-      sku_code == "1523894" & sipsa_name == "Carne de cerdo, pernil sin hueso" ~ "Carne de cerdo, lomo",
-      sku_code == "723282"  & sipsa_name == "Trucha en corte mariposa"       ~ "Trucha",
-      sku_code == "1101"    & sipsa_name == "Uva roja"                       ~ "Uva comun",
-      sku_code == "1601993" & sipsa_name == "Yuca ICA"                       ~ "Yuca",
+      sipsa_name == "Ajo importado"                    ~ "Ajo",
+      sipsa_name == "Almejas con concha"                ~ "Almejas",
+      sipsa_name == "Bagre rayado en postas congelado"  ~ "Bagre rayado",
+      sipsa_name == "Carne de cerdo, lomo sin hueso"    ~ "Carne de cerdo, lomo",
+      sipsa_name == "Carne de cerdo, pernil sin hueso"  ~ "Carne de cerdo, lomo",
+      sipsa_name == "Trucha en corte mariposa"          ~ "Trucha",
+      sipsa_name == "Uva roja"                          ~ "Uva comun",
+      sipsa_name == "Yuca ICA"                          ~ "Yuca",
       
       TRUE ~ sipsa_name
     )
@@ -94,7 +93,7 @@ lista_con_nut <- lista_total %>%
     by = "sipsa_name_norm"
   ) %>%
   select(-sipsa_name_norm, -sipsa_name_join) %>%
-  relocate(sku_code, sipsa_name)
+  relocate(sipsa_name)
 
 # ============================================================
 # Guardar outputs

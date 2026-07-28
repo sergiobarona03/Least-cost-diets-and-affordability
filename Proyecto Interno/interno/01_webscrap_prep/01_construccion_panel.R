@@ -1,13 +1,19 @@
 ########################################################
 ## SCRIPT 01_webscrap_prep/01_construccion_panel.R
 ## Construye el panel de precios a partir de los rds mensuales
-## generados por 00_csv_a_rds.R: limpia, tipifica, elige el sku
-## representativo por alimento/ciudad (más cercano a 500g/1000ml)
-## y arma el panel final.
+## generados por 00_csv_a_rds.R: limpia, tipifica, elige el/los
+## sku representativo(s) por alimento/ciudad (más cercano a
+## 500g/1000ml, o todos si se vende por unidad) y estandariza
+## el precio a 500g/1000ml. Queda a nivel DIARIO a propósito:
+## la agregación a mensual se hace en 01_panel_mensual_tcac.R,
+## después del filtro de cobertura por día en 02a.
 ##
-## Reads:  panel_dir/data/agosto-julio.septiembre.rds
-## Writes: output_panel_dir/panel_v1.rds
+## Reads:  panel_dir/data/*.rds
+##         dataprep_dir/unidades/lista_unidades gramos.xlsx
+## Writes: output_panel_dir/panel_v1.rds  (diario, con
+##         precio_500g ya calculado)
 ##         output_lista_dir/lista_alimentos.xlsx
+##         output_lista_dir/lista_unidades.xlsx
 ########################################################
 
 library(tidyverse)
@@ -24,10 +30,13 @@ base_dir  <- "C:/Users/danie/OneDrive/Escritorio/Least-cost-diets-and-affordabil
 panel_dir <- file.path(base_dir, "01_webscrap_prep")
 
 raw_mensual_dir <- file.path(panel_dir, "data")
+dataprep_dir    <- file.path(base_dir, "02_dataprep")
 
 output_dir       <- file.path(base_dir, "output")
 output_panel_dir <- file.path(output_dir, "paneles/raw_mensual")
 output_lista_dir <- file.path(output_dir, "lista_alimentos")
+
+ruta_gramos_unidad <- file.path(dataprep_dir, "unidades/lista_unidades gramos.xlsx")
 
 dir.create(output_panel_dir, recursive = TRUE, showWarnings = FALSE)
 dir.create(output_lista_dir, recursive = TRUE, showWarnings = FALSE)
@@ -134,7 +143,8 @@ panel_final_temp <- bind_rows(paneles) %>%
 
 # ============================================================
 # Lista representativa por alimento y ciudad
-# (sku más cercano a 500g o 1000ml, priorizando más fechas)
+# (calcula qué tan cerca está cada sku de 500g o 1000ml,
+# solo ordena -- no filtra ni reduce nada todavía)
 # ============================================================
 
 lista_representativa <- panel_final_temp %>%
@@ -167,7 +177,8 @@ lista_representativa <- panel_final_temp %>%
       unidad_extraida %in% c("litro", "litros") ~ abs(cantidad_extraida - 1),
       TRUE ~ NA_real_
     )
-  )  %>% group_by(sipsa_name, city, sku_code, exito_name) %>%
+  ) %>%
+  group_by(sipsa_name, city, sku_code, exito_name) %>%
   summarise(
     n_fechas = n_distinct(fecha),
     cantidad_extraida = first(cantidad_extraida),
@@ -184,16 +195,123 @@ lista_representativa <- panel_final_temp %>%
   ungroup()
 
 # ============================================================
-# Panel final con sku representativo
+# Umbral: quedarse con el/los sku que tengan la MENOR distancia
+# al objetivo, por alimento-ciudad. na.rm = TRUE es clave: si no,
+# un solo sku sin medida (distancia NA) revienta el minimo de
+# todo el grupo y se te cae el alimento completo de lista_final.
+# Si NINGUN sku del alimento-ciudad tiene medida (se vende por
+# unidad, ej. huevo/aguacate), se queda con TODOS -- entra igual
+# al panel y se resuelve mas abajo con la tabla de gramos.
 # ============================================================
 
-panel_final <- panel_final_temp %>%
+lista_min <- lista_representativa %>%
+  group_by(sipsa_name, city) %>%
+  summarise(
+    min_distancia = min(distancia_objetivo, na.rm = TRUE),
+    .groups = "drop"
+  ) %>%
+  mutate(min_distancia = ifelse(is.infinite(min_distancia), NA_real_, min_distancia))
+
+lista_final <- lista_representativa %>%
+  left_join(lista_min, by = c("sipsa_name", "city")) %>%
+  mutate(
+    incluir = case_when(
+      !is.na(min_distancia) & !is.na(distancia_objetivo) &
+        distancia_objetivo == min_distancia ~ TRUE,
+      is.na(min_distancia) ~ TRUE,
+      TRUE ~ FALSE
+    )
+  ) %>%
+  filter(incluir) %>%
+  select(-min_distancia, -incluir)
+
+# ============================================================
+# Referencias de cantidad/objetivo por alimento-ciudad (de
+# lista_final) y gramos por unidad para productos "por unidad"
+# ============================================================
+
+referencias <- lista_final %>%
+  select(sipsa_name, city, cantidad_extraida, objetivo) %>%
+  rename(objetivo_texto = objetivo) %>%
+  distinct(sipsa_name, city, .keep_all = TRUE)
+
+gramos_unidad <- read.xlsx(ruta_gramos_unidad) %>%
+  dplyr::select(sipsa_name, city, cantidad_gramos = `cantidad.aproximada.gramos`) %>%
+  distinct(sipsa_name, city, cantidad_gramos)
+
+# ============================================================
+# Panel con sku representativo + cantidad/objetivo/gramos pegados
+# ============================================================
+
+panel_con_cantidad <- panel_final_temp %>%
   inner_join(
-    lista_representativa %>% select(sipsa_name, city, sku_code),
+    lista_final %>% select(sipsa_name, city, sku_code),
     by = c("sipsa_name", "city", "sku_code")
   ) %>%
+  left_join(referencias, by = c("sipsa_name", "city")) %>%
+  left_join(gramos_unidad, by = c("sipsa_name", "city")) %>%
+  mutate(
+    unidades_paquete = coalesce(
+      as.numeric(str_extract(exito_name, "(?<=\\()\\d+(?=\\s*und\\))")),
+      1
+    )
+  )
+
+# ============================================================
+# Alimentos vendidos por unidad sin cobertura en gramos_unidad
+# (para que sepas cuáles te falta completar en esa tabla)
+# ============================================================
+
+lista_unidades <- panel_con_cantidad %>%
+  filter(is.na(objetivo_texto) & str_to_lower(measurement_unit) == "unidad" & is.na(cantidad_gramos)) %>%
+  distinct(sipsa_name, city, price, measurement_unit) %>%
+  arrange(sipsa_name, city)
+
+write.xlsx(
+  lista_unidades,
+  file = file.path(output_lista_dir, "lista_unidades.xlsx"),
+  overwrite = TRUE
+)
+
+# ============================================================
+# Estandarizar precio a 500g o 1000ml
+# Productos con objetivo_texto: formula (P / cantidad_extraida) * objetivo
+# Productos vendidos por kg o g sin empaque: (price / 1000) * 500
+# Huevo por unidad: (price / (cantidad_gramos * unidades_paquete)) * 500
+# Resto por unidad: (price / cantidad_gramos) * 500
+# ============================================================
+
+panel_estandar <- panel_con_cantidad %>%
+  mutate(
+    objetivo = case_when(
+      objetivo_texto == "500 gramos"      ~ 500,
+      objetivo_texto == "1000 mililitros" ~ 1000,
+      TRUE ~ NA_real_
+    ),
+    precio_500g = case_when(
+      !is.na(objetivo_texto)                                       ~ (price / cantidad_extraida) * objetivo,
+      str_to_lower(measurement_unit) %in% c("kilogramo", "gramo")  ~ (price / 1000) * 500,
+      is.na(objetivo_texto) & str_to_lower(measurement_unit) == "unidad" & !is.na(cantidad_gramos) &
+        str_detect(str_to_lower(sipsa_name), "huevo") ~
+        (price / (cantidad_gramos * unidades_paquete)) * 500,
+      is.na(objetivo_texto) & str_to_lower(measurement_unit) == "unidad" & !is.na(cantidad_gramos) ~
+        (price / cantidad_gramos) * 500,
+      TRUE ~ NA_real_
+    )
+  )
+
+# ============================================================
+# Panel final: mediana de precio_500g (y de price) por
+# alimento-ciudad-FECHA (nivel diario). La agregación a mensual
+# se hace después, en 01_panel_mensual_tcac.R -- así el umbral
+# de cobertura de 02a_lista_alimentos.R se sigue calculando
+# sobre días de scraping, no sobre meses.
+# ============================================================
+
+panel_final <- panel_estandar %>%
   group_by(sipsa_name, city, fecha) %>%
   summarise(
+    precio_500g       = round(median(precio_500g, na.rm = TRUE), 0),
     price             = median(price, na.rm = TRUE),
     unit_price        = first(unit_price),
     measurement_unit  = first(measurement_unit),
@@ -209,7 +327,7 @@ panel_final <- panel_final_temp %>%
 # ============================================================
 
 write.xlsx(
-  lista_representativa,
+  lista_final,
   file = file.path(output_lista_dir, "lista_alimentos.xlsx"),
   overwrite = TRUE
 )

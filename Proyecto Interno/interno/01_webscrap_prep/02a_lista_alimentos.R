@@ -39,7 +39,6 @@ panel_final <- readRDS(file.path(output_panel_dir, "panel_v1.rds")) %>%
       str_detect(str_to_lower(city), "^cartagena") ~ "Cartagena",
       TRUE ~ city
     ),
-    sku_code   = as.character(sku_code),
     sipsa_name = str_squish(as.character(sipsa_name)),
     fecha      = as.Date(fecha),
     mes        = format(fecha, "%Y-%m")
@@ -54,7 +53,7 @@ alimentos_excluir <- c(
   "Mayonesa doy pack", "Mostaza doy pack", "Salsa de tomate doy pack",
   "Jugo instantáneo (sobre)", "Galletas saladas", "Gelatina", "Margarina",
   "Chocolate instantáneo", "Chocolate amargo", "Chocolate dulce",
-  "Vinagre", "Leche en Polvo"
+  "Vinagre"
 )
 
 alimentos_excluir_norm <- alimentos_excluir %>%
@@ -76,7 +75,6 @@ panel_filtrado <- panel_final %>%
   filter(
     !sipsa_name_norm %in% alimentos_excluir_norm,
     !is.na(city),
-    !is.na(sku_code),
     !is.na(sipsa_name),
     !is.na(fecha)
   ) %>%
@@ -102,18 +100,18 @@ print(umbral_por_ciudad %>% arrange(umbral))
 # ============================================================
 
 lista_por_ciudad <- panel_filtrado %>%
-  group_by(city, sku_code, sipsa_name) %>%
+  group_by(city, sipsa_name) %>%
   summarise(n_fechas = n_distinct(fecha), .groups = "drop") %>%
   left_join(umbral_por_ciudad, by = "city") %>%
   filter(n_fechas >= umbral) %>%
-  select(city, sku_code, sipsa_name, n_fechas, fechas_disponibles, umbral)
+  select(city, sipsa_name, n_fechas, fechas_disponibles, umbral)
 
 # ============================================================
 # Total de ciudades y lista de ciudades
 # ============================================================
 
 todas_las_ciudades <- panel_filtrado %>%
-  semi_join(lista_por_ciudad, by = c("city", "sku_code", "sipsa_name")) %>%
+  semi_join(lista_por_ciudad, by = c("city", "sipsa_name")) %>%
   distinct(city) %>%
   pull(city) %>%
   sort()
@@ -125,7 +123,7 @@ total_ciudades <- length(todas_las_ciudades)
 # ============================================================
 
 lista_total <- lista_por_ciudad %>%
-  distinct(sku_code, sipsa_name) %>%
+  distinct(sipsa_name) %>%
   arrange(sipsa_name)
 
 # ============================================================
@@ -158,7 +156,7 @@ wb <- createWorkbook()
 for (cd in todas_las_ciudades) {
   df_ciudad <- lista_por_ciudad %>%
     filter(city == cd) %>%
-    select(sku_code, sipsa_name, n_fechas, umbral) %>%
+    select(sipsa_name, n_fechas, umbral) %>%
     arrange(sipsa_name)
   addWorksheet(wb, sheetName = cd)
   writeData(wb, sheet = cd, df_ciudad)
