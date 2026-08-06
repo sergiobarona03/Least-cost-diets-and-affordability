@@ -1,24 +1,29 @@
 ########################################################
 ## 04_figures/02_fig_costos_coca_cona.R
 ##
-## Costo diario de las dietas CoCA (adecuacion calorica) y
-## CoNA (adecuacion nutricional) para el hogar representativo
+## Costo trimestral (promedio 3T 2025: julio, agosto,
+## septiembre) de las dietas CoCA (adecuacion calorica) y CoNA
+## (adecuacion nutricional) para el hogar representativo
 ## (hombre adulto 31-50, mujer adulta 31-50, nina 9-13) en las
-## 13 ciudades principales de Colombia, trimestre 3 de 2025
-## (julio, agosto, septiembre).
+## 13 ciudades principales de Colombia.
 ##
-## Figura 1: series de linea del costo diario, individualizadas
+## Con 13 ciudades, las series de linea por ciudad se saturan y
+## no se distinguen bien; se usan barras horizontales ordenadas
+## de mayor a menor costo, una por ciudad, en su lugar.
+##
+## Figura 1: costo diario promedio del trimestre, individualizado
 ##           por miembro del hogar (filas) y por dieta (columnas).
-## Figura 2: series de linea del costo per capita del hogar
-##           representativo, individualizadas por dieta.
-## Figura 3: razon CoNA/CoCA per capita en el tiempo, por ciudad.
+## Figura 2: costo per capita promedio del trimestre del hogar
+##           representativo, individualizado por dieta.
+## Figura 3: razon CoNA/CoCA per capita, promedio del trimestre,
+##           por ciudad.
 ##
 ## Reads:  coca_dir/coca_results.rds
 ##         cona_dir/cona_results.rds  (elemento $cost)
 ##
-## Writes: fig_dir/01_costos/fig01_costo_lineas_miembro.png/.pdf
-##         fig_dir/01_costos/fig02_costo_percapita_lineas.png/.pdf
-##         fig_dir/01_costos/fig03_razon_cona_coca.png/.pdf
+## Writes: fig_dir/01_costos/fig01_costo_miembro_barras.png/.pdf
+##         fig_dir/01_costos/fig02_costo_percapita_barras.png/.pdf
+##         fig_dir/01_costos/fig03_razon_cona_coca_barras.png/.pdf
 ########################################################
 
 source("interno/04_figures/00_fig_config.R")
@@ -49,116 +54,147 @@ message(sprintf("Costos cargados: %d filas | %d ciudades | %d fechas | modelos: 
                 n_distinct(df_costos$fecha),
                 paste(levels(df_costos$model), collapse = ", ")))
 
-fecha_breaks <- sort(unique(df_costos$fecha))
+# -----------------------------------------------------------------------
+# 2. Costo diario promedio del trimestre, por miembro x ciudad x modelo
+# -----------------------------------------------------------------------
+avg_miembro <- df_costos %>%
+  group_by(model, ciudad, ciudad_lbl, member) %>%
+  summarise(cost_avg = mean(cost_day, na.rm = TRUE), .groups = "drop")
+
+# Orden de ciudades: costo promedio general (todas las dietas y miembros),
+# de mayor a menor. Mismo orden en las tres figuras para poder comparar.
+orden_ciudades <- avg_miembro %>%
+  group_by(ciudad_lbl) %>%
+  summarise(overall = mean(cost_avg, na.rm = TRUE), .groups = "drop") %>%
+  arrange(desc(overall)) %>%
+  pull(ciudad_lbl)
+
+avg_miembro <- avg_miembro %>%
+  mutate(ciudad_lbl = factor(ciudad_lbl, levels = rev(orden_ciudades)))
 
 # -----------------------------------------------------------------------
-# 2. Figura 1 — series de linea: costo diario por miembro (filas) x
-##   dieta (columnas), una linea por ciudad
+# 3. Figura 1 — barras horizontales: costo diario promedio del trimestre,
+##   por miembro (filas) x dieta (columnas), una barra por ciudad
 # -----------------------------------------------------------------------
-fig1 <- ggplot(df_costos,
-              aes(x = fecha, y = cost_day, color = ciudad_lbl)) +
-  geom_line(linewidth = 0.7) +
-  geom_point(size = 1.6) +
+fig1 <- ggplot(avg_miembro,
+              aes(x = cost_avg, y = ciudad_lbl, fill = ciudad_lbl)) +
+  geom_col(width = 0.72) +
+  geom_text(aes(label = comma(round(cost_avg), big.mark = ".")),
+            hjust = -0.12, size = 2.5, family = "serif", color = "grey20") +
   facet_grid(member ~ model) +
-  city_scale_color(name = NULL) +
-  scale_x_date(breaks = fecha_breaks, date_labels = "%b") +
-  scale_y_continuous(labels = cop_format()) +
+  city_scale_fill(guide = "none") +
+  scale_x_continuous(labels = cop_format(),
+                     expand = expansion(mult = c(0, 0.18))) +
   labs(
     title = "Costo diario de la dieta por miembro del hogar",
-    subtitle = "13 ciudades · 3T 2025",
-    x = NULL, y = "COP / día",
+    x = "COP / día", y = NULL,
     caption = "Fuente: cálculos propios. Hogar representativo: hombre adulto, mujer adulta y niña."
   ) +
   paper_theme() +
   theme(
-    axis.text.x = element_text(angle = 0, hjust = 0.5, size = 8),
+    axis.text.y = element_text(size = 8),
     strip.text  = element_text(size = 9),
-    legend.position = "right"
-  ) +
-  guides(color = guide_legend(ncol = 1))
+    legend.position = "none"
+  )
 
-ggsave(file.path(fig_dir, "01_costos", "fig01_costo_lineas_miembro.png"),
+ggsave(file.path(fig_dir, "01_costos", "fig01_costo_miembro_barras.png"),
        fig1, width = 10, height = 8, dpi = 300, bg = "white")
-ggsave(file.path(fig_dir, "01_costos", "fig01_costo_lineas_miembro.pdf"),
+ggsave(file.path(fig_dir, "01_costos", "fig01_costo_miembro_barras.pdf"),
        fig1, width = 10, height = 8)
 message("Figura 1 guardada.")
 
 # -----------------------------------------------------------------------
-# 3. Costo per capita del hogar representativo
-##   (suma de los 3 miembros / 3)
+# 4. Costo per capita del hogar representativo, promedio del trimestre
+##   (suma de los 3 miembros / 3, promediada sobre jul-ago-sep)
 # -----------------------------------------------------------------------
 N_MEMBERS <- df_costos %>% distinct(Demo_Group, Sex) %>% nrow()
 
-percapita <- df_costos %>%
+percapita_mes <- df_costos %>%
   group_by(model, ciudad, ciudad_lbl, fecha) %>%
   summarise(cost_hogar = sum(cost_day, na.rm = TRUE),
             n_miembros = n(),
             .groups = "drop") %>%
   mutate(cost_percapita = cost_hogar / n_miembros)
 
+percapita_avg <- percapita_mes %>%
+  group_by(model, ciudad, ciudad_lbl) %>%
+  summarise(cost_percapita = mean(cost_percapita, na.rm = TRUE),
+            .groups = "drop")
+
+orden_percapita <- percapita_avg %>%
+  filter(model == "CoNA") %>%
+  arrange(desc(cost_percapita)) %>%
+  pull(ciudad_lbl)
+
+percapita_avg <- percapita_avg %>%
+  mutate(ciudad_lbl = factor(ciudad_lbl, levels = rev(orden_percapita)))
+
 # -----------------------------------------------------------------------
-# 4. Figura 2 — series de linea: costo per capita, individualizado por
-##   dieta (columnas), una linea por ciudad
+# 5. Figura 2 — barras horizontales: costo per capita promedio del
+##   trimestre, individualizado por dieta (columnas)
 # -----------------------------------------------------------------------
-fig2 <- ggplot(percapita,
-              aes(x = fecha, y = cost_percapita, color = ciudad_lbl)) +
-  geom_line(linewidth = 0.8) +
-  geom_point(size = 1.8) +
+fig2 <- ggplot(percapita_avg,
+              aes(x = cost_percapita, y = ciudad_lbl, fill = ciudad_lbl)) +
+  geom_col(width = 0.72) +
+  geom_text(aes(label = comma(round(cost_percapita), big.mark = ".")),
+            hjust = -0.12, size = 2.6, family = "serif", color = "grey20") +
   facet_wrap(~ model, nrow = 1) +
-  city_scale_color(name = NULL) +
-  scale_x_date(breaks = fecha_breaks, date_labels = "%b") +
-  scale_y_continuous(labels = cop_format()) +
+  city_scale_fill(guide = "none") +
+  scale_x_continuous(labels = cop_format(),
+                     expand = expansion(mult = c(0, 0.18))) +
   labs(
     title = "Costo per cápita del hogar representativo",
-    subtitle = "13 ciudades · 3T 2025",
-    x = NULL, y = "COP / día per cápita",
+    x = "COP / día per cápita", y = NULL,
     caption = "Fuente: cálculos propios. Costo per cápita = costo total del hogar representativo / 3 miembros."
   ) +
   paper_theme() +
   theme(
-    axis.text.x = element_text(angle = 0, hjust = 0.5, size = 8),
+    axis.text.y = element_text(size = 9),
     strip.text  = element_text(size = 10),
-    legend.position = "right"
-  ) +
-  guides(color = guide_legend(ncol = 1))
+    legend.position = "none"
+  )
 
-ggsave(file.path(fig_dir, "01_costos", "fig02_costo_percapita_lineas.png"),
-       fig2, width = 11, height = 6, dpi = 300, bg = "white")
-ggsave(file.path(fig_dir, "01_costos", "fig02_costo_percapita_lineas.pdf"),
-       fig2, width = 11, height = 6)
+ggsave(file.path(fig_dir, "01_costos", "fig02_costo_percapita_barras.png"),
+       fig2, width = 10, height = 6, dpi = 300, bg = "white")
+ggsave(file.path(fig_dir, "01_costos", "fig02_costo_percapita_barras.pdf"),
+       fig2, width = 10, height = 6)
 message("Figura 2 guardada.")
 
 # -----------------------------------------------------------------------
-# 5. Figura 3 — razon CoNA / CoCA per capita, por ciudad, en el tiempo
+# 6. Figura 3 — barras horizontales: razon CoNA / CoCA per capita,
+##   promedio del trimestre, por ciudad
 # -----------------------------------------------------------------------
-razon <- percapita %>%
-  select(model, ciudad, ciudad_lbl, fecha, cost_percapita) %>%
+razon <- percapita_avg %>%
+  select(model, ciudad_lbl, cost_percapita) %>%
+  mutate(ciudad_lbl = as.character(ciudad_lbl)) %>%
   pivot_wider(names_from = model, values_from = cost_percapita) %>%
-  mutate(razon_cona_coca = CoNA / CoCA)
+  mutate(razon_cona_coca = CoNA / CoCA) %>%
+  arrange(razon_cona_coca) %>%
+  mutate(ciudad_lbl = factor(ciudad_lbl, levels = ciudad_lbl))
 
-fig3 <- ggplot(razon,
-              aes(x = fecha, y = razon_cona_coca, color = ciudad_lbl)) +
-  geom_hline(yintercept = 1, color = "grey50", linetype = "dashed",
-            linewidth = 0.4) +
-  geom_line(linewidth = 0.8) +
-  geom_point(size = 1.8) +
-  city_scale_color(name = NULL) +
-  scale_x_date(breaks = fecha_breaks, date_labels = "%b") +
-  scale_y_continuous(labels = function(x) sprintf("%.1fx", x)) +
+fig3 <- ggplot(razon, aes(x = razon_cona_coca, y = ciudad_lbl, fill = ciudad_lbl)) +
+  geom_col(width = 0.7) +
+  geom_text(aes(label = sprintf("%.1fx", razon_cona_coca)),
+            hjust = -0.15, size = 2.8, family = "serif", color = "grey20") +
+  city_scale_fill(guide = "none") +
+  scale_x_continuous(labels = function(x) sprintf("%.1fx", x),
+                     expand = expansion(mult = c(0, 0.15))) +
   labs(
-    title = "Razón entre el costo del CoNA y el costo del CoCA",
-    subtitle = "Costo per cápita del hogar representativo · 13 ciudades · 3T 2025",
-    x = NULL,
-    y = "CoNA / CoCA",
-    caption = "Fuente: cálculos propios. Un valor de 2.0x indica que el CoNA cuesta el doble que el CoCA en esa ciudad y mes."
+    title = "Razón entre el costo del CoNA/CoCA",
+    x = "CoNA / CoCA",
+    y = NULL,
+    caption = "Fuente: cálculos propios. Un valor de 2.0x indica que el CoNA cuesta el doble que el CoCA en esa ciudad."
   ) +
   paper_theme() +
-  theme(axis.text.x = element_text(angle = 0, hjust = 0.5, size = 8))
+  theme(
+    axis.text.y = element_text(size = 9),
+    legend.position = "none"
+  )
 
-ggsave(file.path(fig_dir, "01_costos", "fig03_razon_cona_coca.png"),
-       fig3, width = 10, height = 6, dpi = 300, bg = "white")
-ggsave(file.path(fig_dir, "01_costos", "fig03_razon_cona_coca.pdf"),
-       fig3, width = 10, height = 6)
+ggsave(file.path(fig_dir, "01_costos", "fig03_razon_cona_coca_barras.png"),
+       fig3, width = 9, height = 6, dpi = 300, bg = "white")
+ggsave(file.path(fig_dir, "01_costos", "fig03_razon_cona_coca_barras.pdf"),
+       fig3, width = 9, height = 6)
 message("Figura 3 guardada.")
 
 message("Listo. Figuras en: ", file.path(fig_dir, "01_costos"))
