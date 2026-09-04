@@ -22,7 +22,7 @@ panel_dir <- file.path(base_dir, "01_webscrap_prep")
 raw_input_dir   <- file.path("C:/Users/danie/OneDrive/Documentos/input panel")
 raw_dir <- file.path(panel_dir, "data")
 
-dir.create(raw_mensual_dir, recursive = TRUE, showWarnings = FALSE)
+dir.create(raw_dir, recursive = TRUE, showWarnings = FALSE)
 
 # ============================================================
 # Detectar subcarpetas disponibles
