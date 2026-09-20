@@ -1,0 +1,667 @@
+% sage_latex_guidelines.tex V1.20, 14 January 2017
+
+\documentclass[Afour, sageh,times]{sagej}
+
+\usepackage{moreverb,url}
+
+\usepackage[colorlinks,bookmarksopen,bookmarksnumbered,citecolor=red,urlcolor=red]{hyperref}
+
+\usepackage{siunitx} 
+\usepackage{multirow}
+\usepackage{amsfonts, amsmath, amsthm, amssymb, amstext}
+\usepackage{graphicx, graphics}
+\usepackage{booktabs}
+\usepackage{natbib}
+\usepackage{endnotes}
+\usepackage{float}
+\usepackage[flushleft]{threeparttable}
+\usepackage{caption}
+\usepackage{subcaption}
+\usepackage{ mathrsfs}
+
+\captionsetup{font=small, labelfont=bf, labelsep=period, justification=justified}
+\usepackage{bbm}
+\usepackage[export]{adjustbox}
+\hypersetup{breaklinks = true}
+\def\UrlBreaks{\do\/\do-\do\&\do.\do:}
+
+\DeclareMathOperator*{\argmax}{arg \, max}
+
+\usepackage{lscape}   
+
+
+\newcommand\BibTeX{{\rmfamily B\kern-.05em \textsc{i\kern-.025em b}\kern-.08em
+T\kern-.1667em\lower.7ex\hbox{E}\kern-.125emX}}
+
+\def\volumeyear{2016}
+
+\begin{document}
+
+\title{Assessing the Affordability of Least-Cost Diets among Urban Households in Colombia: Evidence from Three Major Cities}
+
+\author{Author 1\affilnum{1}, \\
+Author 2\affilnum{2}}
+
+\affiliation{\affilnum{1}Department of
+Economics and Finance, Faculty of Business and Economic Sciences,
+Pontificia Universidad Javeriana Cali, Santiago de Cali, Colombia. ORCID: \url{https://orcid.org/0000-0001-8390-6673} \\
+\affilnum{2}Department of
+Economics and Finance, Faculty of Business and Economic Sciences,
+Pontificia Universidad Javeriana Cali, Santiago de Cali, Colombia. ORCID: \url{https://orcid.org/0000-0001-8390-6673}}
+
+\corrauth{Author 1
+Department of
+Economics and Finance, Faculty of Business and Economic Sciences,
+Pontificia Universidad Javeriana Cali, Santiago de Cali, Colombia.}
+
+\email{jose.mora@sulross.edu}
+
+\begin{abstract}
+The abstract serves both as a general introduction to the topic and as a brief, non-technical summary of the main results and their implications. Authors are advised to check the author instructions for the journal they are submitting to for word limits and if structural elements like subheadings, citations, or equations are permitted.
+\end{abstract}
+
+\keywords{Diet affordability; Least-cost diets; Food price inflation; Urban food systems; Colombia}
+
+\maketitle
+
+
+\section{Introduction}\label{sec1}
+
+Price and income constraints constitute fundamental barriers to accessing safe, nutritious, and sufficient food, which is essential for achieving the hunger, nutrition, and food security targets established under SDG 2. In 2017, a global study estimated that 3 billion people did not have sufficient income to afford even the least-cost version of a healthy diet recommended by national dietary guidelines, and this challenge was especially acute in South Asia and sub-Saharan Africa \citep{Herforth2020}. These barriers intensify during economic downturns, most severely during the COVID-19 crisis: the pandemic increased the volatility of retail food prices, which exceeded the general price level by more than 5\% where cumulative monthly COVID-19 cases surpassed 8.000 per million inhabitants \citep{Bai2022covid}. This gap disproportionately affected lower-income households, who typically experience higher rates of inflation, owing to their limited capacity to substitute away from rising-cost items and to disproportionate price increases among lower-cost goods \textcolor{blue}{(Costlow et al., 2025)}. Moreover, from an income perspective, one of the few studies incorporating both pre- and post-pandemic data demonstrates that, in Bangkok and Manila, the deterioration in dietary affordability was driven primarily by the contraction of households' budgets rather than by the cost of the diet itself \citep{Mwambi2023}. Previous research has highlighted that the combination of declining incomes, reduced access to nutritious foods, and disruptions in health and social protection services during the pandemic threatened nutritional and food security status in low- and middle-income countries, exacerbating all forms of malnutrition \citep{Headey2020}.
+
+\smallskip
+
+Underlying these price and income dynamics is a broader challenge, namely how economic access to safe, nutritious, and sufficient food can be appropriately assessed. Food security is typically defined by three pillars: availability, access, and utilization. Access is the demand-side dimension of food security, reflecting individuals' ability to obtain sufficient food given income, prices, and safety nets \citep{Barrett2010}. To assess this dimension, recent studies have operationalized access as the affordability of the least-cost, locally available diet that meets nutrient requirements or national dietary guidelines. As \textcolor{blue}{Masters et al. (2015)} observe, this approach not only distinguishes access from utilization, but also provides a clearer basis for guiding changes in food environments. This approach has given rise to a hierarchical family of least-cost diet metrics: (i) the Cost of Caloric Adequacy (CoCA) corresponds to the least-cost diet that meets estimated energy requirements, typically determined through a linear programming (LP) model \citep{Kachwaha2020, Mahrt2019}; (ii) the Cost of Nutrient Adequacy (CoNA) extends this model by adding macro- and micronutrient constraints \citep{Masters2018, Bai2020, dePee2021}, and, according to global estimates, on average costs more than twice as much as the CoCA \citep{Bai2020}; and (iii) the Cost of the Recommended Diet (CoRD), proposed by \citealt{Herforth2020}, estimates the minimum cost of meeting food-based dietary guidelines (FBDGs) while ensuring diversity within and across food groups \citep{Dizon2019}. A more recent methodological development is the Cost and Affordability of a Healthy Diet (CoAHD) indicator, introduced in 2022, which selects least-cost foods based on lowest price per kilocalories rather than per kilogram \citep{Herforth2022, Masters2025, Headey2024}. Finally, several authors have pointed to a key limitation common to these metrics, arguing that by not incorporating observed food preferences, they tend to underestimate the true cost of a healthy diet. This has motivated extensions such as the CoRD-FP metric \citep{Mahrt2019}, which estimates the weighted average price of foods typically consumed within each group, as well as culturally acceptable diet metrics that minimize the deviation from the population's observed average intake \citep{gurmu2019, Lauk2020}.
+
+\smallskip
+
+Within this context, economic access is captured through the affordability of least-cost diet metrics, understood as having sufficient income or other entitlements to obtain adequate food at any given time and place, which is a necessary though not sufficient condition for food security. From a methodological point of view, most studies assess affordability using an individualized approach for representative units (either a representative individual or household) where the total minimum cost of a household diet is given by the sum of estimated costs for each member separately \citep{Frega2012, Baldi2013, Biehl2016}. Following this approach, a household is typically classified as unable to afford a given least-cost diet when its per capita food expenditure falls below the per capita cost of that diet \citep{Geniez2014}. A notable exception to this methodology is the shared diet approach adopted in recent literature. This approach assumes a common dietary pattern for all household members, instead of individualized requirements, and places particular emphasis on the nutritional needs of the most vulnerable member \citep{Schneider2023}. The affordability analysis arguably offers a more comprehensive assessment of the nutritional challenges facing households than conventional poverty lines, which are constructed from the expenditure required to cover a bundle of basic food and non-food needs \citep{Ravallion2010}. Moreover, an expanding body of evidence shows that not only poor households, but also those classified as non-poor by conventional poverty lines, often lack the means to afford even the least-cost healthy diet \citep{Herforth2020, Herforth2022, Mahrt2022, Yoshioka2026}.
+
+\smallskip
+
+Prior research demonstrates that the relationship between least-cost diet metrics and affordability is dynamic, driven by sustained increases in the relative prices of specific food groups over multiple years, predictable seasonal fluctuations within each year, and shocks, most notably the COVID-19 pandemic in recent years \citep{Laborde2021, Mwambi2023, Lewis2023}. For instance, analyses using monthly price series from Ghana and Tanzania reveal that the cost of achieving minimum recommended dietary diversity in Ghana increased by approximately 10\% per year above inflation from 2010 onward, primarily driven by a sustained rise in the relative price of fruit. Over the same period, the CoNA rose even more rapidly, mainly due to higher prices for foods rich in vitamin A and calcium \citep{Masters2018}. The seasonal component of this dynamic is equally significant. In Ethiopia, Malawi, and Tanzania, analyses of CoNA calculations from 2002 to 2016 uncover pronounced seasonality, with synchronized price surges in nutritionally dense foods and seasonal shortages of these foods frequently preceding deficits in calories from staple starches \citep{Bai2020}. The COVID-19 pandemic illustrates this well: general equilibrium models for 63 low- and middle-income countries projected additional increases in 2021 and 2022 (smaller in magnitude but persistent) along with a deepening of affordability. According to this, the proportion of people unable to afford even half the cost of a healthy diet was expected to rise from 43\% to 50\% \citep{Laborde2021}. Furthermore, evidence suggests that temporary income support during the pandemic improved the short-term affordability of healthy diets, but this effect reversed abruptly when the observation period extends beyond the first year after the shock \citep{Lee2021, Lewis2023}.
+\smallskip
+
+The evolution of least-cost diet metrics and their affordability over time acquires additional complexity when examined at the subnational level. A recent study comparing Bangkok, Thailand, and Manila, Philippines, conducted by \citet{Mwambi2023}, reveals that the CoRD moved in opposite directions within the same year, declining in one city and rising in the other; nonetheless, this divergence alone did not determine the trajectory of affordability indicators, which deteriorated in both cases. Further evidence of subnational heterogeneity emerges from analysis of districts, states, and administrative zones in Bangladesh, Bhutan, India, and Nepal, where cost differentials within countries reach up to 133\%, magnitudes comparable to those observed between countries in the same region. Within each country, the correlation across subnational units between least-cost diets and the share of unaffordable households ranges from 0.09 to 0.05 in Bangladesh and Nepal, but turns negative, at -0.55 and -0.27, in Bhutan and India, which suggests that food prices serve as the binding constraint in the former, while household income is more limiting in the latter \citep{Dizon2021}.
+
+\smallskip
+
+Colombia provides a particularly suitable context for examining the interplay between temporal and subnational variation in least-cost diets and their affordability. Prior research reveals that, across Colombia's main cities, price adjustments for perishable foods are significantly slower than for storable foods and that price shocks tend to persist especially in cities like Cali, in contrast to Bogotá and Medellín \citep{Iregui2017, BanRep2020}, a pattern that unfolds in a setting where Cali exhibits structural dependence on external supply flows and a highly concentrated retail market \citep{Temple2015, Rankin2021}. Despite previous studies that have examined Colombian cities using cross-sectional data, specifically Cali \citep{Yoshioka2026} and Bogotá \citep{BaronaMontoya2026}, market evidence has yet to be integrated with longitudinal data on the affordability of least-cost diets.
+
+\smallskip
+
+This study addresses this gap by drawing on a monthly panel of retail food prices and nutritional composition of locally available foods for Bogotá, Medellín, and Cali from 2019 to 2024. This period covers a price cycle, encompassing the pre-pandemic period, the inflationary episode of 2022-2023, and its subsequent correction. Such a framework enables examination of whether the relationship between least-cost diet metrics and affordability shifts across different phases, in three cities that, despite sharing a national context, exhibit structurally distinct food systems. First, we estimate three least-cost diet metrics, namely CoCA, CoNA, and CoRD, and analyze the food group composition of the resulting baskets across cities and over time. For CoNA, the linear programming model further allows us to identify limiting nutrients and shadow price elasticities, in order to determine the marginal cost of nutritional adequacy and its evolution over time. Given the previously noted limitation that standard least-cost metrics do not account for observed dietary preferences, we extend the CoNA to a Consumption-Consistent CoNA (CC-CoNA), which incorporates observed expenditure patterns as additional constraints to approximate a more realistic dietary pattern and to estimate the additional cost imposed by cultural acceptability. Finally, using household income and food expenditure data, we assess affordability under a representative household approach with individualized diets, comparing the per capita cost of the diet to the distribution of income and food expenditure by decile in each city over time.
+
+\begin{figure*}[htp]
+\centering
+\includegraphics[width=\linewidth]{Figures/food_supply_flows.png}
+\caption{\textbf{Municipal food supply flows to major Colombian cities.} 
+The figure displays the main supply connections from origin municipalities to Medellín, Bogotá, and Cali over the period 2018--2024. Each line represents a supply flow between an origin and a destination municipality, with darker and thicker lines indicating more intense flows. Circles denote origin municipalities, where size reflects the level of food supply in tons (low, medium, and high).}
+\label{fig:food_supply_flows}
+\end{figure*}
+
+\smallskip
+
+The paper is organized as follows. Section 1 is this introduction. Section 2 details the data, sources of price and nutritional composition, and the methodological framework used to construct least-cost diet and affordability metrics. Section 3 presents the results, beginning with the temporal evolution of diet costs and their nutritional determinants, including an analysis of limiting nutrients and shadow price elasticities, and then examines how these mechanisms relate to affordability patterns by income decile and by city over the time period. Section 4 discusses these findings in the context of the existing literature, which concludes by outlining the main limitations of the study and proposing a future research direction.
+
+\section{Geographical Study Area and Urban Food System Context}
+
+The empirical analysis focuses on the three largest urban economies in Colombia (Bogotá, Medellín, and Cali) over the period 2018--2024, using quarterly data. According to the 2018 National Population and Housing Census (CNPV) conducted by DANE \citep{DANE2018CNPV}, these cities account for approximately one-third of the country’s urban population (Bogotá: 7.387.400; Medellín: 2.382.399; Cali: 2.172.527 inhabitants), reflecting the high population densities of consolidated metropolitan systems. More recent estimates place Bogotá above 8 million inhabitants, reinforcing its primacy within the national urban hierarchy. Data from the Great Integrated Household Survey (GIHS) indicate that by 2025, Bogotá and the metropolitan areas of Medellín and Cali represented nearly 40\% of the national labor force \citep{DANE_GEIH}. In economic terms, Bogotá contributes 26.8\% of national GDP, while Antioquia and Valle del Cauca account for approximately 15\% and 10\%, respectively. These figures position the three cities as key demographic and economic drivers.
+
+\smallskip
+
+The selection of these cities is further justified by their role as structurally distinct configurations of urban-regional food systems. From a City-Region Food Systems (CRFS) perspective, Bogotá, Medellín, and Cali function as central nodes connecting rural production areas, interregional supply corridors, and urban consumption markets \citep{FAO2016CRFS, Armenia2019}. These systems exhibit strong dependence on external food flows, complex intermediation structures, and uneven institutional coordination, meaning that food availability, price formation, and access to nutritious diets are shaped across multiple territorial scales. This dependence introduces vulnerabilities, particularly under price volatility, logistical disruptions, and broader economic shocks, consistent with evidence on urban food system fragilities in Colombia \citep{Rankin2024, McCullumGomez2025}.
+
+\smallskip
+
+% PÁRRAFO SOBRE BOGOTÁ:
+
+Bogota exemplifies the scale and complexity of Colombia's urban food systems. The city sources approximately 33\% of its perishable foods from within a 40 km radius, and nearly 80\% from within 300 km \citep{ReinaUsuga2020}. Corabastos, Bogota's main wholesale market, distributes a large share of perishable foods to traditional and retail markets, which collectively account for approximately 60\% of the city's final food consumption. Despite this territorial integration, Bogota's food system exhibits high levels of intermediation, logistical bottlenecks, and uneven infrastructure, all of which affect price transmission and disproportionately impact low-income households. Institutional responses, sucha as the PMASAB (Plan Maestro de Abastecimiento y Seguridad Alimentaria de Bogotá) and the promotion of short food supply chains have sought to improve coordination and reduce intermediation \citep{ReinaUsuga2022, Delgado2025}.
+
+\smallskip
+
+Medellin and its metropolitan region, the Aburrá Valley, exemplify a CRFS characterized by strong regional integration but constrained by limited local production capacity \citep{FAO2018MedellinCRFS}. The metropolitan area relies heavily on food inflows from other departaments, most notably Tolima (28\%), Norte de Santander (20\%), and Cundinamarca (12\%), with only 4.4\% of supply originating within the municipality itself. Moreover, food travels on average 268 kilometers before reaching urban consumers. This dynamic not only generates substantial economic leakages, but also amplifies vulnerability to transportation costs, logistical distuptions, and price volatility \citep{FAO2018MedellinCRFS}. Additionally, the coexistence of multiple distribution channels contributes to price dispersion and unequal access across socioeconomic groups, resulting in heterogeneous diet affordability outcomes.
+
+\smallskip
+
+Cali and the Valle del Cauca exemplify an even more pronounced structural dependency within Colombia's urban food systems. The city itself produces less than 1\% of the food it consumes and relies almost entirely on external supplies from several departments, including Cauca, Nariño, Huila, and Tolima \citep{Rankin2021}. This external dependence is further entrenched by a regional agricultural structure dominated by sugarcane production that constrains diversification and limits the availability of locally produced foods. As a result, Cali's food remains acutely vulnerable to supply disruptions \citep{Rankin2021, WLE2019}, and food security is widespread. According to ENSIN-2015, 51.3\% of households experienced some level of food insecurity, and more recent data from the ECV indicate that 25.5\% of households faced moderate or severe food insecurity in 2024. This persistent vulnerability is reflected in a range of coping strategies, such as the purchase of lower-cost foods, reduction of portion sizes, borrowing, and limited self-production (2.8\%), all of which reflects persistent barriers to adequate diets that extend beyond the effects of supply shocks \citep{Rankin2021}. Furthermore, dietary patterns characterized by high consumption of ultra-processed foods contribute to the coexistence of undernutrition, overweight, and micronutrient deficiencies, consistent with the concept of the triple burden of malnutrition observed in Colombian urban contexts \citep{McCullumGomez2025}.
+
+\smallskip
+
+Across the three cities, common structural features emerge, including strong dependence on external supply flows, reliance on interregional production networks, and the coexistence of multiple distribution channels that reinforce socioeconomic inequalities. At the national level, these dynamics are linked to broader processes such as urbanization, transformation of food systems, and dietary transitions toward processed foods \citep{HLPE2020, FAO2021SOFI}. These structural characteristics suggest that urban food systems are shaped not only by territorial dependence but also by systemic vulnerabilities that affect price formation, access, and diet quality. From an analytical perspective, these patterns provide a basis for examining how economic centrality, territorial dependency, and supply chain structures influence diet affordability. In particular, the interaction between income levels, food prices, and system characteristics reveals structural barriers to accessing adequate diets \citep{Masters2018, Bai2020, Hirvonen2020, Bai2022Lancet, Yoshioka2026}. While the present section establishes the contextual framework, the extent to which these structural features translate into measurable differences in affordability is assessed in the empirical results and further discussed in the final section.
+
+\section{Methods and Data}
+
+This section describes the data sources, methodological framework, and estimation procedures underlying the empirical analysis. The primary inputs are a monthly panel of retail food prices and nutrient composition data for locally available foods in Bogotá, Cali, and Medellín over the study period, constructed from the Consumer Price Index (CPI) series and the Colombian Food Composition Table (TCAC), respectively. The analysis is anchored to a representative household composed of a moderately active adult male, a moderately active adult female (both aged 31-50 years), and a moderately active girl aged 9-13 years, whose energy and nutrient requirements are derived from the Dietary Reference Intakes (DRIs) and the national Recommendations for Energy and Nutrient Intake (RIEN), and whose recommended dietary patterns, differentiated by food groups, are drawn from the Colombian Food-Based Dietary Guidelines (GABA). Jointly, these inputs serve as the basis for the estimation of three least-cost diet metrics: the CoCA, which identifies the least-cost diet that meets the energy requirements of each household member; the CoNA, which additionally satisfies a full set of macro- and micro-nutrients requirements; and the CoRD, which meets the food group recommendations established by the GABA guidelines. We further extend the CoNA to incorporate observed consumption patterns through the Consumption-Consistent CoNA (CC-CoNA). Following a representative household approach with individualized diets, the minimum daily cost of each dietary standard is estimated separately for each household member, aggregated to obtain the total household diet cost, and expressed on a per capita basis. Finally, the affordability of each dietary standard is assessed by comparing the estimated per capita household diet cost and the monthly per capita income and the monthly per capita food expenditure distribution, drawn from the Great Integrated Household Survey (GIHS) and disaggregated by income decile for each city and month.
+
+\subsection{Data}
+\subsubsection{Retail Price Data}
+
+Retail food price data for each city were obtained from the official average prices of items included in the Consumer Price Index (CPI) representative basket for Cali, Bogotá, and Medellín. The original series spans from January 1990 to March 2018 and is available at a monthly frequency. Food items in the CPI basket are classified according to the Classification of Individual Consumption by Purpose (COICOP), following a hierarchical structure from the most general to the most specific level: Division, Group, Class, Subclass, and Item. (Supplementary Table S1 provides the complete list of food items included in the analysis, with their corresponding COICOP classification codes). To extend the study period through December 2024, we extrapolated nominal prices using the monthly variation of the CPI at the sub-class level, allowing each item's price to adjust according to its estimated elasticity relative to the corresponding sub-class CPI rather than imposing a strictly proportional adjustment. (Appendix \ref{secA_prices} presents the full extrapolation method and the estimation of these elasticities).
+
+\smallskip
+
+\subsubsection{Food Composition and Nutrient Data}
+
+Energy content (expressed in kilocalories) and nutrient composition data were obtained from the Colombian Food Composition Table (TCAC). The nutritional composition included macronutrients (protein, lipids, and carbohydrates), as well as the following micronutrients: calcium, zinc, iron, magnesium, phosphorus, vitamin C, thiamine, riboflavin, niacin, folate, vitamin B12, vitamin A, and sodium. Missing nutrient values in the TCAC were addressed using standardized food matching (homologation) and nutrient imputation procedures, following \citep{FAOINFOODS2012,ispirova2020}. (Supplementary Table S2 provides a detailed description of the harmonization and imputation protocols). Finally, retail prices were expressed per 100 grams of edible portion to ensure full comparability with nutrient composition data.
+
+\subsubsection{Household and Nutrient Requirements}
+
+According to the CNPV-2018, the average household size in Colombia is approximately three members, and similar figures are observed in Cali (3.0), Medellín (2.9), and Bogotá (2.8) \citep{DANE2018CNPV}. We define a representative household composed of a moderately active woman and man aged 31-50 years, and a moderately active girl aged 9-13 years. For the child, Estimated Energy Requirements (EER) were obtained from the national Recommendations for Energy and Nutrient Intake (RIEN)\
+{Resolution 3803 of 2016 of the Colombian Ministry of Health and Social Protection}. For adults, EERs were calculated using the equations described in the Dietary Reference Intakes (DRIs) issued by the National Academies of Sciences, Engineering, and Medicine \citep{NASEM2023Energy}. To allow for city-specific differentiation, EER calculations incorporate population-specific characteristics, including average body weight, height, and prevailing physical activity levels. This information was obtained from the National Survey of the Nutritional Situation in Colombia \citep{ENSIN2015}. To aggregate energy requirements across age and sex groups, we computed a weighted average of single-age EER values, using as weights the population distribution reported in CNPV-2018, which ensures that aggregate requirements reflect the demographic composition of the population. Finally, macronutrient requirements were established using the Acceptable Macronutrient Distribution Ranges (AMDR), which define minimum and maximum intakes for protein, carbohydrates, and lipids. For micronutrients, the lower bound corresponds to the Estimated Average Requirement (EAR), defined as the daily intake value estimated to meet the requirement of half of healthy individuals. the upper bound corresponds to the Tolerable Upper Intake Level (UL), representing daily intake unlike to pose adverse health effects. For nutrients without a established UL, only the EAR is used. In the specific case of sodium, the Adequate Intake (AI) level was used as the reference minimum value.
+
+\subsubsection{Food-Based Dietary Guidelines}
+
+Food-based dietary recommendations, differentiated by demographic group and adjusted to estimated energy requirements, were derived from the Food-Based Dietary Guidelines for the Colombian Population (GABA) for individuals aged two years and older \citep{GABA2021}. These guidelines define recommended dietary patterns by age group and food group, expressed in terms of the required number of daily food exchanges. For the empirical analysis, we adopt a seven-group classification consistent with the structure of the Colombian dietary guidelines: (i) cereals, roots, tubers, and plantains; (ii) vegetables and green legumes; (iii) fruits; (iv) meats, eggs, legumes, and plant-based mixtures; (v) dairy products; (vi) fats; and (vii) sugars and sweets. This classification ensures consistency with the exchange-based framework used in the construction of recommended diets and allows for a transparent mapping between dietary guidelines and cost estimation (see Table~\ref{tab:gaba_foods} and Supplementary Table S2).
+\endnote{While more recent updates to the Colombian dietary guidelines place greater emphasis on limiting free sugars and suggest a reclassification of these items within broader culinary categories, a fully detailed and operational exchange-based framework consistent with this updated structure is not yet publicly available. As a result, we retain the earlier classification that includes sugars as a distinct food group to ensure internal consistency in the construction and costing of diets. This choice should be interpreted as a methodological constraint rather than a normative recommendation regarding sugar consumption.}
+
+\begin{table*}[htbp]
+\centering
+\caption{Foods selected by food group or subgroup based on Colombia's food-based dietary guidelines (GABA)}
+\label{tab:gaba_foods}
+\begin{tabular}{p{4.5cm} p{5cm} c}
+\toprule
+\textbf{GABA Group} & \textbf{GABA Subgroup} & \textbf{No. of Foods} \\
+\midrule
+Cereals, roots, tubers, and bananas & Cereals & 3 \\
+ & Roots &  \\
+ & Tubers &  \\
+ & Bananas &  \\
+\midrule
+Fruits and vegetables & Vegetables & 2 \\
+ & Fruit & 2 \\
+\midrule
+Milk and dairy products & Milk & 1 \\
+ & Dairy products (cheeses, yogurt, and kumis*) &  \\
+\midrule
+Meats, eggs, legumes, nuts, and seeds & Meats & 2 \\
+ & Eggs &  \\
+ & Dried legumes and vegetable mixes &  \\
+ & Nuts and seeds &  \\
+\midrule
+Fats & Polyunsaturated & 1 \\
+ & Monounsaturated &  \\
+ & Saturated &  \\
+\midrule
+Sugars & Simple sugars & 1 \\
+\bottomrule
+\end{tabular}
+
+\vspace{0.2cm}
+\begin{minipage}{0.95\linewidth}
+\endnotesize
+\textit{Note:} GABA = Food-Based Dietary Guidelines. Source: Own calculations based on information from GABA. *Kumis = traditional fermented cow's milk drink.
+\end{minipage}
+\end{table*}
+
+\subsection{Least-cost diet metrics}
+
+\subsubsection{Cost of caloric adequacy (CoCA)}
+
+We compute three metrics based on least-cost diet models. The first metric is the CoCA, which estimates the minimum monetary cost required to satisfy the EER of a given demographic group. Formally, the CoCA is obtained by minimizing total diet cost subject to a single equality constraint on total energy intake and non-negativity restrictions on food quantities (See Appendix \ref{secA_lp}). Note that the optimal solution of this LP problem is concentrated on a single food item, namely the one with the lowest price per kilocalorie available in the market. The CoCA is therefore fully determined by that item's price and the household's energy requirement.
+
+
+\subsubsection{Cost of Nutrient Adequacy (CoNA)}
+
+The second metric, CoNA, measures the minimum cost of a set of food items that satisfies not only total energy requirements but also established intake requirements for essential macro- and micro-nutrients. Following prior research \citep{Masters2018,dePee2021,Deptford2017,Yoshioka2026}, the CoNA is obtained by extending the LPP used for the CoCA to include inequality constraints that reflect minimum and maximum intake levels for essential nutrients.
+
+As shown by prior research \citep{Briend2003,Frega2012,Chungchunlam2021}, the CoNA LP model allows us to identify "limiting nutrients", that is, nutrients whose minimum intake constraint is exactly met (but not exceeded) at the optimal solution of the model.  The minimum requirement of a limiting nutrient is a decisive factor in selecting foods for the optimal solution and, as one of the most difficult nutritional standards to meet, it places significant upward pressure on diet costs. Although the identification of limiting nutrients does not constitute a direct assessment of nutritional deficiencies in the population, previous research shows they are often correlated \citep{Frega2012}.
+
+The identification of these limiting nutrients is complemented by analyzing the shadow prices associated with the nutrient constraints in the LPP. These shadow prices measure the marginal change in the value of the objective function (i.e. the minimum cost of the diet) resulting from a marginal relaxation or tightening of a given nutrient constraint. Since nutrients are measured in different units, comparisons across nutrients are typically performed using shadow price elasticities \citep{Masters2018}. Thus,
+
+\begin{equation}
+SPE_{m} = \frac{\Delta \% CoNA^{*}}{\Delta \% \underline{N}_{m}},
+\end{equation}
+
+which represents the percentage change in the minimum cost of the nutritionally adequate diet resulting from a 1\% increase in the minimum required intake of nutrient $m$.
+
+Additionally, in order to incorporate observed consumption patterns, we further define the Consumption-Consistent CoNA (CC-CoNA), which augments the standard CoNA framework with expenditure-share constraints derived from the CPI food basket. This least-cost diet metric requires that each food group account for at least a fraction $\alpha \in [0, 1]$ of its observed CPI expenditure share in the optimal diet. At $\alpha = 0$, this constraint is trivially satisfied, and the CC-CoNA reduces to the standard CoNA. At $\alpha = 1$, the full CPI quantity structure is enforced: each food group must account for at least its CPI share $s_g$ of total diet quantity. (See Appendix \ref{secA_lp} for the full formulation of LP models). 
+
+\subsubsection{Cost of a recommended diet (CoRD)}
+
+The CoRD is defined as the minimum cost of meeting FBDGs using locally available foods (see Table \ref{tab:gaba_foods}). Following established approaches, the CoRD is constructed as the lowest-cost set of foods that satisfies recommended consumption across all food groups \citep{Dizon2019, Herforth2020}. These guidelines specify the required number of servings (or exchanges) by demographic group, typically aligned with energy requirements and dietary composition. To ensure comparability across food items, prices are expressed per edible serving. This is obtained by converting prices per 100 grams into edible portions using conversion factors and scaling them to standard serving sizes defined in the dietary guidelines \citep{Herforth2022}. Food items within each group are then ordered according to their price per edible serving.
+
+The selection of foods follows two criteria commonly used in the literature: (i) at least one item per food group to ensure intergroup diversity, and (ii) when recommended consumption exceeds two servings, multiple items (typically between two and four) are included to preserve intragroup diversity \citep{Dizon2019, Herforth2020}. Applying these criteria yields a subset of least-cost foods (see Table \ref{tab:gaba_foods}) that approximates the minimum-cost diet while maintaining basic dietary diversity. The total cost of the diet is computed as the average price per edible serving within each food group multiplied by the recommended number of servings for that group, and then summed across all food groups \citep{Herforth2022}.
+
+\smallskip
+
+\subsection{Affordability Analysis}
+
+Approaches to the affordability analysis of least-cost diets have predominantly relied on a reference unit, with most studies anchoring the analysis either to a representative agent (typically a non-pregnant, non-lactating adult woman of reproductive age) or to a representative household \citep{Herforth2020, FAO2022SOFI, Frega2012, Biehl2016}. Within the representative household framework, the majority of studies have assessed affordability using individualized diets, whereby the total household diet cost is the sum of the costs estimated for each member given their individual nutritional requirements and recommendations. This constrast with approaches based on shared diets, which assume a common dietary pattern across all household members \citep{Schneider2021}. From a methodological standpoint, individualized and shared diet approaches define a plausible range for economic access: the former establishes a lower bound on affordability indicators, and the latter an upper bound. 
+
+\smallskip
+
+Our study follows the representative household approach with individualized diets. Using this framework, affordability is assessed by income decile through two complementary indicators. The first is the non-affordability rate: a household is classified as unable to afford a given dietary standard if its per capita food expenditure falls below the estimated minimum per capita cost of the representative household diet. The second is the cost-to-expenditure ratio, which expresses the minimum diet cost as proportion of the household food expenditure, disaggregated by income level.
+
+\smallskip
+
+The size and composition of the representative household are defined using the 2018 National Population and Housing Census, CNPV-2018 \cite{DANE2018CNPV}. Data on monthly household income (total and per capita) for each city are drawn from the Great Integrated Household Survey (GIHS), with monthly observations subsequently aggregated to construct quarterly income series. Household current monthly income is estimated by aggregating the individual income of each member, differentiated according to their labor market classification: wage employees, self-employed workers, unpaid family workers, and the unemployed and economically inactive. Following the methodology proposed by \cite{DANEIngreso}, individual current monthly income is estimated through an eight-step algorithm that encompasses data cleaning, income component construction, outlier detection, false-zero identification, and hot-deck imputation of flagged values (See Appendix \ref{secA_income_algorithm} for details)
+
+
+\section{Results}
+
+\subsection{Least-cost diet metrics and their evolution}
+
+Figure \ref{fig:levels-costs} presents daily per capita diet costs for the three cities over the period 2019:1 - 2024:12 at monthly frequency, expressed in both nominal and real terms, where the latter are deflated using the city-level food and non-alcoholic beverages CPI. The cost ranking holds consistently across cities and throughout the period, with CoCA the lowest, followed by CoNA, and CoRD the highest. However, as shown in Table \ref{tab:cost_combined}, cross-city comparisons reveal differentiated patterns. Bogotá exhibits the highest average real CoCA (1.507 COP/day), and CoRD (4.366 COP/day). Under CoNA, Medellín emerges as the most expensive city (2.980 COP/day). Furthermore, intercity gaps also differ markedly in their temporal stability. The annual average gap between Bogotá and Cali widened from 6.6\% to 11.6\% under CoCA and from 5\% to 8.3\% under CoRD between 2019 and 2024. In contrat, this gap between Bogotá and Medellín under CoNA narrowed significantly over the same period, decreasing from 4.6\% to 3.1\%.
+
+
+% Figura 1
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.8\linewidth]{Figures/fig01a_cost_levels.pdf}
+    \caption{Daily per capita diet costs (nominal and real) 2019 - 2024. Note: Real costs deflacted by city-level food CPI, base: December 2018}
+    \label{fig:levels-costs}
+\end{figure}
+
+% Tabla 1
+\begin{table*}[htbp]
+\centering
+\begingroup
+\fontsize{7}{8.5}\selectfont
+\setlength{\tabcolsep}{3.5pt}
+\renewcommand{\arraystretch}{0.95}
+
+\caption{Mean annual per capita daily diet costs by city, 2019\textendash{}2024 (COP/day)}
+\label{tab:cost_combined}
+
+\begin{tabular}{llrrrrrr}
+\toprule
+ &  & \multicolumn{3}{c}{Real (base: Dec.\ 2018)} & \multicolumn{3}{c}{Nominal} \\
+\cmidrule(lr){3-5}\cmidrule(lr){6-8}
+City & Period & CoCA & CoNA & CoRD & CoCA & CoNA & CoRD \\
+\midrule
+\multicolumn{8}{l}{\textit{Bogotá}} \\
+ & 2019–2024 & 1.507 (146) & 2.867 (60) & 4.366 (129) & 2.083 (380) & 4.020 (909) & 6.135 (1.449) \\
+ & 2019      & 1.640 (18)  & 2.827 (24) & 4.236 (57)  & 1.717 (16)  & 2.961 (57)  & 4.436 (116)  \\
+ & 2020      & 1.598 (21)  & 2.889 (11) & 4.418 (24)  & 1.760 (18)  & 3.181 (55)  & 4.866 (100)  \\
+ & 2021      & 1.495 (27)  & 2.813 (41) & 4.234 (58)  & 1.810 (80)  & 3.404 (122) & 5.125 (191)  \\
+ & 2022      & 1.514 (77)  & 2.855 (78) & 4.323 (126) & 2.295 (237) & 4.324 (365) & 6.548 (564)  \\
+ & 2023      & 1.561 (110) & 2.949 (29) & 4.522 (72)  & 2.707 (174) & 5.116 (69)  & 7.846 (136)  \\
+ & 2024      & 1.234 (61)  & 2.869 (36) & 4.462 (18)  & 2.207 (86)  & 5.136 (42)  & 7.989 (120)  \\
+\midrule
+\multicolumn{8}{l}{\textit{Medellín}} \\
+ & 2019–2024 & 1.460 (123) & 2.980 (48) & 4.226 (93)  & 2.027 (364) & 4.189 (919) & 5.948 (1.341) \\
+ & 2019      & 1.602 (31)  & 2.958 (17) & 4.151 (22)  & 1.672 (23)  & 3.087 (70)  & 4.333 (78)   \\
+ & 2020      & 1.518 (17)  & 2.996 (29) & 4.244 (54)  & 1.689 (17)  & 3.335 (72)  & 4.724 (110)  \\
+ & 2021      & 1.454 (22)  & 2.928 (25) & 4.127 (37)  & 1.774 (62)  & 3.574 (155) & 5.039 (229)  \\
+ & 2022      & 1.444 (47)  & 3.005 (50) & 4.285 (103) & 2.201 (203) & 4.577 (352) & 6.527 (534)  \\
+ & 2023      & 1.511 (70)  & 3.035 (30) & 4.310 (102) & 2.628 (113) & 5.278 (55)  & 7.496 (157)  \\
+ & 2024      & 1.232 (53)  & 2.957 (39) & 4.237 (44)  & 2.200 (81)  & 5.281 (55)  & 7.567 (115)  \\
+\midrule
+\multicolumn{8}{l}{\textit{Cali}} \\
+ & 2019–2024 & 1.397 (151) & 2.857 (75) & 4.096 (107) & 2.013 (353) & 4.195 (982) & 6.018 (1.435) \\
+ & 2019      & 1.540 (45)  & 2.831 (31) & 4.036 (40)  & 1.646 (20)  & 3.029 (68)  & 4.317 (81)   \\
+ & 2020      & 1.497 (20)  & 2.880 (52) & 4.142 (37)  & 1.708 (24)  & 3.286 (56)  & 4.727 (91)   \\
+ & 2021      & 1.429 (58)  & 2.806 (74) & 3.997 (91)  & 1.805 (61)  & 3.548 (157) & 5.053 (189)  \\
+ & 2022      & 1.401 (57)  & 2.857 (64) & 4.070 (107) & 2.230 (207) & 4.547 (362) & 6.478 (529)  \\
+ & 2023      & 1.413 (87)  & 2.956 (40) & 4.211 (126) & 2.595 (148) & 5.431 (109) & 7.736 (230)  \\
+ & 2024      & 1.106 (65)  & 2.816 (72) & 4.120 (40)  & 2.092 (101) & 5.327 (81)  & 7.797 (114)  \\
+\bottomrule
+\end{tabular}
+
+\vspace{0.5em}
+\noindent{\scriptsize \textit{Note:} Cells report mean (standard deviation) across monthly observations
+within each period. Real COP deflated by city-level food CPI
+(DANE Divisi\'{o}n 01100000, base: December 2018).
+Per capita cost = mean daily cost across household members.}
+
+\endgroup
+\end{table*}
+
+The temporal dynamics, examined through year-on-year variation, reveal that in nominal terms the 2022-2023 inflationary episode struck all three cities with comparable intensity, though peak timing differed by model (Figure \ref{fig:yoy-costs}). For CoCA, year-on-year peaks were reached in January 2023 in Medellín (39.1\%), April 2023 in Bogotá (38\%), and November 2022 in Cali (34.8\%). By contrast, CoNA and CoRD peaked more synchronously between September and December 2022, with year-on-year variations ranging from 32.4\% to 34.5\% and from 35.3\% to 36.8\%, respectively. In real terms, the post-inflationary period reveals a pronounced asymmetry across the cities. By mid-2024, real CoCA decreased by as much as 28.7\% in Bogotá and 27.7\% in Cali, whereas corrections for CoNA y CoRD remained considerably smaller, ranging from 4.1\% to 7.9\%. Indeed, pairwise correlations of real year-on-year variations further underscore this pattern: exceeding 0.93 for CoCA, yet falling to 0.81 - 0.88 for CoNA and 0.78 - 0.86 for CoRD, consistent with greater geographic heterogeneity in the cost of higher-quality diets.
+
+
+% Figura 2: Variación interanual
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\linewidth]{Figures/fig01b_cost_yoy.pdf}
+    \caption{Year-on-year change (\%) in diet costs (nominal and real) 2020 - 2024. Note: Year-on-year change is measured as the percentage difference between each month and the same month twelve months prior. Real costs deflacted by city-level food CPI, base: December 2018.}
+    \label{fig:yoy-costs}
+\end{figure}
+
+\subsection{Cost premiums}
+
+Figure \ref{fig:quality_premium} presents three nutritional quality premiums: CoNA/CoCA, CoRD/CoCA, and CoRD/CoNA. Over the full period, the CoNA/CoCA ratio reached a median of 1.85 in Bogotá (IQR: 1.80 - 1.97), 2.01 in Medellín (1.96 - 2.11), and 1.99 in Cali (1.91 - 2.14). Thus, a nutritionally adequate diet costs 80 - 114\% more than an energy-sufficient one. The CoRD/CoNA premium is far more modest. Results show that, once minimum nutritional requirements are met, achieving the dietary diversity recommended by GABA carries a further premium of only 40\% - 55\%. The temporal evolution reveals a pattern of acceleration concentrated in 2024. The CoNA/CoCA premium, stable between 1.72 and 1.94 through the 2021-2023, jumped to to a median of 2.37 in Bogotá (IQR: 2.29 - 2.38), 2.43 in Medellín (2.38 - 2.46), and 2.57 in Cali (2.50 - 2.61). By contrast, the CoRD/CoNA premium shows a stable trajectory throughout the period, with medians ranging from 1.40 to 1.54, which suggests that marginal cost of dietary diversity beyond nutritional adequacy remains unaffected by the inflationary cycle.
+
+
+% Figure 3: Monthly composition of CoNA by food item
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\linewidth]{Figures/fig02_quality_premium.png}
+    \caption{Nutritional quality premiums by city, 2019--2024. Boxplots show the annual distribution of the cost ratios CoNA/CoCA, CoRD/CoCA, and CoRD/CoNA. }
+\label{fig:quality_premium}
+\end{figure}
+
+% Tabla 2: premiums de calidad nutricional (mediana)
+\begin{table}[htbp]
+\centering
+\begingroup
+\fontsize{7}{8.5}\selectfont
+\setlength{\tabcolsep}{3.5pt}
+\renewcommand{\arraystretch}{0.95}
+\caption{Nutritional quality premiums by city, median (Q1, Q3), 2019\textendash{}2024}
+\label{tab:cost_premiums_median}
+\begin{tabular}{llrrr}
+\toprule
+City & Period & CoNA/CoCA & CoRD/CoCA & CoRD/CoNA \\
+\midrule
+\multicolumn{5}{l}{\textit{Bogotá}} \\
+ & 2019–2024 & 1.845 (1.798, 1.967) & 2.805 (2.744, 3.022) & 1.518 (1.505, 1.537) \\
+ & 2019      & 1.720 (1.712, 1.738) & 2.572 (2.558, 2.631) & 1.499 (1.488, 1.505) \\
+ & 2020      & 1.811 (1.795, 1.822) & 2.785 (2.745, 2.798) & 1.528 (1.522, 1.540) \\
+ & 2021      & 1.877 (1.864, 1.902) & 2.838 (2.812, 2.852) & 1.506 (1.501, 1.510) \\
+ & 2022      & 1.875 (1.833, 1.954) & 2.820 (2.765, 2.976) & 1.515 (1.505, 1.518) \\
+ & 2023      & 1.827 (1.799, 2.041) & 2.812 (2.760, 3.130) & 1.534 (1.524, 1.542) \\
+ & 2024      & 2.370 (2.292, 2.382) & 3.716 (3.552, 3.728) & 1.562 (1.549, 1.569) \\
+\midrule
+\multicolumn{5}{l}{\textit{Medellín}} \\
+ & 2019–2024 & 2.010 (1.962, 2.109) & 2.835 (2.790, 2.977) & 1.415 (1.404, 1.432) \\
+ & 2019      & 1.828 (1.817, 1.883) & 2.581 (2.555, 2.615) & 1.403 (1.398, 1.413) \\
+ & 2020      & 1.985 (1.941, 1.993) & 2.811 (2.799, 2.824) & 1.412 (1.405, 1.423) \\
+ & 2021      & 2.012 (2.004, 2.029) & 2.836 (2.814, 2.861) & 1.408 (1.406, 1.413) \\
+ & 2022      & 2.085 (2.037, 2.129) & 2.968 (2.898, 3.051) & 1.428 (1.419, 1.436) \\
+ & 2023      & 1.975 (1.972, 2.070) & 2.831 (2.805, 2.899) & 1.423 (1.400, 1.428) \\
+ & 2024      & 2.425 (2.383, 2.456) & 3.518 (3.375, 3.548) & 1.439 (1.416, 1.447) \\
+\midrule
+\multicolumn{5}{l}{\textit{Cali}} \\
+ & 2019–2024 & 1.986 (1.914, 2.138) & 2.801 (2.749, 3.080) & 1.428 (1.411, 1.456) \\
+ & 2019      & 1.825 (1.803, 1.876) & 2.607 (2.573, 2.678) & 1.428 (1.423, 1.432) \\
+ & 2020      & 1.923 (1.893, 1.945) & 2.756 (2.746, 2.791) & 1.430 (1.421, 1.461) \\
+ & 2021      & 1.972 (1.946, 1.986) & 2.776 (2.763, 2.809) & 1.426 (1.403, 1.444) \\
+ & 2022      & 2.039 (1.995, 2.080) & 2.882 (2.787, 3.028) & 1.416 (1.410, 1.441) \\
+ & 2023      & 2.024 (1.993, 2.248) & 2.974 (2.844, 3.148) & 1.419 (1.401, 1.449) \\
+ & 2024      & 2.574 (2.501, 2.614) & 3.805 (3.691, 3.867) & 1.470 (1.457, 1.486) \\
+\bottomrule
+\end{tabular}
+\vspace{0.5em}
+\noindent{\scriptsize \textit{Note:} Cells report median (Q1, Q3)}
+\endgroup
+\end{table}
+
+\subsection{Limiting Nutrients and Shadow Prices}
+
+The CoNA LP model identifies which nutrients act as limiting factors, that is, whose minimum requirement binds in the optimal solution. According to figure \ref{fig:limiting-nutrients}, that shows the annual binding frequency of each nutrient, three nutrients are limiting in 100\% of months across all three cities: calcium, sodium, and vitamin C. Although nutritional concerns over sodium typically center on excess rather than deficiency, the model incorporates a minium requirement of 1.500 mg/day (corresponding to the Adequate Intake level), which the LP model satisfies by selecting precise quantities of salt, the only local available food item with sufficient sodium density to complement the rest of the basket at minimum cost. However due to the very low realtive price of salt in Colombian urban markets, sodium's SPE is negligible ($\sim$0.001) and thus economically irrelevant in the analysis. Vitamin C also exhibits a modest SPE (0.042 - 0.046). Calcium instead displays by far the highest values (0.337 - 0.523), such that a 10\% tightening of its minimum requirement would raise the minimum cost of a nutritionally adequate diet by more than 3\%, evaluate at margin.
+
+\begin{figure*}[!htp]
+    \centering
+    \includegraphics[width=\linewidth]{Figures/fig03_binding_heatmap.png}
+    \caption{Annual binding frequency of limiting nutrients by city and household member, 2019--2024. Values report the share of months in each year in which the nutrient's minimum requirement was binding in the CoNA linear program. Nutrients with 0\% binding frequency across every city, member, and period are omitted. Household members: adult male [31--51), adult female [31--51), female child [10--14).}
+
+    \label{fig:limiting-nutrients}
+\end{figure*}
+
+Figure \ref{fig:spe-evolution} traces the evolution of SPE between 2019 and 2024. Calcium is consistently the most expensive constraint (from 0.338 - 0.438 in 2019 to 0.460 - 0.511 in 2024). The highest values are observed for 10-14 year-old girls (SPE: 0.486 - 0.523), a finding that reflects their elevated requirements during the growth phase. Zinc is second in overall economic importance, with SPE ranging from 0.040 to 0.718 across cities and years for the adult male, surpassing calcium as the dominant constraint for the adult male in Bogotá and Medellín (0.564 and 0.486, respectively). 
+
+\begin{figure*}[!htp]
+    \centering
+    \includegraphics[width=\linewidth]{Figures/fig05_shadow_evolution.png}
+    \caption{Annual mean shadow price of energy (SPE) for the 20 most frequently binding nutrients, by city and household member, 2019--2024. Cell values report the mean SPE for each year, expressed as the share of total daily diet cost attributable to that nutrient's minimum constraint. Color categories group cells into five SPE ranges for visual reference; grey cells indicate SPE $\approx$ 0 (non-binding or negligible constraint). Household members: adult male [31--51), adult female [31--51), female child [10--14).}
+    \label{fig:spe-evolution}
+\end{figure*}
+
+\subsection{Diet Composition and Cost Drivers}
+
+The CoNA composition is dominated by a core set of items present in nearly all months across the three cities (pasteurized milk, dried peas, wheat flour, lentils, vegetable fat, and guavas), though each city also draws on additional food items with selective presence, specifically cassava in Cali, rice in Medellín, and soybean oil in both Bogotá and Cali. Pasteurized mil accounts for 35.1 - 40.6\% of total CoNA cost, consistent with its role as the dominant calcium source identified above; legumes are the second largest component (dried peas: 12.8\% - 15.7\%, and lentils: 4.9\% - 6.7\%), with divergent city trajectories (Supplementary Figure S1 provides the full monthly cost decomposition by food item).
+
+\smallskip
+
+The composition of CoRD mirrors the exchange structure recommended by the GABA, with a serving distribution that is identical across cities and stable overt time. Results show a marked asymmetry between servings and economic weight. Dairy, with only 4.16 - 4.31 daily servings, accounts for 63.3\% - 68\% of total CoRD; by contrast, fats, the highest volume group, with 4.51 - 4.67 daily servings, represent just 3.2\% - 4.8\% of total CoRD. Cali shows the highest share of dairy costs relative to CoRD (68\%), which reflects that it is the only city where the model selects both cheese and pasteurized milk (Supplementary Table S2 provides the full cost decomposition by GABA food group).
+
+
+\subsection{The Cultural Acceptability Premium: Costs of CC-CoNA}
+
+CC-CoNA extends CoNA by incorporating a parameter $\alpha$ that penalizes deviations from the optimal diet relative to the observed consumption patterns; as $\alpha$ rises from 0 to 1, the LP progressively stricter adherence to local dietary habits, and the resulting cost captures the premium of designing a culturally acceptable nutritional diet (Figure \ref{fig:ccona_series}). At $\alpha =1$, full adherance to observed patterns, the mean premium over CoNA reached 1.96\% in Bogotá, 2.22\% in Cali, and 1.71\% in Medellín over the full period, which indicates that a nutritionally adequate and culturally acceptable intervention entails only a modest surcharge relative to the unconstrained least-cost diet. The premium falls to roughly half (0.84\% - 1.09\%) at $\alpha = 0.5$ and to quarter (0.41\% - 0.53\%) at $\alpha = 0.25$. Year-on-year variations in CC-CoNA are also highly correlated with those of pure CoNA, at $\alpha$, showing Pearson correlations of 0.925 - 0.957. This result confirms that cultural acceptability premium introduces no independent source of cost volatility. The cross-city comparison reveals a reordering over time. More precisely, in 2019 Bogotá held the highest premium (1.63\%), and Cali the lowest (1.29\%), but during the 2022-2023 inflationary episode all three cities converged toward exceptionally high premiums (3.01 - 3.49\%), after which the post-inflationary adjustment widened the gap between observed-consumption and least-cost baskets asymmetrically across cities, steadily in Cali and only after a temporary compression in Medellín.
+
+\subsection{Affordability Across the Income Distribution}
+
+A household is classified as unable to afford a diet when its annual per capita food expenditure, estimated as a fixed share of income that varies by decil pair (39\% for deciles 1-2, 36\% for deciles 3-4, declining to 26\% for deciles 9-10, following \citep{Yoshioka2026}, data obtained from the ECV), falls short of the annual cost of that diet. Two complementary measures are used: (i) the unaffordability rate, capturing the share of households unable to afford a diet, and (ii) the affordability gapa, which captures the average proportional shortfall between food expenditure and diet cost\endnote{Since deciles are constructed to be equally weighted, with each representing approximately 10\% of the urban population, the simple mean of decile-level rates corresponds directly to the total share of affected households in the city}.
+
+\subsubsection{The Incidence of Unaffordability}
+
+CoCA affected between 2.9\% and 4.1\% of the urban population under normal conditions (2019) (see Table \ref{tab:afford_annual}), where between 29.2\% and 40.6\% of households could not afford even the cheapest energy sufficient diet (see Figure \ref{fig:afford_deciles}). The aggregate incidence is modest; however, this share in Cali worsened to 47.4\% by 2024 (+6.8 pp relative to 2019), that is, nearly half of the lowest-income decile could not cover the minimum caloric threshold with its effective food budget. In Bogotá and Medellín, the first-decile improved (-5.5 and -8 pp, respectively). The peak aggregate unaffordability ocurred in 2020 across al three cities, at 10.7\% in Bogotá, 8\% in Medellín, 11.9\% in Cali, coinciding with the food-budget disruptions associated with the pandemic.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\linewidth]{Figures/fig08_afford_deciles.png}
+    \caption{Monthly unaffordability rate by income decile, city, and diet model, 2019:1--2024:12. Cell values report the share of households in each decile whose monthly per capita food expenditure falls below the monthly cost of the corresponding diet. Dashed vertical lines mark year boundaries. CoCA = Cost of Caloric Adequacy; CoNA = Cost of Nutritional Adequacy; CoRD = Cost of Recommended Diet.}
+\label{fig:afford_deciles}
+\end{figure}
+
+The transition from CoCA to CoNA substantially increases the incidence of unaffordability. In 2019, 7.6\% of Bogota's households, 9.4\% of Medellín's, and 10.9\% of Cali's could not afford a nutritionally adequate diet, between 2.5 and 3 times the caloric unaffordability rate. CoNA unaffordability extends to the fourth decile in Bogotá, and in Cali to the fifth. The post-2020 dynamics clearly set the cities apart. Bogotá and Medellín partially recovered their 2019 levels (8.3\% and 10.6\% in 2024), Cali recorded its worst year outside 2020 in 2023 (23.6\%), and by 2024 still had 20\% of its population unable to afford CoNA, nearly double Bogotá's rate. It should be noted that the most severe deterioration is concentrated in Cali's second decile, whose rate rose from 12.9\% in 2019 to 81.9\% in 2024, equivalent to an additional 6.9\% of Cali's total population falling into nutritional unaffordability over that period. 
+
+% Tabla 4: tasa agregada de inasequibilidad — formato wide
+\begin{table*}[htbp]
+\centering
+\begingroup
+\fontsize{7}{8}\selectfont
+\setlength{\tabcolsep}{2pt}
+\renewcommand{\arraystretch}{0.95}
+\caption{Aggregate household unaffordability rate by city and diet model, 2019\textendash{}2024 (\% of households, mean (SD))}
+\label{tab:afford_annual}
+\begin{tabular}{lrrrrrrrrr}
+\toprule
+ & \multicolumn{3}{c}{Bogotá} & \multicolumn{3}{c}{Medellín} & \multicolumn{3}{c}{Cali} \\
+\cmidrule(lr){2-4}\cmidrule(lr){5-7}\cmidrule(lr){8-10}
+Period & CoCA & CoNA & CoRD & CoCA & CoNA & CoRD & CoCA & CoNA & CoRD \\
+\midrule
+2019–2024 & 5.0 (4.2) & 12.8 (6.3) & 27.4 (8.2) & 4.4 (2.8) & 13.5 (5.2) & 26.0 (6.9) & 6.3 (4.4) & 19.3 (7.3) & 35.0 (8.3) \\
+2019       & 2.9 (1.1)  & 7.6 (1.2)   & 18.9 (3.1) & 3.3 (0.6) & 9.4 (1.4)   & 19.0 (2.5) & 4.1 (1.3) & 10.9 (1.8) & 23.2 (3.0) \\
+2020       & 10.7 (7.7) & 20.4 (10.9) & 35.6 (13.0) & 8.0 (5.1) & 19.0 (9.0) & 31.1 (11.8) & 11.9 (8.5) & 25.6 (11.9) & 41.4 (13.0) \\
+2021       & 5.2 (1.4)  & 15.2 (1.9)  & 31.9 (2.5) & 4.1 (0.8) & 13.3 (1.6)  & 26.5 (2.1) & 6.1 (1.7) & 18.2 (4.5)  & 34.7 (4.5) \\
+2022       & 4.7 (1.1)  & 13.8 (1.3)  & 29.2 (2.1) & 4.2 (0.7) & 13.9 (1.7)  & 28.9 (2.2) & 4.9 (1.2) & 17.6 (3.1)  & 34.2 (2.3) \\
+2023       & 3.8 (1.0)  & 11.7 (1.9)  & 28.2 (3.1) & 4.6 (1.4) & 15.0 (3.9)  & 28.5 (4.4) & 6.0 (1.4) & 23.6 (2.7)  & 39.4 (3.2) \\
+2024       & 2.4 (0.6)  & 8.3 (1.6)   & 20.8 (3.1) & 2.5 (1.0) & 10.6 (2.1)  & 22.1 (4.0) & 4.7 (1.4) & 20.0 (3.6)  & 37.0 (3.1) \\
+\bottomrule
+\end{tabular}
+\vspace{0.5em}
+\noindent{\scriptsize 
+
+\textit{Note:} Mean (SD) of the aggregate unaffordability rate across monthly observations
+within each period. The aggregate rate is the simple mean across the ten income deciles
+(equal population weight). CoCA = Cost of Caloric Adequacy; CoNA = Cost of Nutritional
+Adequacy; CoRD = Cost of Recommended Diet.}
+\endgroup
+\end{table*}
+
+CoRD affects nearly 1 in 5 households in 2019 (18.9\% in Bogotá, 19\% in Medellín, 23.2\% in Cali). The 2020 peak pushed this incidence to 31.1\% - 41.4\%, implying that between a third and nearly half of the urban population could not afford a recommended diet that year. By 2024, Cali reached 37\% of its households affected, the highest level of the period outside 2020, with the third decile unable to afford it.
+
+\subsubsection{The Affordability Gap}
+
+Incidence captures how many households are unaffordable but not how far they fall short of the household. Thus, Figure \ref{fig:afford_gap} shows that, for CoNA, the first decile carries mean gaps of 0.460 in Bogotá, 0.472 in Medellín, and 0.575 in Cali over the full period. This finding indicates that the poorest decile's food budget covers only between 42.5\% and 54\% of the cost of a nutritionally adequate diet; the shortfall is not a narrow margin but close to half the diet's cost. For CoRD, the first decile registers gaps of 0.64 in Bogotá, 0.626 in Medellín, and 0.703 in Cali, implying that the average food budget covers only between 29.7\% and 37.4\% of the recommended diet's cost. In Cali, the gap reaches 0.368 in the second decile and 0.207 in the third over the full period, that is, even households with intermediate unaffordability rates face an average food-budget shortfall of 20\% - 37\% of CoRD. The evolution between 2019 - 2024 reveals a widespread deterioration of gaps in Cali, where the first-decile CoRD gap rose from 0.593 in 2019 to 0.731 in 2024, peaking at 0.805 during the 2020 inflationary episode. In Bogotá and Medellín the deterioration was more contained and concentrated in the lowest deciles.
+
+\begin{figure*}[!htp]
+    \centering
+    \includegraphics[width=\linewidth]{Figures/fig09_afford_gap.png}
+    \caption{Annual affordability gap by income decile (1--3), city, and diet model, 2019--2024. Cell values report the mean affordability gap for each year, where the gap measures the average proportional shortfall between food expenditure and diet cost across all households in the decile (0 = no gap; 1 = food budget covers 0\% of diet cost). CoCA = Cost of Caloric Adequacy; CoNA = Cost of Nutritional Adequacy; CoRD = Cost of Recommended Diet.}
+\label{fig:afford_gap}
+\end{figure*}
+
+The affordability results presented above are sensitive to the assumption regarding the share of income that households allocate to food, estimated here as a fixed share by decile pair based on consumption patterns observed in the ECV. To assess the robustness of these findings, an extreme scenario is evaluated in which households allocate their entire per capita income to food (see Figure \ref{fig:full-income-afford}). The results reveal that unaffordability under this scenario is concentrated exclusively in the first decile. Over the full period, on average, between 10.6\% and 15.8\% of that decile could still not afford CoCA, between 24.5\% and 39.7\% could not afford CoNA, and between 41.3\% and 60.6\% could not afford CoRD (depending on the city). This finding confirms that unaffordability among the poorest decile does not stem from the food-expenditure-share assumption, but rather reflects an absolute income constraint. 
+
+\section{Discussion}
+
+This study examines the cost and affordability of the least-cost diets in Colombia's three largest cities (Bogotá, Medellín, and Cali) over the period 2019 to 2024 using monthly data. This timeframe encompasses multiple phases, namely a pre-pandemic baseline, the acute disruptions of the COVID-19 pandemic, the inflationary episode of 2022-2023, and the subsequent period of stabilization. Such timeframe enables an examination of the evolution of least-cost diet metrics and affordability across these distinct episodes, and allows us to interrogate whether these patterns are consistent with the underlying structural features that differentiate the food systems of the three cities. From this analysis four main findings emerge. First, the main economic barrier to dietary quality does not lie in achieving the diversity recommended by national dietary guidelines, but in attaining nutritional adequacy, a premium that is both greater in magnitude and more sensitive to inflationary shocks than the cost of dietary diversity. Second, this barrier is disproportionately driven by a single nutrient, namely calcium, that is identified as a limiting nutrient in all cities and throughout the sample period. Calcium's SPE not only rises steadily over time but also varies markedly across locations. Third, the heterogeneity in least-cost mechanisms between cities reflects underlying differences in market structure and integration, particularly evident in the weaker price co-movements for perishable, nutrient-dense foods. Most notably, fourth, the city where limiting nutrients such as calcium have remained persistently problematic is also where least-cost diet affordability has deteriorated most acutely. Findings show that this pattern is especially concerning for households near the poverty line, particularly those in the second income decile, which highlights a vulnerability that goes beyond a temporary pandemic shock. The remainder of this section discusses each of these findings in detail.
+
+\subsection{The Cost Structure of Dietary Quality}
+
+Our study shows that the largest economic barrier to diet quality arises between caloric sufficiency and nutritional adequacy, not between nutritional adequacy and the recommended diet. The CoNA/CoCA premium indicates that a nutritionally adequate diet cost between 80\% and 114\% more than an energy-sufficient one (1.85 in Bogotá, 2.01 in Medellín, 1.99 in Cali); meeting national dietary guidelines added only a further 40\% - 54\% above nutritional adequacy (CoRD/CoNA: 1.52, 1.42, and 1.43, respectively). The latter premium remains notably stable over time, which suggests that the additional cost of meeting national dietary guidelines reflects a structural feature of these urban food markets rather than responses to the inflationary cycle. \citet{Bai2020} find that CoNA costs on average 166\% more than CoCA globally, and around 121\% and 118\% more in Latin America and upper-middle-income countries, respectively. The three Colombian cities fall below those benchmarks over the full period, though Cali is converging toward them (its CoNA/CoCA premium rising from 2.4 in 2022, as reported by \citealt{Yoshioka2026}, to 2.57 by 2024 in our estimates). For CoCA, a study for Cali \citet{Yoshioka2026} and a study for Latin America \citet{FAO2021SOFI} report a ratio of 1.4, close to our full-period estimates (1.42 - 1.52). This pattern holds even when a broader dietary standard is considered, as Hirvonen et al. \cite{Hirvonen2020} find that the EAT-Lancet diet, a globally standard designed to meet both human health and planetary sustainability, costs on average 60\% more than the least-cost nutritionally adequate diet. The evidence consistently points in the same direction, insofar as the steepest economic step in the diet quality ladder falls between caloric sufficiency and nutritional adequacy.
+
+
+\subsection{Limiting nutrients, calcium, and Intercity Divergence}
+
+Three nutrients emerged as limiting in the CoNA model in 100\% of months across all three cities: calcium, sodium, and vitamin C. This pattern is consistent with prior studies reporting calcium and vitamin C as active constraints controlling total diet cost in a Danish linear programming model \cite{Parlesak2016}, calcium and vitamin C as key cost-determining micronutrients in a similarly structured model for Ghanaian households \cite{Nykanen2018}, and calcium and sodium among the most frequently limiting nutrients in an optimization model for low-income Brazilian households \cite{Verly2019}.
+
+\smallskip
+
+Sensitivity and compositional analysis of the CoNA diet identify calcium as the most expensive nutritional constraint to satisfy in the LP model. This finding corroborates international evidence \cite{Bai2022b}, evidence from Brazil where calcium emerged as the nutrient causing the largest cost and dietary deviation when its constraint was relaxed, consistently across income strata \cite{Verly2020}, and prior results from Cali \cite{Yoshioka2026}.  A single food source, pasteurized milk, drive this concentration, and it supplies between 64\% and 85\% of total dietary calcium in the optimal CoNA and between 97\% and 99\% of vitamin B12, which translates into a cost share of 35.1\% - 40.6\% of total minimum diet cost. Such dependence on a single food item, both nutritionally and economically, exposes CoNA to dairy price fluctuations, in line with evidence from middle-income countries where dairy products are relatively expensive and unsubsidized \cite{Bai2022b, Raghunathan2020}. This strengthens the argument for targeted interventions on critical food items over general dietary approaches, following \citet{Wallingford2024} and \citet{Ryckman2021}. Intercity variation in calcium's SPE align with dairy price inflation across markets. Cali recorded the highest mil inflation of the three cities in 2022-2023 (26.7\% and 20.5\%),  and in 2024 its disinflation was more contained in Cali than in Bogotá, precisely the city where calcium's SPE has remained the highest throughout the period. Zinc, the second most important constraint, according to SPE values, shows the opposite pattern, driven by legumes whose price trajectory diverged across cities, falling in economic relevance in Cali as legume inflation turned negative after 2022. Beyond these aggregate patterns, requirements also differ clearly by household member. Calcium's burden is largest for the adolescent girl of the representative household; by contrast, zinc displaces calcium as the dominant constraint for the adult male, consistent with global evidence \citep{Bai2022b}, notably in Bogotá and Medellín.
+
+\subsection{Market Structure and the Case of Cali}
+
+Cross-city co-movement is markedly higher for CoCA (> 0.93) than for CoNA (0.81-0.88) or CoRD (0.78 - 0.86), accroding to Pearson's coefficient. This pattern is consistent with the role of storability in facilitating spatial arbitrage for basic staples, but not for perishable, nutritionally dense foods, as previous research has shown \citep{Gilbert2010}. Supporting this interpretation, evidence from Colombian supply networks indicates that storable staples are sourced from more geographically integrated markets; by contrast, perishable products are predominantly supplied from nearby areas due to limited storability \citep{BanRep2020}. The same asymmetry emerges in the post-inflationary correction following the 2022-2023 episode. By mid-2024, real CoCA had fallen by as much as 28.7\%, driven by nominal declines in CPI subclasses for rice, wheat, and pre-cooked flours, that is, the cheapest sources of calories in each market (see Supplementary Figure S2). By way of contrast, CoNA and CoRD corrections remained much smaller, an asymmetry also documented in a recent study for China \cite{Bai2026}. This divergence widens the relative gap between caloric sufficiency and nutrient adequacy, whose distributional consequences falling most heavily on low-income households that rely on starchy staples \citep{Bai2022b, Wallingford2024}.
+
+\smallskip
+
+This structural exposure is most acute in Cali, which exhibits the most pronounced and persistent divergence in affordability across all three diet models. The city's vulnerability reflects underlying structural features rather than temporary shock, such as a temporary pandemic episode. As \citet{Cattaneo2023} note in their global study, income inequality is a key determinant of persistent unaffordability, which is consistent with Cali's Gini coefficient of 0.509, among the highest of Colombia's metropolitan areas \citep{Dane2024}. Supply-side vulnerability further exacerbates this exposure, insofar as Cali's wholesale market handles only a fraction of the volume managed by those in Bogotá and Medellín; futhermore, as \citet{Temple2015} observe, 11 large firms control 85\% of retail food assets in the city. Within just 14 months, Cali facd a compounding sequence of shocks, the COVID-19 pandemic and the 2021 national strike, which disrupted food supply flows from the departments supplying most of the city's fresh foods. Although prior studies \citep{Rankin2021} document that both events worsened food security, their analysis does not directly assess these specific impacts. Transaction costs add a further layer to this vulnerability. On average, these costs account for 42\% of origin-market prices across the three cities and rise with greater travel time between markets \citep{BanRep2020}. Nevertheless, Cali's average transaction cost is in fact the lowest of the three (27\% vs. 48\% in Bogotá and 41\% in Medellín), suggesting that the specific composition of products sourced, and the concentration of suppliers providing them, drive the city's vulnerability more than distance alone.
+
+\subsection{Uneven Affordability and the Near-Poor}
+
+The unaffordability of least-cost diets reached its highest point in all three cities in 2020. This trend is consistent with global evidence. \citealt{Laborde2021} estimate that, in 2020, 141 million additional people could not afford a healthy diet compared to a no-pandemic scenario, and that the depth of unaffordability, the share unable to afford even half the cost of a healthy diet, rose from 43\% to 50\% across the 63 countries studied. \citet{FAO2022SOFI} confirm that Latin America and the Caribbean recorded the highest cost of a healthy diet of any region in 2020 (USD 3.89 per person per day, PPP terms), with rising food prices identified as a primary driver of that year's deterioration in the region.
+
+\smallskip
+
+The subsequent recovery, however, has been uneven. Indeed, \citealt{RoseroMoncayo2024} document that between 2020 and 2022 unaffordability declined only slightly in upper-middle-income economics (from 25\% to 22\%) relative to lower-middle-income economies (from 56\% to 53\%). \citealt{FAO2025} show that Latin America stil has not fully recovered, and furthermore \citealt{Mwambi2023}, comparing Bangkok and Manila, find that recovery trajectories depend more on local features than on the aggregate national shock. Note that Cali's trajectory reflects this asymmetry. Unlike Bogotá and Medellín, whih partially regained their 2019 CoNA affordability levels by 2024, Cali's unaffordability rate remained nearly twice as high as Bogotas's. Notably, for Cali's second income decile, the share unable to afford a minimum-cost nutritious diet rose from 12.9\% in 2019 to 81.9\% in 2024, an increase of 69 p.p. This finding is indicative of "near-poor" households, those above conventional vulnerability under normal conditions but pushed into unaffordability by income shocks combined with rising relative food costs. Moreover, this is consistent with evidence that pandemic-induced poverty extended beyond pre-existing poor populations \citep{Lustig2023}, and that labor-market vulnerability, particularly unemployment and informal employment, was closely associated with food insecurity across Latin America \citep{NovoaSanzana2024}. This mechanism is specially relavant for Cali, where labor informality reached 46.6\% in late 2024, compared to the 42\% average across Colombia's 13 major metropolitan areas \citep{DANE2025}.
+
+\section*{Limitations, Original version}
+
+This study has several limitations that should be considered when interpreting the results and designing policy interventions. First, the representative household approach, while standard in the literature, assumes a specific demographic composition (an adult couple and a 9--13-year-old girl). This typology may not fully capture the distinct vulnerabilities of increasingly common household structures, such as female-headed single-parent households, unipersonal households, or those including older adults, whose economies of scale, labor market participation, and nutritional requirements differ significantly. Future research should incorporate sensitivity analyses across diverse household typologies to provide a more granular view of intra-urban inequality.
+
+Second, the affordability analysis relies on a fixed food expenditure share by income decile. While our robustness check, assuming households allocate 100\% of their income to food, confirms that the unaffordability of the poorest decile reflects an absolute income constraint, a fixed expenditure share may not fully capture intra-temporal coping strategies during severe inflationary shocks. In reality, during periods like the 2022--2023 inflationary episode, the poorest households often temporarily increase their food budget share or compromise on dietary quality, for example by substituting nutrient-dense foods for cheaper, energy-dense staples. Incorporating dynamic expenditure shares or modeling quality-adjusted demand would further refine these affordability estimates.
+
+Third, the linear programming models, particularly the CoNA, exhibit a heavy mathematical reliance on a single food item, pasteurized milk, to satisfy calcium and vitamin B12 constraints. While this identifies the marginal cost driver in the market, it raises questions about real-world feasibility given the prevalence of lactose intolerance and varying cultural consumption patterns in Colombia. Future modeling should relax this constraint by incorporating alternative, culturally acceptable, and potentially cheaper calcium sources, for example small fish with edible bones, fortified plant-based alternatives, or specific dark leafy greens, to test the model's sensitivity and provide more realistic dietary baskets.
+
+Finally, the Cultural Acceptability Premium (CC-CoNA) yielded a surprisingly low cost increase, ranging from 1.71\% to 2.22\% at $\alpha=1$. While this suggests that the baseline CPI food basket already contains a relatively nutritious core, it may also reflect methodological constraints in how CPI expenditure shares map onto the LP food groups. Further refinement of the CC-CoNA constraints using direct household microdata from consumption surveys, rather than aggregate CPI shares, is warranted to ensure the metric accurately captures the true cost of cultural preferences and habitual dietary patterns.
+
+\section*{Conclusion, Original version}
+
+This study provides a comprehensive, longitudinal assessment of the cost and affordability of least-cost diets across Bogotá, Medellín, and Cali from 2019 to 2024, capturing the pre-pandemic baseline, the acute disruptions of 2020, and the severe inflationary episode of 2022--2023. Our findings demonstrate that the steepest economic barrier to dietary quality in these Colombian cities lies not in achieving recommended dietary diversity, but in attaining basic nutritional adequacy. This gap is disproportionately driven by the marginal cost of calcium, highlighting a structural vulnerability in urban food markets where a single food source, pasteurized milk, dictates the affordability of a nutritionally adequate diet.
+
+Furthermore, the analysis reveals profound subnational heterogeneity. While Bogotá and Medellín showed signs of post-inflationary recovery in diet affordability, Cali experienced a persistent and structural deterioration. In Cali, the inflationary shocks pushed ``near-poor'' households, particularly the second income decile, into severe nutritional unaffordability. This underscores that urban food system vulnerabilities, driven by external supply dependencies, high retail market concentration, and elevated labor informality, exacerbate the impacts of macroeconomic shocks on the most vulnerable populations. From a policy perspective, the results indicate that broad-based income transfers or general food subsidies may be insufficient to close the nutritional gap. Instead, targeted interventions are required. Policymakers should consider specific measures to reduce the cost of limiting nutrients, such as temporary subsidies for dairy products, fortification programs, or incentives for the production and distribution of alternative calcium-rich foods. Additionally, for cities like Cali, structural policies aimed at decentralizing food supply chains, reducing retail market concentration, and strengthening local peri-urban agriculture are essential to build resilience against future price shocks. Ultimately, ensuring economic access to nutritious diets requires aligning social protection programs with the specific nutritional bottlenecks and structural realities of local urban food systems.
+
+
+
+
+\section*{Appendix A}
+\label{secA_prices}
+
+In this appendix we present the extrapolation method using the monthly variation of the CPI at the subclass level. The price of food item $j$ in city $c$ and month $t$, $p_{jct}$, was computed as
+
+\begin{equation}
+p_{jct}=p_{j,c,\tau}^{obs}\left(\frac{CPI_{s(j),c,t}}{CPI_{s(j),c,\tau}}\right)^{\lambda_j},
+\end{equation}
+
+where $p_{j,c,\tau}^{obs}$ is the last observed price of item $j$ in city $c$, and $s(j)$ denotes the CPI sub-class to which item $j$ belongs.
+
+The parameter $\lambda_j$ corresponds to a regression in first log differences without intercept, using only the observations of item $j$ within the training sample:
+
+\begin{equation}
+\Delta \log p_{j,c,t} = \hat{\lambda}_j \, \Delta \log CPI_{s(j),c,t} + \varepsilon_{j,c,t}.
+\end{equation}
+
+This regression is estimated only when sub-class $s(j)$ contains more than one item; when item $j$ is the only member of its sub-class, there is no within-sub-class variation available to identify an item-specific elasticity, and $\lambda_j$ is set equal to 1, implying a strictly proportional adjustment between the item's price and the corresponding sub-class CPI:
+
+\begin{equation}
+\lambda_j=
+\begin{cases}
+\hat{\lambda}_j, & \text{if } n_{s(j)} > 1,\\[6pt]
+1, & \text{if } n_{s(j)} = 1.
+\end{cases}
+\end{equation}
+
+To prevent elasticities estimated with few observations or high residual variance from introducing excessive noise into the extrapolation, $\hat{\lambda}_j$ is shrunk toward the unit elasticity using a James-Stein-type estimator,
+
+\begin{equation}
+\lambda_j^{*} = 1 + \delta_{s(j)}\left(\hat{\lambda}_j - 1\right),
+\end{equation}
+
+where the shrinkage factor $\delta_{s(j)} \in [0,1]$ depends on the number of items in the sub-class and the average within-sub-class residual variance, pulling $\hat{\lambda}_j$ closer to 1 when the sub-class is small or the estimate is noisy, and closer to $\hat{\lambda}_j$ itself when the sub-class contains more items and the estimate is reliable.
+
+\section*{Appendix B}
+\label{secA_lp}
+
+This appendix presents the full linear programming (LP) formulations underlying the three least-cost diet metrics introduced.
+
+\subsubsection*{Cost of Caloric Adequacy (CoCA)}
+Let $x_{jd}$ denote the quantity (in grams) of food item $j \in \{1, \ldots, J\}$ allocated to demographic group $d \in \{1, \ldots, D\}$, $p_j$ the retail price per gram, and $e_j$ its energy content (kilocalories per gram). The CoCA for group $d$ is obtained by solving
+
+
+\begin{equation}
+    \min_{x_{1d}, \ldots, x_{Jd}} \sum_{j=1}^{J} p_{j} x_{jd}
+\end{equation}
+
+subject to
+
+\begin{equation}
+    \sum_{j=1}^{J} e_{j} x_{jd} = EER_{d}; \quad x_{jd} \geq 0 \quad \forall j \in \{1, \ldots, J\},
+\end{equation}
+
+where $EER_d$ denotes the estimated energy requirement specific to demographic group $d$. This LP problem consists of a single equality constraint and non-negativity restrictions; the linear objective function implies that the optimum occurs at an extreme point of the feasible set, so the optimal diet is concentrated on a single food item. Let $k$ denote the item satisfying $p_{k}/e_{k} = \min_{j}\{p_{j}/e_{j}\}$. The optimal solution sets $x_{kd}^{*} = EER_d/e_{k}$ and $x_{jd}^{*} = 0$ for all $j \neq k$, so that
+
+\begin{equation}
+    CoCA_d = p_k \left(\frac{EER_d}{e_k}\right).
+\end{equation}
+
+\subsubsection*{Cost of Nutrient Adequacy (CoNA)}
+Let $a_{mj}$ denote the content of nutrient $m \in \{1, \ldots, M\}$ per gram of food $j$, and let $\underline{N}_{md}$ and $\overline{N}_{md}$ denote the lower and upper intake bounds for nutrient $m$ and demographic group $d$, respectively. The CoNA is obtained by extending the CoCA problem to include nutrient constraints:
+
+\begin{equation}
+\min_{x_{1d}, \ldots, x_{Jd}} \sum_{j=1}^{J} p_{j} x_{jd}
+\end{equation}
+
+subject to
+
+\begin{equation}
+    \sum_{j=1}^{J} e_{j}x_{jd} = EER_d
+\end{equation}
+
+\begin{equation}
+    \underline{N}_{md} \leq \sum_{j=1}^{J} a_{mj} x_{jd} \leq \overline{N}_{md} \quad \forall m \in \{1, \ldots, M\},
+\end{equation}
+
+\begin{equation}
+    x_{jd} \geq 0 \quad \forall j \in \{1, \ldots, J\}.
+\end{equation}
+
+
+\subsubsection*{Consumption-Consistent CoNA (CC-CoNA)}
+Let $g \in \{1, \ldots, G\}$ index CPI sub-classes, $\mathcal{I}_g$ the subset of food items belonging to sub-class $g$, and $s_g$ the expenditure share of group $g$ in the CPI basket, such that $\sum_{g=1}^{G} s_g = 1$. The CC-CoNA augments the CoNA problem above with the additional constraint
+
+\begin{equation}
+    \frac{\sum_{i \in \mathcal{I}_g} x_{id}}{\sum_{i=1}^{J} x_{id}} \geq \alpha\, s_g \qquad \forall g \in \{1, \ldots, G\},
+\end{equation}
+
+which can equivalently be written as
+
+\begin{equation}
+    \sum_{i=1}^{J} \left(\mathbbm{1}[i \in \mathcal{I}_g] - \alpha s_g\right) x_{id} \geq 0 \qquad \forall g \in \{1, \ldots, G\},
+\end{equation}
+
+where $\alpha \in [0, 1]$ controls the degree to which the optimal diet must reflect observed consumption patterns.
+
+\section*{Appendix C}
+\label{secA_income_algorithm}
+Individual current monthly income is constructed from the Great Integrated Household Survey (GIHS), conducted monthly by DANE. This variable is computed by aggregating income across four labor market classifications: wage employees, self-employed workers, unpaid family workers, and the unemployed and economically inactive. For each classification, income is estimated following the eight-step methodology proposed by \cite{DANEIngreso}.
+
+\begin{figure*}[htp]
+    \centering
+    \includegraphics[width=1.02\textwidth]{Figures/Esquema_algoritmo_ingreso.png}
+    \caption{Algorithm for the construction of per capita income for poverty measurement based on the Great Integrated Household Survey (GIHS).}
+    \label{fig:income_algorithm}
+\end{figure*}
+
+Figure \ref{fig:income_algorithm} presents a schematic overview of the algorithm used to construct per capita income for poverty measurement based on the GIHS. As shown in the figure, the procedure integrates data processing, income component construction, identification of data issues (missing values, outliers, and false zeros), and the subsequent imputation process to obtain the final income measure. The procedure proceeds as follows:
+
+\begin{enumerate}
+    \item Load and clean the survey modules.
+    \item Construct the variables of interest for income-receiving individuals.
+    \item Compute the components of current income: monetary income from the primary occupation, income from secondary activities, in-kind income, and income from other sources.
+    \item Identify missing values in each income component.
+    \item Identify outliers by means of quantile regression, estimating regressions at the 10th, 25th, 50th, 75th, 85th, and 95th percentiles using the log of income as the dependent variable.
+    \item Implement a classification model for the detection of false zeros, that is, observations where reported income is zero but the individual is likely an income earner.
+    \item Flag the missing values identified in Step 4, the outliers from Step 5, and the false zeros from Step 6 for imputation.
+    \item Carry out imputation using the hot-deck method, which replaces flagged values with observed values from a donor record selected on the basis of matching characteristics.
+\end{enumerate}
+
+% End notes
+
+\theendnotes
+
+%%Harvard (name/date)
+\bibliographystyle{SageH}
+\bibliography{bibliography.bib}
+
+\clearpage
+\clearpage
+
+
+
+\end{document}
