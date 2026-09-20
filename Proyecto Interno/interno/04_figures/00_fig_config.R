@@ -1,7 +1,7 @@
 ########################################################
 ## 04_figures/00_fig_config.R
 ## Configuracion compartida para las graficas del proyecto
-## de 13 ciudades (CoCA / CoNA, trimestre 3 2025).
+## de 13 ciudades (CoCA / CoNA / CoRD / CoAHD, trimestre 3 2025).
 ########################################################
 
 # -----------------------------------------------------------------------
@@ -18,10 +18,15 @@ if (is.na(base_dir)) stop("Ninguno de los directorios base existe")
 output_dir <- file.path(base_dir, "interno/output")
 coca_dir   <- file.path(base_dir, "interno/03_models/coca")
 cona_dir   <- file.path(base_dir, "interno/03_models/cona")
+cord_dir   <- file.path(base_dir, "interno/03_models/cord")
+coahd_dir  <- file.path(base_dir, "interno/03_models/coahd")
+hcost_dir  <- file.path(base_dir, "interno/03_models/hcost")
 fig_dir    <- file.path(output_dir, "figuras")
 
 dir.create(file.path(fig_dir, "01_costos"),     recursive = TRUE, showWarnings = FALSE)
 dir.create(file.path(fig_dir, "02_composicion"), recursive = TRUE, showWarnings = FALSE)
+dir.create(file.path(fig_dir, "03_restricciones"), recursive = TRUE, showWarnings = FALSE)
+dir.create(file.path(fig_dir, "04_adecuacion"),    recursive = TRUE, showWarnings = FALSE)
 
 # -----------------------------------------------------------------------
 # 1. Ciudades: colores y etiquetas
@@ -77,8 +82,10 @@ city_scale_color <- function(...) {
 # 2. Metricas: colores y etiquetas
 # -----------------------------------------------------------------------
 MODEL_COLS <- c(
-  "CoCA" = "#95A5A6",
-  "CoNA" = "#2C3E6B"
+  "CoCA"  = "#B0BEC5",
+  "CoNA"  = "#264653",
+  "CoRD"  = "#E76F51",
+  "CoAHD" = "#2A9D8F"
 )
 
 # -----------------------------------------------------------------------
@@ -159,6 +166,17 @@ paper_theme <- function(base_size = 11) {
       strip.text       = element_text(face = "bold", size = base_size - 1),
       plot.margin      = margin(6, 8, 6, 6)
     )
+}
+
+# -----------------------------------------------------------------------
+# 6. Guardado en 4K: el png sale de 3840 px de ancho (dpi = 3840 / ancho)
+#    y el pdf con las mismas medidas en pulgadas
+# -----------------------------------------------------------------------
+guardar_fig <- function(fig, nombre, carpeta, ancho = 12.8, alto = 7.2) {
+  ruta <- file.path(fig_dir, carpeta, nombre)
+  ggplot2::ggsave(paste0(ruta, ".png"), fig, width = ancho, height = alto,
+                  dpi = 3840 / ancho, bg = "white")
+  ggplot2::ggsave(paste0(ruta, ".pdf"), fig, width = ancho, height = alto)
 }
 
 cop_format <- function(prefix = "$", suffix = "") {

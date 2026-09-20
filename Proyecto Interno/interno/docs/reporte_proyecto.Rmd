@@ -1,0 +1,811 @@
+---
+title: "Proyecto Interno 13 ciudades de Colombia"
+subtitle: "Datos, método y estimaciones de costo de la dieta, con lo hecho hasta el momento"
+date: "`r format(Sys.Date(), '%d de %B de %Y')`"
+lang: es
+geometry: margin=2.5cm
+output:
+  pdf_document:
+    toc: true
+    toc_depth: 2
+    number_sections: true
+    fig_caption: true
+    latex_engine: pdflatex
+header-includes:
+  - \usepackage{booktabs}
+  - \usepackage{longtable}
+  - \usepackage{float}
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, warning = FALSE, message = FALSE,
+                      fig.align = "center", out.width = "100%", fig.pos = "H")
+
+library(tidyverse)
+library(scales)
+library(knitr)
+library(kableExtra)
+library(patchwork)
+library(lubridate)
+library(stringr)
+
+interno_dir <- "C:/Users/danie/OneDrive/Escritorio/Least-cost-diets-and-affordability/Proyecto Interno/interno/"
+
+source(file.path(interno_dir, "04_figures/00_fig_config.R"))
+source(file.path(interno_dir, "04_figures/aux-functions/modelos_costos.R"))
+
+cop0 <- function(x) format(round(x), big.mark = ".", decimal.mark = ",", trim = TRUE)
+fig  <- function(ruta) file.path(interno_dir, "output/figuras", ruta)
+dec  <- function(x) sub(".", ",", x, fixed = TRUE)
+```
+
+```{r cargar-datos}
+coca_v1 <- readRDS(file.path(interno_dir, "v1/03_models/coca/coca_results.rds"))
+coca_v2 <- readRDS(file.path(interno_dir, "03_models/coca/coca_results.rds"))
+cona_v1 <- readRDS(file.path(interno_dir, "v1/03_models/cona/cona_results.rds"))
+cona_v2 <- readRDS(file.path(interno_dir, "03_models/cona/cona_results.rds"))
+
+box_v1 <- readRDS(file.path(interno_dir, "v1/shiny_boxplots/data_boxplots.rds"))
+box_v2 <- readRDS(file.path(interno_dir, "shiny_boxplots/data_boxplots.rds"))
+
+percapita_ciudad <- function(cost_df, costo_col) {
+  cost_df %>%
+    mutate(fecha = as.Date(fecha)) %>%
+    group_by(ciudad, fecha) %>%
+    summarise(hogar = sum(.data[[costo_col]], na.rm = TRUE), .groups = "drop") %>%
+    mutate(pc = hogar / 3) %>%
+    group_by(ciudad) %>%
+    summarise(pc = mean(pc, na.rm = TRUE), .groups = "drop")
+}
+
+coca_pc <- bind_rows(
+  percapita_ciudad(coca_v1, "cost_day") %>% mutate(version = "v1"),
+  percapita_ciudad(coca_v2, "cost_day") %>% mutate(version = "v2")
+) %>% recode_city()
+
+cona_pc <- bind_rows(
+  percapita_ciudad(cona_v1$cost, "cona_cost") %>% mutate(version = "v1"),
+  percapita_ciudad(cona_v2$cost, "cona_cost") %>% mutate(version = "v2")
+) %>% recode_city()
+
+pc4 <- costo_percapita(leer_costos_modelos()) %>% recode_city()
+
+panel_v1 <- readRDS(file.path(interno_dir, "output/paneles/raw_mensual/panel_v1.rds"))
+lista_ciudad <- readRDS(file.path(interno_dir, "output/paneles/raw_mensual/lista_por_ciudad.rds"))
+fechas_ciudad <- panel_v1 %>% group_by(city) %>% summarise(n = n_distinct(fecha), .groups = "drop")
+n_fechas_max <- max(fechas_ciudad$n)
+n_alimentos  <- n_distinct(lista_ciudad$sipsa_name)
+
+sens <- readRDS(file.path(interno_dir, "output/sensibilidad_umbral/tablas.rds"))
+pct  <- function(nuevo, base) 100 * (nuevo / base - 1)
+
+etiqueta_regla <- c(
+  base      = "85% de los días de la ciudad (regla anterior)",
+  fruta75   = "Frutas al 75%, el resto al 85% de la ciudad",
+  fruta80   = "Frutas al 80%, el resto al 85% de la ciudad",
+  actual    = "85% de los días del grupo (adoptada)",
+  semanal   = "Un dato por semana (14 días o más)",
+  quincenal = "Un dato cada dos semanas (7 días o más)"
+)
+```
+
+# Resumen
+
+Este documento reúne lo que se ha hecho en el proyecto hasta el momento con los precios de supermercado de julio a septiembre de 2025 en 13 ciudades de Colombia: la limpieza y estandarización de los precios, la elección del producto que representa a cada alimento, los umbrales de fechas y de precio que definen qué alimentos entran al panel, y las estimaciones de costo de la dieta. Las estimaciones son el costo de cubrir las calorías (CoCA), el de cubrir además los nutrientes (CoNA) y el de una dieta que sigue la guía alimentaria (CoRD), a las que ahora se suma una cuarta dieta, el costo de una dieta saludable (CoAHD).
+
+El método de precios tiene dos versiones. La **v1** elegía, para cada alimento, el producto de tamaño más parecido a 500 g o 1.000 ml. La **v2** elige el producto de menor precio por gramo entre los que pesan hasta 500 g y tienen suficiente cobertura de fechas. Las dos versiones se corrieron sobre los mismos datos y el resto del proceso es igual, así que la diferencia entre ellas es solo el criterio de precio. La v2 es la que corre en el código principal y la v1 quedó archivada en `v1/`.
+
+Promedio simple de las 13 ciudades, en COP por persona al día:
+
+```{r tabla-resumen}
+resumen <- pc4 %>%
+  group_by(modelo) %>%
+  summarise(prom = mean(pc), .groups = "drop") %>%
+  mutate(Modelo = as.character(modelo), `Costo (COP/día)` = cop0(prom)) %>%
+  select(Modelo, `Costo (COP/día)`)
+
+kable(resumen, booktabs = TRUE, align = "lr", caption = "Costo per cápita promedio de las 13 ciudades") %>%
+  kable_styling(latex_options = c("hold_position", "striped"), full_width = FALSE)
+```
+
+Con el método v1, el CoNA promedio era `r cop0(mean(cona_pc$pc[cona_pc$version == "v1"]))` COP al día y con el v2 es `r cop0(mean(cona_pc$pc[cona_pc$version == "v2"]))` COP, una baja de `r sprintf("%.0f", 100 * (1 - mean(cona_pc$pc[cona_pc$version == "v2"]) / mean(cona_pc$pc[cona_pc$version == "v1"])))`%. El resto del proceso es el mismo en las dos versiones, así que la diferencia viene del cambio en la elección del producto (sección 3), salvo en Ibagué, donde también influye la regla de cobertura por grupo (sección 4). La misma sección incluye el diagnóstico del umbral de fechas y sus pruebas de sensibilidad.
+
+# Datos y limpieza
+
+## Fuente
+
+Los precios vienen del scraping diario de los productos del Éxito, que el proyecto asocia a los nombres de alimentos de SIPSA. El panel cubre `r n_distinct(fechas_ciudad$city)` ciudades y `r n_fechas_max` fechas de scraping entre julio y septiembre de 2025 (Medellín tiene `r fechas_ciudad$n[fechas_ciudad$city == "Medellín"]`). Cada día se guardó en un csv; `00_csv_a_rds.R` los junta por carpeta en un solo archivo comprimido.
+
+## Limpieza
+
+`01_construccion_panel.R` arma el panel a partir de esos archivos. Los pasos son:
+
+1. Todas las columnas se tipifican (precio como número, códigos de producto como texto) y la fecha se toma del nombre del archivo de origen.
+2. Se unifican los nombres de ciudad (Bogotá y Bogotá D.C. pasan a Bogotá, y las variantes de Cartagena a Cartagena).
+3. Se descartan las filas sin alimento, ciudad o código de producto, las que tienen un código que no es numérico, las filas cuya ciudad es una dirección web, las que traen una marca de tiempo en lugar de la unidad de precio, y las de precio cero o negativo.
+4. Se excluyen del panel trece alimentos que no son alimentos base (colorantes, salsas en sobre, gelatina, margarina, chocolates, vinagre, galletas saladas, jugo instantáneo y el bocadillo veleño).
+
+## Estandarización del precio
+
+Un mismo alimento se vende en presentaciones distintas, así que todos los precios se llevan a una base común: el precio de 500 g (o 1.000 ml para líquidos).
+
+- Cuando el nombre del producto trae su tamaño (por ejemplo "380 gr" o "1,5 litros"), el precio se lleva a 500 g o 1.000 ml en proporción. Los mililitros se tratan como gramos, sin corregir por densidad.
+- Los alimentos que se venden por kilogramo o gramo se llevan a 500 g directamente.
+- Los que se venden por unidad (los huevos, por ejemplo) usan una tabla de gramos por unidad que se armó aparte.
+
+Para cada alimento, ciudad y fecha se toma la mediana del precio estandarizado. Al final, el precio por 100 g de parte comestible se calcula como `precio_500g / (5 × parte comestible)`, donde la parte comestible viene de la tabla de composición de alimentos (TCAC). Ese es el precio que usan todos los modelos.
+
+# Elección del producto que representa a cada alimento
+
+Para cada alimento y ciudad el supermercado tiene varios productos (skus) de tamaños distintos, y el panel necesita uno solo para poder comparar precios entre ciudades.
+
+## v1: el más parecido a 500 g
+
+Se calculaba qué tan cerca estaba el tamaño de cada producto de 500 gramos (o 1.000 ml) y se elegía el más cercano.
+
+## v2: el de menor precio por gramo bajo un umbral
+
+La regla, en orden:
+
+1. **Cobertura de fechas**: solo compiten los productos que el scraper capturó en al menos el 85% de los días disponibles de la ciudad. Si ninguno cumple, se consideran todos.
+2. **Tamaño**: de los que pasaron el paso 1, se prefieren los que pesan 500 gramos o menos (el umbral de tamaño). Si ninguno cumple, se comparan todos los tamaños.
+3. **Precio**: entre los que quedan, se elige el de menor precio por gramo.
+
+El paso de cobertura se agregó después de detectar un problema, que se cuenta en la sección 4. La regla vive en `01_webscrap_prep/aux-functions/seleccionar_sku_umbral.R`.
+
+```{r ejemplo-leche, cache=TRUE}
+raw_mensual_dir <- file.path(interno_dir, "01_webscrap_prep/data")
+variables_panel <- c("sipsa_name","city","sku_code","exito_name","price",
+                     "unit_price","measurement_unit","tcac_code")
+extraer_fecha_archivo <- function(a) a %>% str_extract("\\d{2}-\\d{2}-\\d{4}") %>% dmy()
+construir_panel <- function(ruta, orden) {
+  readRDS(ruta) %>% select(any_of(variables_panel), archivo_origen) %>%
+    mutate(sipsa_name = as.character(sipsa_name), city = str_squish(as.character(city)),
+          sku_code = as.character(sku_code), exito_name = as.character(exito_name),
+          price = parse_number(price), unit_price = as.character(unit_price),
+          fecha = extraer_fecha_archivo(archivo_origen)) %>%
+    filter(!is.na(sipsa_name), !is.na(city), !is.na(sku_code), str_detect(sku_code, "^[0-9]+$"),
+          !str_detect(city, "^http"), !str_detect(unit_price, "T|\\+00:00"), price > 0) %>%
+    select(-archivo_origen)
+}
+archivos <- list.files(raw_mensual_dir, pattern = "\\.rds$", full.names = TRUE)
+panel_ej <- map2(archivos, seq_along(archivos), construir_panel) %>% bind_rows()
+
+leche_manizales <- panel_ej %>%
+  filter(sipsa_name == "Leche en polvo", city == "Manizales") %>%
+  mutate(texto = str_to_lower(exito_name),
+        medida = str_extract(texto, "\\d+(?:[\\.,]\\d+)?\\s*(g|gr|gramo|gramos)"),
+        gramos = medida %>% str_extract("\\d+(?:[\\.,]\\d+)?") %>% as.numeric()) %>%
+  group_by(exito_name, gramos) %>%
+  summarise(dias_con_datos = n_distinct(fecha), precio_mediano = median(price), .groups = "drop") %>%
+  mutate(cop_gramo = round(precio_mediano / gramos, 1)) %>%
+  arrange(cop_gramo) %>%
+  mutate(cumple = ifelse(dias_con_datos >= 67, "Sí", "No")) %>%
+  select(Producto = exito_name, `COP/gramo` = cop_gramo, `Días con datos` = dias_con_datos,
+        `Cumple 67 días` = cumple) %>%
+  head(6)
+
+kable(leche_manizales, booktabs = TRUE, format.args = list(decimal.mark = ","),
+     caption = "Leche en polvo en Manizales: productos ordenados por precio por gramo (el filtro pide 67 de 79 días)") %>%
+  kable_styling(latex_options = c("hold_position", "striped"), font_size = 9)
+```
+
+En este ejemplo los cuatro productos más baratos por gramo no llegan a los 67 días, porque son marcas económicas que el scraper no capturó todos los días. Sin el paso 1, la v2 habría elegido el más barato de la lista (FRESCAMPO 380g) y la leche en polvo habría desaparecido de Manizales. Con el paso 1 gana COSMOLAC 380g, el más barato entre los que sí tienen suficientes datos.
+
+# Qué alimentos quedan en cada ciudad
+
+Una vez elegido el producto, se decide qué alimentos quedan en el panel de cada ciudad. Un alimento entra si tiene precio en una proporción suficiente de los días. Esto evita que un alimento visto solo algunos días, y por lo tanto poco confiable, entre a los modelos.
+
+## El problema que apareció con la v2
+
+Antes de agregar el paso de cobertura al escoger el producto, la v2 elegía por precio puro. En Manizales, Ibagué y Villavicencio eso llevó a que la leche en polvo desapareciera del panel: el producto más barato no tenía suficientes días y no había forma de pasar al siguiente. Sin leche en polvo como fuente de calcio, el CoNA tenía que sacarlo de la cebolla, que aporta muy poco calcio por gramo, y terminaba comprando cerca de 1,8 kg de cebolla al día para la niña del hogar, lo que disparaba el costo.
+
+```{r tabla-antes-despues}
+rango_nina <- function(cona, ciudades) {
+  cona$cost %>%
+    filter(Demo_Group == "[10, 14)", Sex == 1, ciudad %in% ciudades) %>%
+    group_by(ciudad) %>%
+    summarise(r = sprintf("%s a %s", cop0(min(cona_cost)), cop0(max(cona_cost))), .groups = "drop")
+}
+ciu3 <- c("IBAGUE", "MANIZALES", "VILLAVICENCIO")
+sin_fix <- c(IBAGUE = "sin solución", MANIZALES = "1.048.147 a 1.383.059", VILLAVICENCIO = "25.266 a 25.837")
+
+antes_despues <- rango_nina(cona_v1, ciu3) %>% rename(v1 = r) %>%
+  left_join(rango_nina(cona_v2, ciu3) %>% rename(actual = r), by = "ciudad") %>%
+  mutate(sin_fix = sin_fix[ciudad], Ciudad = CITY_LABS[ciudad]) %>%
+  select(Ciudad, `v1` = v1, `v2 sin cobertura` = sin_fix, `v2 actual` = actual)
+
+kable(antes_despues, booktabs = TRUE, align = "lccc",
+     caption = "Costo diario del CoNA de la niña del hogar (COP/día), rango de los tres meses") %>%
+  kable_styling(latex_options = c("hold_position", "striped"), font_size = 9)
+```
+
+Los valores de la columna "v2 sin cobertura" vienen de la corrida anterior a la corrección. El código actual ya incluye el paso de cobertura, así que para repetirlos hay que quitarlo de `seleccionar_sku_umbral.R` y volver a correr desde `01_construccion_panel.R`.
+
+La corrección fue exigir cobertura antes de comparar precios. Se probaron tres formas: dar prioridad a los productos con cobertura (la elegida), recorrer la lista ordenada por precio hasta encontrar uno con cobertura, y bajar el umbral del 85% para todos los alimentos. La tercera se descartó porque para rescatar la leche en las tres ciudades había que bajar el umbral hasta 60% o 62%, lo que habría admitido cientos de combinaciones alimento-ciudad poco confiables en todo el panel.
+
+## El umbral de fechas por ciudad y por grupo
+
+El umbral de fechas es el 85% de los días disponibles. En un principio se calculaba por ciudad: la fecha contaba como disponible si aparecía cualquier producto ese día. Eso ya corrige el caso de una ciudad con menos días de scraping (por eso Medellín tiene un umbral de 61 días y las demás de 67).
+
+No corrige el caso de un grupo de alimentos que el scraper capturó de forma irregular en una ciudad. Ese fue el de las frutas de Ibagué: aunque la ciudad tiene `r fechas_ciudad$n[fechas_ciudad$city == "Ibagué"]` días de datos, las frutas son de temporada y rotan, y la mejor fruta apareció 66 días, uno menos que el umbral. Ninguna de las 39 frutas con datos pasó el filtro y Ibagué se quedó sin frutas, lo que impedía calcular CoRD y CoAHD, que exigen frutas en la dieta.
+
+Por eso la regla actual mide la cobertura contra los días en que el **grupo** del alimento tiene datos en esa ciudad, y no contra todos los días de la ciudad. Un alimento entra si aparece al menos el 85% de los días de su grupo (grupos GABA, con frutas y verduras por separado). Los alimentos sin grupo se comparan contra los días de la ciudad, como antes. La regla está en `01_webscrap_prep/aux-functions/umbral_fechas_grupo.R`.
+
+Antes de adoptarla se compararon las reglas de la tabla sobre las cifras finales de Ibagué, que es la única ciudad que cambia de forma relevante con las tres primeras. Las dos últimas filas son las reglas más laxas que se describen más adelante. Las cifras salen de `05_sensibilidad_umbral/`, y la regla adoptada reproduce exactamente los resultados del proyecto.
+
+```{r tabla-reglas}
+ib <- sens$costos %>% filter(ciudad == "IBAGUE") %>% select(regla, modelo, pc) %>%
+  pivot_wider(names_from = modelo, values_from = pc)
+ib <- sens$alimentos_por_regla %>% select(regla, Frutas = frutas_ibague) %>%
+  left_join(ib, by = "regla") %>%
+  arrange(factor(regla, levels = names(etiqueta_regla))) %>%
+  transmute(Regla = etiqueta_regla[regla], Frutas = as.character(Frutas), CoNA = cop0(CoNA),
+            CoRD = ifelse(is.na(CoRD), "sin resultado", cop0(CoRD)),
+            CoAHD = ifelse(is.na(CoAHD), "sin resultado", cop0(CoAHD)))
+
+kable(ib, booktabs = TRUE, align = "lrrrr",
+     caption = "Ibagué: efecto de la regla de cobertura (COP/día per cápita)") %>%
+  kable_styling(latex_options = c("hold_position", "striped"), font_size = 9) %>%
+  column_spec(1, width = "6.5cm")
+```
+
+Con la regla adoptada el costo de las otras doce ciudades no cambia, aunque Manizales, Villavicencio y Pereira ganan algunos alimentos; con el 75% o el 80% para frutas, Villavicencio bajaba 1% en el CoNA. Se eligió la del grupo porque solo toca las ciudades con un problema real de cobertura, y porque bajar el umbral de las frutas al 75% mete frutas más baratas pero menos constantes, que es la misma tensión de la leche en polvo: el costo baja porque entran productos con menos datos.
+
+```{r tabla-alimentos-ciudad}
+antes_n <- setNames(sens$alimentos_ciudad$pasa_base, sens$alimentos_ciudad$ciudad)
+
+despues <- lista_ciudad %>% group_by(city) %>%
+  summarise(Después = n(), Frutas = sum(grupo %in% "FRUTAS"), .groups = "drop")
+
+tab_alim <- despues %>%
+  mutate(Antes = antes_n[city]) %>%
+  arrange(desc(Después)) %>%
+  transmute(Ciudad = city, `Alimentos antes` = Antes, `Alimentos ahora` = Después, `Frutas ahora` = Frutas)
+
+kable(tab_alim, booktabs = TRUE, align = "lccc",
+     caption = "Alimentos que quedan en el panel de cada ciudad, con la regla anterior y la actual") %>%
+  kable_styling(latex_options = c("hold_position", "striped"), font_size = 9)
+```
+
+En total quedan `r n_alimentos` alimentos distintos en el panel. Ibagué sigue teniendo la canasta más chica de las trece ciudades, y eso es algo a tener en cuenta al leer sus costos.
+
+## Pruebas de sensibilidad del umbral de fechas
+
+Con la regla por grupo ya adoptada, se revisó si el umbral seguía dejando fuera alimentos con información real y qué pasaría con reglas más laxas: exigir al menos un dato por semana, o al menos uno cada dos semanas. Todo se calculó sobre el panel diario antes de filtrar por umbral, con los scripts de `05_sensibilidad_umbral/` (ver la sección "Cómo replicar").
+
+```{r sens-datos}
+rs <- sens$resumen_no_pasan
+universo <- with(sens$diagnostico_ciudad[1, ], vistos + nunca_vistos)
+
+pc_regla <- sens$costos %>%
+  group_by(regla, modelo) %>% summarise(pc = mean(pc), .groups = "drop")
+pc_ciudad <- sens$costos %>% mutate(Ciudad = CITY_LABS[ciudad])
+```
+
+En el panel diario aparecen `r universo` alimentos distintos en alguna ciudad, sin contar los trece que se excluyen desde el principio.
+
+### ¿Falta información o filtra el umbral?
+
+```{r tabla-diagnostico}
+d <- sens$diagnostico_ciudad %>%
+  transmute(Ciudad = ciudad, `Nunca vistos` = nunca_vistos, `Vistos` = vistos, `Pasan hoy` = pasan,
+            `No pasan` = no_pasan, `Con 1 dato por semana` = con_semanal, `Con 1 dato cada 2 semanas` = con_quincenal)
+d_total <- d %>% summarise(Ciudad = "Total", across(-c(Ciudad, `Nunca vistos`), sum), `Nunca vistos` = NA)
+d <- bind_rows(d, d_total[names(d)])
+options(knitr.kable.NA = "")
+
+kable(d, booktabs = TRUE, align = "lrrrrrr", format.args = list(big.mark = "."),
+     caption = "Alimentos por ciudad según su cobertura de fechas") %>%
+  kable_styling(latex_options = c("hold_position", "striped"), font_size = 8) %>%
+  column_spec(6:7, width = "2.4cm")
+```
+
+"Nunca vistos" son los alimentos que el scraper no capturó ni un día en esa ciudad. "Con 1 dato por semana" y "con 1 dato cada 2 semanas" cuentan, de los que no pasan hoy, los que sí cumplirían esas reglas más laxas (la segunda incluye a la primera).
+
+Entre `r min(sens$diagnostico_ciudad$nunca_vistos)` y `r max(sens$diagnostico_ciudad$nunca_vistos)` alimentos por ciudad no se ven nunca, y ahí sí no hay información. Pero los que no pasan el umbral son muchos más, `r cop0(rs$total)` pares alimento-ciudad, y no todos se caen por lo mismo:
+
+```{r tabla-dias-fallan}
+kable(sens$dias_no_pasan %>% transmute(`Días con datos` = as.character(rango), `Pares alimento-ciudad` = n),
+     booktabs = TRUE, align = "lr", format.args = list(big.mark = "."),
+     caption = "Días con datos de los pares que no pasan el umbral actual") %>%
+  kable_styling(latex_options = c("hold_position", "striped"), font_size = 9, full_width = FALSE)
+```
+
+Una ciudad tiene entre 72 y 79 días de scraping. Más de la mitad de los que no pasan (`r rs$hasta_12`) tiene 12 días o menos, y `r rs$hasta_5` tienen entre 1 y 5: son alimentos que casi no se vieron, y con esa información no se puede fijar un precio. En el otro extremo, `r rs$desde_41` tienen 41 días o más, `r rs$desde_56` de ellos 56 o más, es decir, más de la mitad del periodo, y `r rs$desde_41_3mes` de los `r rs$desde_41` tienen datos en los tres meses. Esos se caen por el umbral y no por falta de información.
+
+```{r frutas-ibague}
+fr <- head(sens$frutas_ibague_no_pasan, 4)
+```
+
+Es el caso de las frutas de Ibagué que no pasan: `r paste0(paste0(head(fr$sipsa_name, -1), " (", head(fr$n_dias, -1), " días)", collapse = ", "), " y ", tail(fr$sipsa_name, 1), " (", tail(fr$n_dias, 1), " días)")`, contra un umbral de `r fr$umbral[1]` días, y todas tienen datos en los tres meses.
+
+### Reglas de un dato por semana y cada dos semanas
+
+El trimestre tiene datos en 14 semanas por ciudad. Las reglas se aplican al número de días con dato de cada alimento en cada ciudad:
+
+- **Un dato por semana**: pasa si tiene al menos 14 días con dato.
+- **Un dato cada dos semanas**: pasa si tiene al menos 7 días con dato.
+
+Es un criterio de conteo: no verifica que cada semana tenga un dato, solo que haya tantos días como semanas (o la mitad). Un alimento con todos sus días en un solo mes podría pasar. En la práctica no es frecuente: de los `r rs$solo_semanal` pares que pasan la regla semanal pero no la actual, `r rs$solo_semanal_3mes` tienen datos en los tres meses, y de los `r rs$solo_quincenal` que solo pasan la quincenal, `r rs$solo_quincenal_3mes`.
+
+```{r tabla-reglas-laxas}
+apr <- sens$alimentos_por_regla %>%
+  mutate(Regla = etiqueta_regla[regla]) %>%
+  arrange(factor(regla, levels = names(etiqueta_regla))) %>%
+  transmute(Regla, `Pares alimento-ciudad` = cop0(pares), `Alimentos distintos` = alimentos,
+            `Frutas Ibagué` = frutas_ibague, `Frutas Manizales` = frutas_manizales)
+kable(apr, booktabs = TRUE, align = "lrrrr",
+     caption = "Alimentos que quedan en el panel según la regla de cobertura") %>%
+  kable_styling(latex_options = c("hold_position", "striped"), font_size = 8) %>%
+  column_spec(1, width = "6.5cm")
+```
+
+Las dos reglas más laxas admiten casi lo mismo. Costo per cápita promedio de las 13 ciudades (COP/día) al correr los cuatro modelos con cada una:
+
+```{r tabla-costos-laxas}
+base_pc <- pc_regla %>% filter(regla == "actual") %>% select(modelo, base = pc)
+costos_laxas <- pc_regla %>%
+  filter(regla %in% c("actual", "semanal", "quincenal")) %>%
+  left_join(base_pc, by = "modelo") %>%
+  mutate(celda = ifelse(regla == "actual", cop0(pc),
+                        paste0(cop0(pc), " (", dec(sprintf("%+.1f%%", pct(pc, base))), ")"))) %>%
+  select(Modelo = modelo, regla, celda) %>%
+  pivot_wider(names_from = regla, values_from = celda) %>%
+  arrange(factor(Modelo, levels = c("CoCA", "CoNA", "CoRD", "CoAHD"))) %>%
+  select(Modelo, `Regla adoptada` = actual, `1 dato por semana` = semanal, `1 dato cada 2 semanas` = quincenal)
+kable(costos_laxas, booktabs = TRUE, align = "lrrr",
+     caption = "Costo per cápita promedio según la regla de cobertura") %>%
+  kable_styling(latex_options = c("hold_position", "striped"), font_size = 9)
+```
+
+```{r cona-ciudades-laxas}
+cona_ciudad <- pc_ciudad %>% filter(modelo == "CoNA", regla %in% c("actual", "semanal")) %>%
+  select(Ciudad, regla, pc) %>% pivot_wider(names_from = regla, values_from = pc) %>%
+  mutate(d = pct(semanal, actual))
+sin_cambio <- cona_ciudad$Ciudad[abs(cona_ciudad$d) < 0.05]
+poco_cambio <- cona_ciudad$Ciudad[abs(cona_ciudad$d) >= 0.05 & abs(cona_ciudad$d) < 1]
+coca_ciudad <- pc_ciudad %>% filter(modelo == "CoCA", regla %in% c("actual", "semanal")) %>%
+  select(Ciudad, regla, pc) %>% pivot_wider(names_from = regla, values_from = pc) %>%
+  mutate(d = pct(semanal, actual)) %>% arrange(d)
+```
+
+El efecto es muy desigual entre ciudades. En `r paste0(paste(head(sin_cambio, -1), collapse = ", "), " y ", tail(sin_cambio, 1))` el CoNA no cambia con la regla semanal, y en `r paste(poco_cambio, collapse = " y ")` cambia menos de 1%. Donde más baja es justo donde la regla actual dejaba fuera más alimentos:
+
+```{r tabla-cona-ciudades-laxas}
+kable(cona_ciudad %>% filter(d <= -3) %>% arrange(d) %>%
+        transmute(Ciudad, `Regla adoptada` = cop0(actual), `1 dato por semana` = cop0(semanal),
+                  Diferencia = dec(sprintf("%.1f%%", d))),
+     booktabs = TRUE, align = "lrrr",
+     caption = "CoNA per cápita (COP/día) en las ciudades donde más cambia con la regla semanal") %>%
+  kable_styling(latex_options = c("hold_position", "striped"), font_size = 9, full_width = FALSE)
+```
+
+El CoCA de `r coca_ciudad$Ciudad[1]` baja `r dec(sprintf("%.0f", -coca_ciudad$d[1]))`% (de `r cop0(coca_ciudad$actual[1])` a `r cop0(coca_ciudad$semanal[1])`) y el de `r coca_ciudad$Ciudad[2]` `r dec(sprintf("%.0f", -coca_ciudad$d[2]))`%, por la entrada de alimentos baratos con pocas observaciones.
+
+### Qué tan confiables son los alimentos que entran
+
+```{r confiabilidad}
+cf <- sens$confiabilidad
+cf_sem <- cf %>% filter(regla == "semanal") %>% arrange(factor(modelo, levels = c("CoNA", "CoRD", "CoAHD", "CoCA")))
+cf_qui <- cf %>% filter(regla == "quincenal")
+po <- sens$poco_observados %>% filter(n_dias == min(n_dias)) %>%
+  group_by(Food, ciudad) %>% summarise(modelos = paste(modelo, collapse = " y "), .groups = "drop")
+```
+
+Una regla más laxa baja el costo porque los modelos buscan lo más barato, y lo más barato tiende a ser un alimento visto pocos días, cuyo precio es más ruidoso. Entre los alimentos que cada modelo elige con la regla semanal, entre el `r sprintf("%.0f", min(cf_sem$pct))`% y el `r sprintf("%.0f", max(cf_sem$pct))`% no pasaría la regla actual (`r paste0(cf_sem$no_pasan_actual, " de ", cf_sem$pares, " en ", cf_sem$modelo, collapse = ", ")`). Con la regla semanal el alimento más escaso tiene `r min(cf_sem$minimo_dias)` días de datos. Con la quincenal el mínimo baja a `r min(cf_qui$minimo_dias)` días (por ejemplo `r paste0(str_to_lower(po$Food), " en ", CITY_LABS[po$ciudad], " en ", po$modelos, collapse = "; ")`), y entre el `r sprintf("%.0f", min(cf_qui$pct))`% y el `r sprintf("%.0f", max(cf_qui$pct))`% de lo elegido no pasaría la regla actual.
+
+### Decisión
+
+Se mantiene la regla del 85% de los días del grupo. Las razones son:
+
+1. Corrige el problema real, que era un grupo entero sin alimentos en Ibagué, y toca solo a las ciudades con ese problema (las otras doce no cambian).
+2. Las reglas más laxas bajan el CoNA `r sprintf("%.0f", -pct(pc_regla$pc[pc_regla$regla == "semanal" & pc_regla$modelo == "CoNA"], pc_regla$pc[pc_regla$regla == "actual" & pc_regla$modelo == "CoNA"]))`% en promedio, y hasta `r sprintf("%.0f", -min(cona_ciudad$d))`% en algunas ciudades, en buena parte porque entran alimentos con pocos días de datos que los modelos eligen por ser los más baratos.
+3. La regla de una vez cada dos semanas casi no agrega cobertura sobre la semanal (`r rs$solo_quincenal` pares más, de los cuales solo `r rs$solo_quincenal_3mes` tienen datos en los tres meses) y admite alimentos con 7 días.
+
+La regla de un dato por semana queda como análisis de sensibilidad: sus resultados están en las tablas anteriores y no forman parte del flujo del proyecto.
+
+# Composición nutricional y hogar representativo
+
+## Composición de los alimentos
+
+A cada alimento se le pega su composición nutricional de la Tabla de Composición de Alimentos Colombiana (TCAC), a través de un archivo de mapeo entre los nombres de SIPSA y los de la TCAC. Algunos nombres se corrigen a mano porque el mapeo los nombra distinto (por ejemplo "Ajo importado" se cruza como "Ajo"). El archivo `mapeo_tcac.R` hace este cruce y lo usan tanto la composición como la regla de cobertura por grupo, que necesita saber el grupo GABA de cada alimento.
+
+El panel final es mensual: para cada alimento y ciudad se toma la mediana del precio de 500 g entre las fechas de cada mes.
+
+## Hogar y requerimientos
+
+Todos los modelos se calculan para un hogar representativo de tres personas: un hombre adulto (31 a 50 años), una mujer adulta (31 a 50 años) y una niña (9 a 13 años). Los costos per cápita son el costo del hogar dividido entre tres.
+
+- **Energía**: los requerimientos energéticos estimados (EER) de los adultos usan las ecuaciones del IOM/NASEM 2023 con la antropometría y la actividad física de ENSIN y SABE por ciudad. Los de la niña son un promedio ponderado por la estructura de población del Censo 2018 (CNPV) en cada ciudad.
+- **Nutrientes**: los límites mínimos y máximos de los nutrientes vienen de las tablas EER_LL y UL del paquete FoodpriceR.
+- **Guía alimentaria**: los intercambios de la GABA se ajustan al EER de cada ciudad, multiplicándolos por el factor `EER de la ciudad / recomendación energética de la GABA`. Ese ajuste sale de `02_dataprep/03_gaba_ajustado.R`.
+
+# Modelos de costo mínimo
+
+Además de CoCA, CoNA y CoRD, en esta etapa se estima una nueva dieta, el CoAHD, que se explica a continuación.
+
+## CoAHD: costo de una dieta saludable
+
+### Qué es
+
+El CoAHD (cost and affordability of a healthy diet) es el indicador con el que FAO y el Banco Mundial monitorean desde 2020 el acceso económico a dietas saludables, y que reportan cada año en el informe *El estado de la seguridad alimentaria y la nutrición en el mundo*. Tiene dos partes: el costo de la dieta saludable más barata, y qué parte de la población no puede pagarla. Aquí se calcula la primera. La segunda necesita datos de ingreso de los hogares, que este proyecto no tiene.
+
+La dieta saludable se define con las guías alimentarias: cuánto de cada grupo de alimentos se recomienda comer al día. El costo es el de cubrir esas cantidades con los alimentos más baratos de cada grupo en el lugar y momento que se mida. FAO estima que la canasta que usa cubre en promedio el 95% de los requerimientos de nutrientes, aunque no se arma a partir de ellos.
+
+### En qué nos basamos
+
+- FAO (2025), *The cost and affordability of a healthy diet (CoAHD) indicators: methods and data sources*, que describe cómo se calcula el indicador global.
+- Herforth et al. (2022), *Methods and options to monitor the cost and affordability of a healthy diet globally*, documento de trabajo de FAO 22-03, donde se define la canasta de dieta saludable (Healthy Diet Basket, HDB) y el cálculo por kilocaloría.
+- Herforth et al. (2024), *Monitoring the cost and affordability of a healthy diet within countries*, en Current Developments in Nutrition. Es la guía para calcular el indicador con datos propios de un país, y acepta usar la guía alimentaria nacional como estándar de dieta saludable cuando existe. Es lo que hace este proyecto.
+
+### Cómo se calcula
+
+El cálculo tiene cinco pasos, que siguen los de Herforth et al. (2024):
+
+1. Cada alimento se clasifica en un grupo de la guía alimentaria (aquí, los siete grupos GABA).
+2. A cada alimento se le asocia su energía por 100 g y su parte comestible (de la TCAC).
+3. Se calcula el precio por kilocaloría: el precio de 100 g de parte comestible dividido entre las kilocalorías de 100 g.
+4. En cada grupo se eligen los $n_g$ alimentos de menor precio por kilocaloría. El número de alimentos por grupo es el mismo que usa CoRD (3, 2, 2, 1, 2, 1 y 1, en total 12).
+5. Cada alimento elegido aporta las kilocalorías del grupo dividido entre $n_g$, y el costo de la dieta es la suma de los precios por kilocaloría por las kilocalorías que aporta cada alimento:
+
+$$\text{Costo}_g = \sum_{i=1}^{n_g} p_i \, \frac{k_g}{n_g}, \qquad \text{CoAHD} = \sum_g \text{Costo}_g$$
+
+donde $p_i$ es el precio por kilocaloría del alimento $i$ y $k_g$ las kilocalorías diarias del grupo $g$.
+
+La diferencia con CoRD es solo la unidad de medida. CoRD compra cada grupo en intercambios y ordena los alimentos por precio por intercambio. CoAHD compra en kilocalorías y ordena por precio por kilocaloría, así que en principio pueden elegir alimentos distintos. En este panel casi no lo hacen (ver la sección de composición).
+
+### Qué se adaptó
+
+```{r tabla-hdb}
+hdb <- tribble(
+  ~Aspecto, ~`Canasta global de FAO (HDB)`, ~`Adaptación en este proyecto`,
+  "Estándar de dieta", "Mediana de las cantidades de 10 guías alimentarias del mundo", "Guía alimentaria colombiana (GABA)",
+  "Grupos", "6: almidones, verduras, frutas, animales, leguminosas y aceites", "7 grupos GABA, con azúcares y las leguminosas junto a las carnes",
+  "Alimentos elegidos", "11", "12",
+  "Energía", "2.330 kcal al día para todos", "La de cada miembro, ajustada por ciudad",
+  "Precios", "Precio nacional anual (ICP)", "Precio mensual de cada ciudad"
+)
+
+kable(hdb, booktabs = TRUE, longtable = TRUE) %>%
+  kable_styling(latex_options = c("hold_position", "striped", "repeat_header"), font_size = 8) %>%
+  column_spec(1, width = "3cm") %>%
+  column_spec(2, width = "5.5cm") %>%
+  column_spec(3, width = "6cm")
+```
+
+Las kilocalorías de cada grupo son las de los intercambios de la GABA ajustados a la energía de cada miembro. Por eso la dieta de cada persona suma exactamente su requerimiento, y no las 2.330 kcal de la canasta global. La cifra que resulta no es directamente comparable con la que publica FAO, que usa la canasta global y precios nacionales.
+
+### Alimentos excluidos
+
+El ajo, el ají y el ají topito dulce se excluyen tanto en CoAHD como en CoRD. La tabla suplementaria 2 de Herforth et al. (2024), que es un ejemplo para Pakistán, lista los alimentos de cada grupo y aparte una categoría "Excluded" con el ají (chilies), la sal, el té, el agua embotellada, el café, el ajo y el jengibre. La tabla no explica por qué; lo que tienen en común es que son condimentos o bebidas. Es una lista de ejemplo y no una lista oficial para Colombia, así que se tomó solo para el ajo y el ají, que son los que trae el panel.
+
+Sin la exclusión, los dos modelos llenaban el grupo de verduras con ajo, porque solo comparan precios. En CoAHD el ajo tiene 144 kcal por 100 g contra 47 de la zanahoria, y sale más barato por kilocaloría. En CoRD un intercambio de ajo pesa 17 g contra unos 51 g de la zanahoria, así que el intercambio de ajo cuesta unos 163 COP y el de zanahoria 239, aunque el ajo es más caro por 100 g (978 COP contra 468). La lista está en `EXCLUIDOS_GABA`, dentro de `gaba_insumos.R`, y la usan `03_cord.R` y `031_coahd.R`. CoCA y CoNA no la usan.
+
+### Ejemplo
+
+```{r ejemplo-coahd}
+coahd_res <- readRDS(file.path(interno_dir, "03_models/coahd/coahd_results.rds"))
+ej <- coahd_res$comp %>%
+  filter(ciudad == "BOGOTA", fecha == min(as.Date(fecha)), Sex == 1, Demo_Group == "[31,51)") %>%
+  mutate(Grupo = recode(Group,
+    "Cereales, raíces, tubérculos y plátanos" = "Cereales",
+    "Leche y productos lácteos" = "Lácteos",
+    "Carnes, huevos, leguminosas, frutos secos y semillas" = "Carnes y leguminosas")) %>%
+  arrange(factor(Grupo, levels = c("Cereales", "Frutas", "Verduras", "Lácteos", "Carnes y leguminosas", "Grasas", "Azúcares"))) %>%
+  mutate(kcal_exacta = Kcal, costo_exacto = Cost) %>%
+  transmute(Grupo, Alimento = Food, kcal_exacta, costo_exacto, `kcal` = round(Kcal), `Gramos` = round(Cantidad_g),
+            `COP/kcal` = round(Price_kcal, 2), `Costo (COP)` = round(Cost))
+
+ej_tot <- c(kcal = sum(ej$kcal_exacta), costo = sum(ej$costo_exacto))
+ej_leche <- 100 * ej$costo_exacto[ej$Alimento == "Leche en polvo"] / ej_tot["costo"]
+ej <- ej %>% select(-kcal_exacta, -costo_exacto)
+
+kable(ej, booktabs = TRUE, format.args = list(decimal.mark = ","),
+     caption = "CoAHD de una mujer de 31 a 50 años en Bogotá, primer mes del trimestre") %>%
+  kable_styling(latex_options = c("hold_position", "striped"), font_size = 8)
+```
+
+Ese día la dieta de esta mujer suma `r round(ej_tot["kcal"])` kcal y cuesta `r cop0(ej_tot["costo"])` COP. Un solo alimento, la leche en polvo, pesa `r sprintf("%.0f", ej_leche)`% del costo: el grupo de lácteos pide unas 380 kcal y hay un solo alimento en el que ponerlas.
+
+# Resultados
+
+## Cuatro modelos, trece ciudades
+
+```{r fig-4modelos, fig.cap="Costo per cápita de la dieta por modelo"}
+knitr::include_graphics(fig("01_costos/fig05_costo_4modelos_percapita.png"))
+```
+
+En todas las ciudades el orden es el mismo: CoCA es el más barato, luego CoNA, luego CoAHD y luego CoRD. Cubrir la guía alimentaria cuesta más que cubrir los nutrientes al mínimo costo, porque la guía obliga a comprar alimentos de todos los grupos aunque no sean los más baratos.
+
+```{r tabla-4modelos}
+tab4 <- pc4 %>%
+  mutate(pc = cop0(pc)) %>%
+  select(Ciudad = ciudad_lbl, modelo, pc) %>%
+  pivot_wider(names_from = modelo, values_from = pc) %>%
+  arrange(Ciudad)
+
+kable(tab4, booktabs = TRUE, align = "lrrrr", longtable = TRUE,
+     caption = "Costo per cápita por modelo (COP/día)") %>%
+  kable_styling(latex_options = c("hold_position", "striped", "repeat_header"), font_size = 9)
+```
+
+```{r fig-primas, fig.cap="Cuántas veces cuesta cada dieta frente al CoCA y frente al CoNA"}
+knitr::include_graphics(fig("01_costos/fig06_primas_modelos.png"))
+```
+
+Frente al CoCA, la dieta que cubre nutrientes cuesta entre `r dec(sprintf("%.1f", min(pc4$pc[pc4$modelo == "CoNA"] / pc4$pc[pc4$modelo == "CoCA"])))` y `r dec(sprintf("%.1f", max(pc4$pc[pc4$modelo == "CoNA"] / pc4$pc[pc4$modelo == "CoCA"])))` veces más, y las que siguen la guía alimentaria entre `r dec(sprintf("%.1f", min(pc4$pc[pc4$modelo == "CoAHD"] / pc4$pc[pc4$modelo == "CoCA"])))` y `r dec(sprintf("%.1f", max(pc4$pc[pc4$modelo == "CoRD"] / pc4$pc[pc4$modelo == "CoCA"])))` veces más. Entre CoNA y las dietas de la guía la diferencia es mucho menor, de entre `r sprintf("%.0f", 100 * (min(pc4$pc[pc4$modelo == "CoAHD"] / pc4$pc[pc4$modelo == "CoNA"]) - 1))`% y `r sprintf("%.0f", 100 * (max(pc4$pc[pc4$modelo == "CoRD"] / pc4$pc[pc4$modelo == "CoNA"]) - 1))`%.
+
+Ibagué, Villavicencio y Manizales son las ciudades más caras en CoNA, CoRD y CoAHD. En Ibagué hay que recordar que su canasta es la más chica (`r tab_alim$"Alimentos ahora"[tab_alim$Ciudad == "Ibagué"]` alimentos frente a `r tab_alim$"Alimentos ahora"[tab_alim$Ciudad == "Bogotá"]` en Bogotá), así que parte de su costo puede venir de tener menos alimentos entre los cuales elegir y no solo de precios más altos.
+
+## v1 y v2: el efecto de la elección del producto
+
+```{r fig-coca-comparado, fig.height=6, fig.width=9}
+orden_coca <- coca_pc %>% filter(version == "v1") %>% arrange(desc(pc)) %>% pull(ciudad_lbl)
+coca_pc <- coca_pc %>% mutate(ciudad_lbl = factor(ciudad_lbl, levels = rev(as.character(orden_coca))))
+
+ggplot(coca_pc, aes(x = pc, y = ciudad_lbl, fill = version)) +
+  geom_col(position = position_dodge(width = 0.75), width = 0.7) +
+  scale_fill_manual(values = c("v1" = "#95A5A6", "v2" = "#2C3E6B"), name = NULL) +
+  scale_x_continuous(labels = cop_format(), expand = expansion(mult = c(0, 0.12))) +
+  labs(title = "CoCA: costo per cápita, v1 y v2", x = "COP/día per cápita", y = NULL) +
+  paper_theme() + theme(legend.position = "bottom", axis.text.x = element_text(angle = 0, hjust = 0.5))
+```
+
+```{r fig-cona-comparado, fig.height=6, fig.width=9}
+orden_cona <- cona_pc %>% filter(version == "v1") %>% arrange(desc(pc)) %>% pull(ciudad_lbl)
+cona_pc <- cona_pc %>% mutate(ciudad_lbl = factor(ciudad_lbl, levels = rev(as.character(orden_cona))))
+
+ggplot(cona_pc, aes(x = pc, y = ciudad_lbl, fill = version)) +
+  geom_col(position = position_dodge(width = 0.75), width = 0.7) +
+  scale_fill_manual(values = c("v1" = "#95A5A6", "v2" = "#2C3E6B"), name = NULL) +
+  scale_x_continuous(labels = cop_format(), expand = expansion(mult = c(0, 0.12))) +
+  labs(title = "CoNA: costo per cápita, v1 y v2", x = "COP/día per cápita", y = NULL) +
+  paper_theme() + theme(legend.position = "bottom", axis.text.x = element_text(angle = 0, hjust = 0.5))
+```
+
+```{r tablas-v1-v2}
+dif_cona_3 <- cona_pc %>% filter(ciudad %in% c("IBAGUE", "MANIZALES", "VILLAVICENCIO")) %>%
+  select(ciudad, version, pc) %>% pivot_wider(names_from = version, values_from = pc) %>%
+  mutate(d = 100 * (1 - v2 / v1)) %>% pull(d)
+
+tabla_v <- function(pc, nombre) {
+  pc %>%
+    select(ciudad_lbl, version, pc) %>%
+    pivot_wider(names_from = version, values_from = pc) %>%
+    mutate(dif_pct = 100 * (v2 - v1) / v1) %>%
+    arrange(desc(v1)) %>%
+    transmute(Ciudad = ciudad_lbl, `v1 (COP/día)` = cop0(v1), `v2 (COP/día)` = cop0(v2),
+              Diferencia = ifelse(abs(dif_pct) < 0.05, "0,0%", dec(sprintf("%+.1f%%", dif_pct))))
+}
+
+kable(tabla_v(coca_pc), booktabs = TRUE, align = "lccc", longtable = TRUE,
+     caption = "CoCA per cápita por ciudad, v1 y v2") %>%
+  kable_styling(latex_options = c("hold_position", "striped", "repeat_header"))
+```
+
+```{r tabla-cona-v1-v2}
+kable(tabla_v(cona_pc), booktabs = TRUE, align = "lccc", longtable = TRUE,
+     caption = "CoNA per cápita por ciudad, v1 y v2") %>%
+  kable_styling(latex_options = c("hold_position", "striped", "repeat_header"))
+```
+
+El CoCA casi no cambia entre versiones, salvo en Cúcuta y en Manizales, donde baja `r sprintf("%.0f", 100 * (1 - coca_pc$pc[coca_pc$ciudad == "CUCUTA" & coca_pc$version == "v2"] / coca_pc$pc[coca_pc$ciudad == "CUCUTA" & coca_pc$version == "v1"]))`% y `r sprintf("%.0f", 100 * (1 - coca_pc$pc[coca_pc$ciudad == "MANIZALES" & coca_pc$version == "v2"] / coca_pc$pc[coca_pc$ciudad == "MANIZALES" & coca_pc$version == "v1"]))`%. El CoNA baja cerca de un tercio en casi todas las ciudades; en Ibagué, Manizales y Villavicencio baja menos (entre `r sprintf("%.0f", min(dif_cona_3))`% y `r sprintf("%.0f", max(dif_cona_3))`%).
+
+## Precios por gramo de los alimentos seleccionados
+
+Cada versión tiene su propia app interactiva con los alimentos del panel que tienen precio por gramo (`r n_distinct(box_v1$all$articulo)` en la v1 y `r n_distinct(box_v2$all$articulo)` en la v2) y el detalle por ciudad:
+
+- v1: <https://danielavaldesc.shinyapps.io/03_shiny_boxplots/>
+- v2: <https://danielavaldesc.shinyapps.io/03_shiny_boxplots-1/>
+
+Aquí se muestra, de forma estática, el precio por gramo de los alimentos que el CoNA elige en cada versión (sin el bocadillo veleño).
+
+```{r boxplot-comparado, fig.height=13, fig.width=9}
+hacer_boxplot_reporte <- function(df, titulo) {
+  orden <- df %>% group_by(articulo) %>%
+    summarise(mediana = median(precio_gramo, na.rm = TRUE), .groups = "drop") %>%
+    arrange(mediana) %>% pull(articulo)
+  df <- df %>% mutate(articulo = factor(articulo, levels = orden))
+
+  ggplot(df, aes(x = articulo, y = precio_gramo, fill = articulo)) +
+    geom_boxplot(outlier.size = 0.6, linewidth = 0.25) +
+    scale_y_continuous(labels = cop_format()) +
+    scale_fill_viridis_d(option = "D") +
+    labs(title = titulo, x = NULL, y = "COP/gramo") +
+    paper_theme(base_size = 8) +
+    theme(legend.position = "none", axis.text.y = element_text(size = 6),
+          axis.text.x = element_text(angle = 0, hjust = 0.5)) +
+    coord_flip()
+}
+
+p_v1 <- hacer_boxplot_reporte(box_v1$all %>% filter(seleccionado),
+  sprintf("v1: alimentos seleccionados (%d)", n_distinct(box_v1$all$articulo[box_v1$all$seleccionado])))
+p_v2 <- hacer_boxplot_reporte(box_v2$all %>% filter(seleccionado),
+  sprintf("v2: alimentos seleccionados (%d)", n_distinct(box_v2$all$articulo[box_v2$all$seleccionado])))
+
+p_v1 / p_v2
+```
+
+```{r analisis-boxplots}
+resumen_v1 <- box_v1$resumen %>% filter(seleccionado)
+resumen_v2 <- box_v2$resumen %>% filter(seleccionado)
+
+mas_caro_v1 <- resumen_v1 %>% arrange(desc(mediana_pg)) %>% slice(1)
+mas_caro_v2 <- resumen_v2 %>% arrange(desc(mediana_pg)) %>% slice(1)
+mas_variable_v1 <- resumen_v1 %>% mutate(rango = max_pg - min_pg) %>% arrange(desc(rango)) %>% slice(1)
+mas_variable_v2 <- resumen_v2 %>% mutate(rango = max_pg - min_pg) %>% arrange(desc(rango)) %>% slice(1)
+n_sel_v1 <- n_distinct(box_v1$all$articulo[box_v1$all$seleccionado])
+n_sel_v2 <- n_distinct(box_v2$all$articulo[box_v2$all$seleccionado])
+```
+
+La v2 selecciona `r n_sel_v2` alimentos como óptimos frente a `r n_sel_v1` en la v1. Es consistente con que la v2 elige sistemáticamente precios más bajos, de modo que unos pocos alimentos ganan en más ciudades.
+
+El alimento más caro por gramo entre los seleccionados es `r mas_caro_v1$articulo` en la v1 (`r cop0(mas_caro_v1$mediana_pg)` COP/gramo) y `r mas_caro_v2$articulo` en la v2 (`r cop0(mas_caro_v2$mediana_pg)` COP/gramo). El de mayor dispersión de precio entre ciudades y meses es `r mas_variable_v1$articulo` en la v1 (de `r cop0(mas_variable_v1$min_pg)` a `r cop0(mas_variable_v1$max_pg)` COP/gramo) y `r mas_variable_v2$articulo` en la v2 (de `r cop0(mas_variable_v2$min_pg)` a `r cop0(mas_variable_v2$max_pg)`). En el otro extremo, los cereales, tubérculos y condimentos (arracacha, sal, maíz) son baratos y casi no varían en ninguna de las dos versiones, y por eso no cambian de precio representativo entre una y otra.
+
+## Composición de la dieta
+
+### CoNA
+
+```{r datos-composicion}
+comp_v1 <- cona_v1$comp %>% mutate(fecha = as.Date(fecha)) %>% filter(quantity > 0)
+comp_v2 <- cona_v2$comp %>% mutate(fecha = as.Date(fecha)) %>% filter(quantity > 0)
+
+norm_ciudad <- function(x) toupper(iconv(x, from = "", to = "ASCII//TRANSLIT"))
+
+contrib_version <- function(comp, box) {
+  precios <- box$all %>% mutate(ciudad_norm = norm_ciudad(ciudad)) %>%
+    select(Food = articulo, ciudad_norm, fecha, precio_gramo)
+  n_miembros <- comp %>% distinct(Demo_Group, Sex) %>% nrow()
+  comp %>%
+    group_by(ciudad, Food, fecha) %>%
+    summarise(qty = sum(quantity, na.rm = TRUE) / n_miembros, .groups = "drop") %>%
+    mutate(ciudad_norm = norm_ciudad(ciudad)) %>%
+    left_join(precios, by = c("ciudad_norm", "Food", "fecha")) %>%
+    mutate(contrib = precio_gramo * qty) %>%
+    filter(!is.na(contrib))
+}
+
+aporte <- function(contrib) {
+  contrib %>% group_by(Food) %>% summarise(total = sum(contrib), .groups = "drop") %>%
+    mutate(pct = 100 * total / sum(total)) %>% arrange(desc(total))
+}
+
+aporte_v1 <- aporte(contrib_version(comp_v1, box_v1))
+aporte_v2 <- aporte(contrib_version(comp_v2, box_v2))
+
+leche_pct_v1 <- aporte_v1$pct[aporte_v1$Food == "Leche en polvo"]
+leche_pct_v2 <- aporte_v2$pct[aporte_v2$Food == "Leche en polvo"]
+quesos_pct_v1 <- sum(aporte_v1$pct[str_detect(aporte_v1$Food, "Queso")])
+quesos_pct_v2 <- sum(aporte_v2$pct[str_detect(aporte_v2$Food, "Queso")])
+ciudades_queso_v2 <- unique(CITY_LABS[comp_v2$ciudad[str_detect(comp_v2$Food, "Queso")]])
+```
+
+Las figuras siguientes muestran cuánto aporta cada alimento al costo per cápita del CoNA en cada ciudad. El punto blanco sobre cada barra es el costo total del CoNA en esa ciudad, para comprobar que los aportes suman el costo del modelo.
+
+La leche en polvo es el alimento que más pesa en el costo en las dos versiones: `r sprintf("%.0f", leche_pct_v1)`% del costo total en la v1 y `r sprintf("%.0f", leche_pct_v2)`% en la v2, sumando las 13 ciudades. La diferencia grande está en los quesos: en la v1 el queso campesino y el queso cuajada aportan `r sprintf("%.0f", quesos_pct_v1)`% del costo (el bloque azul oscuro en Medellín, Cali y Cartagena), y en la v2 aportan `r sprintf("%.0f", quesos_pct_v2)`%, porque solo aparecen en `r paste(ciudades_queso_v2, collapse = ", ")`. Con el método v2 los alimentos caros que sí sobreviven, como la leche en polvo, entran a un precio más bajo, y los quesos, que en la v1 competían por precio en muchas ciudades, casi desaparecen de la solución.
+
+```{r fig-contrib-v1, fig.cap="v1: contribución de cada alimento al costo per cápita del CoNA"}
+knitr::include_graphics(file.path(interno_dir, "v1/output/figuras/02_composicion/fig04_contribucion_costo.png"))
+```
+
+```{r fig-contrib-v2, fig.cap="v2: contribución de cada alimento al costo per cápita del CoNA"}
+knitr::include_graphics(fig("02_composicion/fig04_contribucion_costo.png"))
+```
+
+### CoRD y CoAHD
+
+En CoRD y CoAHD el número de alimentos por grupo está fijo, así que en lugar de las cantidades interesa cuánto pesa cada grupo y qué alimentos gana cada ciudad.
+
+```{r fig-grupos, fig.cap="Costo per cápita de CoRD y CoAHD por grupo de alimentos"}
+knitr::include_graphics(fig("02_composicion/fig07_costo_por_grupo.png"))
+```
+
+```{r fig-part, fig.cap="Participación de cada grupo en el costo de CoRD y CoAHD"}
+knitr::include_graphics(fig("02_composicion/fig08_participacion_grupo.png"))
+```
+
+```{r datos-grupos}
+cord_res <- readRDS(file.path(interno_dir, "03_models/cord/cord_results.rds"))
+lacteo_ahd <- coahd_res$comp %>% filter(str_detect(Group, "Leche")) %>%
+  group_by(ciudad, fecha) %>% summarise(c = sum(Cost), .groups = "drop") %>%
+  group_by(ciudad) %>% summarise(c = mean(c) / 1, .groups = "drop")
+tot_ahd <- coahd_res$comp %>% group_by(ciudad, fecha, Demo_Group, Sex) %>%
+  summarise(t = sum(Cost), .groups = "drop") %>% group_by(ciudad) %>% summarise(t = mean(t), .groups = "drop")
+part_lacteos <- coahd_res$comp %>%
+  mutate(lac = str_detect(Group, "Leche")) %>%
+  group_by(ciudad, fecha, Demo_Group, Sex) %>%
+  summarise(p = sum(Cost[lac]) / sum(Cost), .groups = "drop") %>%
+  summarise(min = min(p), max = max(p))
+```
+
+Los lácteos, que son un solo alimento, pesan entre `r sprintf("%.0f", 100 * part_lacteos$min)`% y `r sprintf("%.0f", 100 * part_lacteos$max)`% del costo del CoAHD según la ciudad y el miembro, y son el grupo que más pesa en todos los casos. Le siguen, con bastante menos peso, las carnes, huevos y leguminosas.
+
+```{r fig-elegidos, fig.cap="Alimentos elegidos por CoRD y CoAHD en cada ciudad"}
+knitr::include_graphics(fig("02_composicion/fig09_alimentos_elegidos.png"))
+```
+
+```{r datos-coincidencia}
+sets_grupo <- function(x) x %>% group_by(ciudad, fecha, Group) %>%
+  summarise(alimentos = paste(sort(unique(Food)), collapse = "|"), .groups = "drop")
+coinc <- inner_join(sets_grupo(cord_res$comp), sets_grupo(coahd_res$comp),
+                    by = c("ciudad", "fecha", "Group"), suffix = c("_cord", "_coahd")) %>%
+  mutate(igual = alimentos_cord == alimentos_coahd)
+coinc_grupo <- coinc %>% group_by(Group) %>% summarise(pct = 100 * mean(igual), .groups = "drop")
+
+verd <- cord_res$comp %>% filter(Group == "Verduras") %>%
+  distinct(ciudad, fecha, Demo_Group, Sex, Food) %>% count(Food, sort = TRUE)
+```
+
+Con el ajo y el ají excluidos, CoRD y CoAHD eligen exactamente los mismos alimentos en `r sum(coinc$igual)` de las `r nrow(coinc)` combinaciones de ciudad, mes y grupo. Las diferencias están solo en los lácteos (`r sprintf("%.0f", coinc_grupo$pct[str_detect(coinc_grupo$Group, "Leche")])`% de coincidencia, porque en algunas ciudades CoRD escoge el queso campesino y CoAHD la leche en polvo) y en las carnes, huevos y leguminosas (`r sprintf("%.0f", coinc_grupo$pct[str_detect(coinc_grupo$Group, "Carnes")])`%). Por eso la diferencia de costo entre los dos modelos (CoRD entre `r sprintf("%.0f", 100 * (min(pc4$pc[pc4$modelo == "CoRD"] / pc4$pc[pc4$modelo == "CoAHD"]) - 1))`% y `r sprintf("%.0f", 100 * (max(pc4$pc[pc4$modelo == "CoRD"] / pc4$pc[pc4$modelo == "CoAHD"]) - 1))`% más caro) viene de la cantidad que compra cada uno de esos alimentos, y no de cuáles elige: CoRD compra intercambios, con los gramos de un intercambio de cada alimento, y CoAHD compra las kilocalorías del grupo repartidas entre los alimentos.
+
+En las verduras los dos modelos eligen sobre todo `r str_to_lower(verd$Food[1])`, `r str_to_lower(verd$Food[2])` y `r str_to_lower(verd$Food[3])`. La `r str_to_lower(verd$Food[verd$Food == "Arveja amarilla seca importada"])` aparece `r verd$n[verd$Food == "Arveja amarilla seca importada"]` veces de las `r sum(verd$n)` combinaciones de ciudad, mes y miembro. El mapeo la clasifica como verdura aunque es una leguminosa seca, que en la GABA va con las carnes, huevos y leguminosas.
+
+## Restricciones nutricionales del CoNA
+
+```{r fig-binding, fig.cap="Restricciones nutricionales activas en el CoNA"}
+knitr::include_graphics(fig("03_restricciones/fig10_restricciones_activas.png"))
+```
+
+Una restricción está activa cuando la dieta más barata cumple el requerimiento justo en el límite: es lo que obliga a gastar más de lo que costaría cubrir solo las calorías. El calcio, la vitamina C y el sodio se activan en todas las ciudades y para los tres miembros, y el magnesio en el hombre adulto. La vitamina A, la proteína y el zinc varían según el miembro y la ciudad.
+
+```{r fig-sombra, fig.cap="Precio sombra de las restricciones nutricionales"}
+knitr::include_graphics(fig("03_restricciones/fig11_precios_sombra.png"))
+```
+
+El precio sombra dice cuánto subiría el costo diario si el requerimiento fuera más exígente. Cada celda de la figura es el precio sombra medio del trimestre de un nutriente en una ciudad, y solo se muestran los nutrientes que pasan de 0,02 en alguna ciudad; el sodio, el magnesio y el folato están activos pero no encarecen la dieta. El calcio es el más caro de sostener para la mujer adulta y la niña, y la proteína y el zinc para el hombre adulto, con mucha diferencia entre ciudades.
+
+## Adecuación nutricional de las dietas
+
+```{r fig-adecuacion, fig.cap="Adecuación nutricional de la dieta de cada modelo"}
+knitr::include_graphics(fig("04_adecuacion/fig12_adecuacion_nutricional.png"))
+```
+
+La figura compara, para cada modelo, cuánto aporta la dieta de cada nutriente como porcentaje del requerimiento mínimo. CoCA cubre las calorías pero deja muy por debajo el calcio, las vitaminas A, C y B12, los lípidos, la riboflavina y el folato. CoNA cubre todo por construcción. Las dietas de la guía alimentaria (CoRD y CoAHD) cubren casi todos los requerimientos sin haberlos incluido como restricción, con algunas excepciones. En CoAHD la energía queda entre 94% y 95% del requerimiento, porque las kilocalorías salen de los intercambios de la GABA, que no llegan exactamente al requerimiento, y quedan justo por debajo de 100% la proteína del hombre adulto (96%), los lípidos de la niña (99%) y su calcio (92%). La niacina es la más justa en las dietas de la guía: entre 78% y 96% en CoRD y CoAHD, con la mujer adulta como el caso más bajo (78% y 79%). No se muestra el sodio, porque tiene límite máximo y no mínimo.
+
+# Cómo replicar
+
+Los scripts se corren en el orden de la tabla; cada uno lee lo que dejó el anterior y guarda su resultado en `output/`. La carpeta `interno/` de este proyecto tiene además el detalle de cada carpeta en `docs/organizacion_proyecto.pdf`.
+
+```{r tabla-replicar}
+pasos <- tribble(
+  ~Paso, ~Script, ~Resultado,
+  "1", "01_webscrap_prep/00_csv_a_rds.R", "Un .rds por mes con los datos del scraper",
+  "2", "01_webscrap_prep/01_construccion_panel.R", "Panel de precios estandarizado (panel_v1.rds)",
+  "3", "01_webscrap_prep/02a_lista_alimentos.R", "Panel sin los 13 alimentos excluidos y lista de alimentos por ciudad (umbral de fechas por grupo)",
+  "4", "01_webscrap_prep/02b_panel_balanceado.R", "Panel balanceado",
+  "5", "02_dataprep/00_tcac_composicion.R", "Composición nutricional de cada alimento",
+  "6", "02_dataprep/01_panel_mensual_tcac.R", "Panel mensual con composición",
+  "7", "02_dataprep/02_eer_3members.R", "Requerimiento de energía del hogar (solo si cambian los datos de población)",
+  "8", "02_dataprep/03_gaba_ajustado.R", "Intercambios de la GABA ajustados a cada ciudad",
+  "9", "03_models/01_coca.R, 02_cona.R, 03_cord.R, 031_coahd.R", "Resultados de cada modelo en 03_models/<modelo>/",
+  "10", "03_models/05_models_hcost.R", "Costo del hogar y per cápita de los cuatro modelos, en 03_models/hcost/",
+  "11", "04_figures/02 a 07", "Figuras en 4K (3840 px de ancho) en output/figuras/",
+  "12", "05_sensibilidad_umbral/01_cobertura_alimentos.R", "Cobertura de fechas de cada alimento",
+  "13", "05_sensibilidad_umbral/02_correr_regla.R (una vez por regla)", "Modelos con cada regla: actual, base, fruta75, fruta80, semanal y quincenal",
+  "14", "05_sensibilidad_umbral/03_tablas_sensibilidad.R", "Tablas de la sección de sensibilidad",
+  "15", "docs/reporte_proyecto.Rmd", "Este documento"
+)
+kable(pasos, booktabs = TRUE, longtable = TRUE) %>%
+  kable_styling(latex_options = c("hold_position", "striped", "repeat_header"), font_size = 8) %>%
+  column_spec(1, width = "0.8cm") %>% column_spec(2, width = "6.5cm") %>% column_spec(3, width = "7cm")
+```
+
+Para cada regla de sensibilidad, el paso 13 se corre desde la terminal, por ejemplo `Rscript 02_correr_regla.R semanal`.
+
+Lo que hay que tener a mano y los parámetros que definen los resultados:
+
+- **Datos de entrada**: los csv del scraper (carpeta `input panel`, una subcarpeta por mes) y el archivo de mapeo `composicion-nut/Mapeo Sipsa TCAC _28.07.26.xlsx`.
+- **Rutas**: están al inicio de cada script y son absolutas; hay que cambiarlas a la carpeta donde quede el proyecto.
+- **Paquetes de R**: tidyverse, janitor, openxlsx, writexl, readxl, stringi, lubridate, scales, zoo, fs, FoodpriceR, patchwork, knitr y kableExtra.
+- **Umbral de tamaño**: 500 g (`umbral_gramos` en `01_construccion_panel.R`).
+- **Umbral de fechas**: 85% de los días del grupo en cada ciudad (`cobertura` en `umbral_fechas_grupo.R`), y 85% de los días de la ciudad para elegir el producto de cada alimento (`seleccionar_sku_umbral.R`).
+- **Alimentos excluidos del panel**: los 13 de la lista `alimentos_excluir` en `02a_lista_alimentos.R`.
+- **Dieta saludable**: alimentos por grupo (3, 2, 2, 1, 2, 1 y 1) y alimentos excluidos (ajo, ají) en `gaba_insumos.R`.
+- **Reporte**: para generar el pdf hay que tener instalado LaTeX (por ejemplo con `tinytex`) y correr `rmarkdown::render("docs/reporte_proyecto.Rmd")`.
+
+# Referencias
+
+- FAO. (2025, julio). *The cost and affordability of a healthy diet (CoAHD) indicators: methods and data sources*. Metadata for FAOSTAT. <https://www.fao.org/faostat/en/#data/CAHD>
+- Herforth, A., Venkat, A., Bai, Y., Costlow, L., Holleman, C. y Masters, W. A. (2022). *Methods and options to monitor the cost and affordability of a healthy diet globally*. FAO Agricultural Development Economics Working Paper 22-03. Roma: FAO. <https://doi.org/10.4060/cc1169en>
+- Herforth, A. W., Gilbert, R., Sokourenko, K., et al. (2024). Monitoring the cost and affordability of a healthy diet within countries: building systems in Ethiopia, Ghana, Malawi, Nigeria, Pakistan, Tanzania, and Viet Nam. *Current Developments in Nutrition*, 8, 104441. <https://doi.org/10.1016/j.cdnut.2024.104441>. La lista de alimentos excluidos (ají, sal, té, agua embotellada, café, ajo y jengibre) está en su tabla suplementaria 2 (archivo `1-s2.0-S2475299124023758-mmc1.docx`).

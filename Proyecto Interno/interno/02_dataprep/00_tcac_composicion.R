@@ -5,7 +5,8 @@
 ## composición nutricional por alimento (sipsa_name).
 ##
 ## Reads:  output_dir/lista_alimentos/lista_total_alimentos.xlsx
-##         proyecto_dir/composicion-nut/1823_mapeo_sipsa_tcac v1.0_2025.xlsx
+##         proyecto_dir/composicion-nut/Mapeo Sipsa TCAC _28.07.26.xlsx
+##         01_webscrap_prep/aux-functions/mapeo_tcac.R
 ## Writes: output_dir/tcac/composicion_270726.xlsx
 ##         output_dir/tcac/composicion_270726.rds
 ########################################################
@@ -29,71 +30,17 @@ ruta_output <- file.path(output_dir, "tcac")
 
 dir.create(ruta_output, recursive = TRUE, showWarnings = FALSE)
 
+source(file.path(interno_dir, "01_webscrap_prep/aux-functions/mapeo_tcac.R"), encoding = "UTF-8")
+
 # ============================================================
-# Cargar lista total de alimentos
+# Cargar lista total de alimentos y cruzar con TCAC
 # ============================================================
 
 lista_total <- read.xlsx(file.path(ruta_lista, "lista_total_alimentos.xlsx"))
 
-# ============================================================
-# Cargar TCAC
-# ============================================================
+tcac <- leer_mapeo_tcac(ruta_tcac)
 
-tcac <- read.xlsx(ruta_tcac, sheet = "Imputada") %>%
-  rename(sipsa_name = `Alimento.(Nombre.sipsa)`) %>%
-  mutate(sipsa_name = str_squish(as.character(sipsa_name)))
-
-# ============================================================
-# Correcciones manuales en lista_total antes del join
-# ============================================================
-
-lista_total <- lista_total %>%
-  mutate(
-    sipsa_name_join = case_when(
-      sipsa_name == "Ajo importado"                    ~ "Ajo",
-      sipsa_name == "Almejas con concha"                ~ "Almejas",
-      sipsa_name == "Bagre rayado en postas congelado"  ~ "Bagre rayado",
-      sipsa_name == "Carne de cerdo, lomo sin hueso"    ~ "Carne de cerdo, lomo",
-      sipsa_name == "Carne de cerdo, pernil sin hueso"  ~ "Carne de cerdo, lomo",
-      sipsa_name == "Trucha en corte mariposa"          ~ "Trucha",
-      sipsa_name == "Uva roja"                          ~ "Uva comun",
-      sipsa_name == "Yuca ICA"                          ~ "Yuca",
-      
-      TRUE ~ sipsa_name
-    )
-  )
-
-# ============================================================
-# Normalizar nombres para el join
-# ============================================================
-
-normalizar <- function(x) {
-  x %>%
-    str_to_upper() %>%
-    stringi::stri_trans_general("Latin-ASCII") %>%
-    str_squish()
-}
-
-lista_total <- lista_total %>%
-  mutate(sipsa_name_norm = normalizar(sipsa_name_join))
-
-tcac <- tcac %>%
-  mutate(sipsa_name_norm = normalizar(sipsa_name))
-
-# ============================================================
-# Join por nombre normalizado
-# ============================================================
-
-tcac_unico <- tcac %>%
-  distinct(sipsa_name_norm, .keep_all = TRUE)
-
-lista_con_nut <- lista_total %>%
-  left_join(
-    tcac_unico %>% select(-sipsa_name),
-    by = "sipsa_name_norm"
-  ) %>%
-  select(-sipsa_name_norm, -sipsa_name_join) %>%
-  relocate(sipsa_name)
+lista_con_nut <- unir_mapeo_tcac(lista_total, tcac)
 
 # ============================================================
 # Guardar outputs

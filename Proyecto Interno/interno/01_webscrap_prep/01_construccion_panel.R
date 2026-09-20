@@ -1,12 +1,19 @@
 ########################################################
 ## SCRIPT 01_webscrap_prep/01_construccion_panel.R
-## Construye el panel de precios a partir de los rds mensuales
-## generados por 00_csv_a_rds.R: limpia, tipifica, elige el/los
-## sku representativo(s) por alimento/ciudad (más cercano a
-## 500g/1000ml, o todos si se vende por unidad) y estandariza
-## el precio a 500g/1000ml. Queda a nivel DIARIO a propósito:
-## la agregación a mensual se hace en 01_panel_mensual_tcac.R,
-## después del filtro de cobertura por día en 02a.
+##
+## Construye el panel de precios a partir de los rds 
+## mensuales generados por 00_csv_a_rds.R: limpia, tipifica,
+## elige el sku representativo por alimento/ciudad y 
+## estandariza el precio a 500g/1000ml.
+##
+## Criterio de seleccion del sku representativo: primero se
+## descartan los skus que no cumplirian el umbral de cobertura
+## de fechas de su ciudad (85%, mismo criterio que usa despues
+## 02a_lista_alimentos.R); entre los que SI cumplen, se elige el
+## de MENOR precio por gramo, con preferencia por los que pesan
+## por debajo de un umbral de tamano (umbral_gramos, default
+## 500g), cayendo a comparar todos los tamanos si ninguno cumple.
+## La funcion: aux-functions/seleccionar_sku_umbral.R
 ##
 ## Reads:  panel_dir/data/*.rds
 ##         dataprep_dir/unidades/lista_unidades gramos.xlsx
@@ -28,6 +35,7 @@ library(openxlsx)
 
 base_dir  <- "C:/Users/danie/OneDrive/Escritorio/Least-cost-diets-and-affordability/Proyecto Interno/interno/"
 panel_dir <- file.path(base_dir, "01_webscrap_prep")
+aux_dir   <- file.path(panel_dir, "aux-functions")
 
 raw_mensual_dir <- file.path(panel_dir, "data")
 dataprep_dir    <- file.path(base_dir, "02_dataprep")
@@ -40,6 +48,16 @@ ruta_gramos_unidad <- file.path(dataprep_dir, "unidades/lista_unidades gramos.xl
 
 dir.create(output_panel_dir, recursive = TRUE, showWarnings = FALSE)
 dir.create(output_lista_dir, recursive = TRUE, showWarnings = FALSE)
+
+source(file.path(aux_dir, "seleccionar_sku_umbral.R"))
+
+# ============================================================
+# Umbral de tamano (gramos) para elegir sku de menor precio/gramo.
+# umbral_gramos = NULL equivale a "ningun umbral": se compara el
+# precio por gramo entre todos los skus del alimento-ciudad.
+# ============================================================
+
+umbral_gramos <- 500
 
 # ============================================================
 # Variables
@@ -68,16 +86,17 @@ extraer_fecha_archivo <- function(archivo) {
 
 # ============================================================
 # Construcción de panel a partir de un rds mensual (output del 00)
+## (identico a v1)
 # ============================================================
 
 construir_panel <- function(ruta_rds, orden) {
-  
+
   readRDS(ruta_rds) %>%
     select(any_of(variables_panel), archivo_origen) %>%
-    
+
     mutate(
       sipsa_name = as.character(sipsa_name),
-      
+
       city = str_squish(as.character(city)),
       city = case_when(
         str_to_lower(city) %in% c(
@@ -86,20 +105,20 @@ construir_panel <- function(ruta_rds, orden) {
         str_detect(str_to_lower(city), "^cartagena") ~ "Cartagena",
         TRUE ~ city
       ),
-      
+
       sku_code = as.character(sku_code),
       exito_name = as.character(exito_name),
       price = parse_number(price),
       unit_price = as.character(unit_price),
       measurement_unit = as.character(measurement_unit),
       tcac_code = str_remove(as.character(tcac_code), ",.*$"),
-      
+
       fecha = extraer_fecha_archivo(archivo_origen),
       dia = day(fecha),
       mes = month(fecha),
       orden_mes = orden
     ) %>%
-    
+
     filter(
       !is.na(sipsa_name),
       !is.na(city),
@@ -109,7 +128,7 @@ construir_panel <- function(ruta_rds, orden) {
       !str_detect(unit_price, "T|\\+00:00"),
       price > 0
     ) %>%
-    
+
     select(-archivo_origen) %>%
     arrange(fecha, sipsa_name, city, sku_code)
 }
@@ -129,11 +148,6 @@ nombres_carpeta <- tools::file_path_sans_ext(basename(archivos_rds))
 paneles <- map2(archivos_rds, seq_along(archivos_rds), construir_panel)
 names(paneles) <- nombres_carpeta
 
-# Guardar cada panel individual (equivalente a panel_julio.rds, etc.)
-iwalk(paneles, function(df, nombre) {
-  saveRDS(df, file.path(output_panel_dir, paste0("panel_", nombre, ".rds")))
-})
-
 # ============================================================
 # Panel temporal combinado
 # ============================================================
@@ -142,88 +156,78 @@ panel_final_temp <- bind_rows(paneles) %>%
   arrange(orden_mes, fecha, sipsa_name, city, sku_code)
 
 # ============================================================
-# Lista representativa por alimento y ciudad
-# (calcula qué tan cerca está cada sku de 500g o 1000ml,
-# solo ordena -- no filtra ni reduce nada todavía)
+# Info por sku: tamaño de alimento (extraido del nombre exito) y
+## precio mediano del sku a lo largo de las fechas (base para
+## calcular precio por gramo antes de elegir el sku).
 # ============================================================
 
 lista_representativa <- panel_final_temp %>%
   mutate(
     texto_exito = str_to_lower(exito_name),
-    
+
     medida = str_extract(
       texto_exito,
       "\\d+(?:[\\.,]\\d+)?\\s*(g|gr|gramo|gramos|ml|mililitro|mililitros|litro|litros)"
     ),
-    
+
     cantidad_extraida = medida %>%
       str_extract("\\d+(?:[\\.,]\\d+)?") %>%
       str_replace(",", ".") %>%
       as.numeric(),
-    
+
     unidad_extraida = medida %>%
       str_extract("g|gr|gramo|gramos|ml|mililitro|mililitros|litro|litros"),
-    
+
     objetivo = case_when(
       unidad_extraida %in% c("g", "gr", "gramo", "gramos") ~ "500 gramos",
       unidad_extraida %in% c("ml", "mililitro", "mililitros") ~ "1000 mililitros",
       unidad_extraida %in% c("litro", "litros") ~ "1000 mililitros",
       TRUE ~ NA_character_
     ),
-    
-    distancia_objetivo = case_when(
-      unidad_extraida %in% c("g", "gr", "gramo", "gramos") ~ abs(cantidad_extraida - 500),
-      unidad_extraida %in% c("ml", "mililitro", "mililitros") ~ abs(cantidad_extraida - 1000),
-      unidad_extraida %in% c("litro", "litros") ~ abs(cantidad_extraida - 1),
+
+    # Tamano del sku en GRAMOS (litros/ml se tratan 1:1 como gramos,
+    # igual que el resto del pipeline -- no se distingue densidad).
+    gramos_sku = case_when(
+      unidad_extraida %in% c("g", "gr", "gramo", "gramos")    ~ cantidad_extraida,
+      unidad_extraida %in% c("ml", "mililitro", "mililitros") ~ cantidad_extraida,
+      unidad_extraida %in% c("litro", "litros")               ~ cantidad_extraida * 1000,
       TRUE ~ NA_real_
     )
   ) %>%
   group_by(sipsa_name, city, sku_code, exito_name) %>%
   summarise(
-    n_fechas = n_distinct(fecha),
+    n_fechas          = n_distinct(fecha),
     cantidad_extraida = first(cantidad_extraida),
-    objetivo = first(objetivo),
-    distancia_objetivo = first(distancia_objetivo),
+    objetivo          = first(objetivo),
+    gramos_sku        = first(gramos_sku),
+    precio_mediano    = median(price, na.rm = TRUE),
     .groups = "drop"
   ) %>%
-  group_by(sipsa_name, city) %>%
-  arrange(
-    is.na(distancia_objetivo),
-    distancia_objetivo,
-    desc(n_fechas)
-  ) %>%
-  ungroup()
-
-# ============================================================
-# Umbral: quedarse con el/los sku que tengan la MENOR distancia
-# al objetivo, por alimento-ciudad. na.rm = TRUE es clave: si no,
-# un solo sku sin medida (distancia NA) revienta el minimo de
-# todo el grupo y se te cae el alimento completo de lista_final.
-# Si NINGUN sku del alimento-ciudad tiene medida (se vende por
-# unidad, ej. huevo/aguacate), se queda con TODOS -- entra igual
-# al panel y se resuelve mas abajo con la tabla de gramos.
-# ============================================================
-
-lista_min <- lista_representativa %>%
-  group_by(sipsa_name, city) %>%
-  summarise(
-    min_distancia = min(distancia_objetivo, na.rm = TRUE),
-    .groups = "drop"
-  ) %>%
-  mutate(min_distancia = ifelse(is.infinite(min_distancia), NA_real_, min_distancia))
-
-lista_final <- lista_representativa %>%
-  left_join(lista_min, by = c("sipsa_name", "city")) %>%
   mutate(
-    incluir = case_when(
-      !is.na(min_distancia) & !is.na(distancia_objetivo) &
-        distancia_objetivo == min_distancia ~ TRUE,
-      is.na(min_distancia) ~ TRUE,
-      TRUE ~ FALSE
-    )
-  ) %>%
-  filter(incluir) %>%
-  select(-min_distancia, -incluir)
+    precio_gramo_sku = precio_mediano / gramos_sku
+  )
+
+# ============================================================
+# Umbral de cobertura de fechas por ciudad (mismo calculo que
+# 02a_lista_alimentos.R: 85% de las fechas disponibles de la
+# ciudad). Se necesita ANTES de elegir el sku -- ver punto 0 de
+# seleccionar_sku_umbral() -- para que un sku barato pero con
+# pocos dias de datos no se lleve al alimento completo con el.
+# ============================================================
+
+umbral_fechas_ciudad <- panel_final_temp %>%
+  group_by(city) %>%
+  summarise(fechas_disponibles = n_distinct(fecha), .groups = "drop") %>%
+  mutate(umbral_fechas = floor(0.85 * fechas_disponibles)) %>%
+  select(city, umbral_fechas)
+
+# ============================================================
+# Elegir el sku representativo por alimento-ciudad
+# ============================================================
+
+lista_final <- seleccionar_sku_umbral(lista_representativa, umbral_gramos = umbral_gramos,
+                                      umbral_fechas_ciudad = umbral_fechas_ciudad) %>%
+  select(-precio_mediano, -precio_gramo_sku, -gramos_sku)
 
 # ============================================================
 # Referencias de cantidad/objetivo por alimento-ciudad (de
@@ -259,7 +263,6 @@ panel_con_cantidad <- panel_final_temp %>%
 
 # ============================================================
 # Alimentos vendidos por unidad sin cobertura en gramos_unidad
-# (para que sepas cuáles te falta completar en esa tabla)
 # ============================================================
 
 lista_unidades <- panel_con_cantidad %>%
@@ -275,10 +278,6 @@ write.xlsx(
 
 # ============================================================
 # Estandarizar precio a 500g o 1000ml
-# Productos con objetivo_texto: formula (P / cantidad_extraida) * objetivo
-# Productos vendidos por kg o g sin empaque: (price / 1000) * 500
-# Huevo por unidad: (price / (cantidad_gramos * unidades_paquete)) * 500
-# Resto por unidad: (price / cantidad_gramos) * 500
 # ============================================================
 
 panel_estandar <- panel_con_cantidad %>%
@@ -301,11 +300,8 @@ panel_estandar <- panel_con_cantidad %>%
   )
 
 # ============================================================
-# Panel final: mediana de precio_500g (y de price) por
-# alimento-ciudad-FECHA (nivel diario). La agregación a mensual
-# se hace después, en 01_panel_mensual_tcac.R -- así el umbral
-# de cobertura de 02a_lista_alimentos.R se sigue calculando
-# sobre días de scraping, no sobre meses.
+# Panel final: mediana de precio_500g por
+## alimento-ciudad-FECHA (nivel diario).
 # ============================================================
 
 panel_final <- panel_estandar %>%
@@ -332,6 +328,10 @@ write.xlsx(
   overwrite = TRUE
 )
 
+
 saveRDS(panel_final, file.path(output_panel_dir, "panel_v1.rds"))
 
-cat("\nListo. panel_v1.rds y lista_alimentos.xlsx guardados en", output_dir, "\n")
+cat("\nListo. panel_v1.rds y lista_alimentos.xlsx guardados (umbral_gramos =",
+    ifelse(is.null(umbral_gramos), "NULL (sin umbral)", umbral_gramos), ")\n")
+cat("Panel en:", output_panel_dir, "\n")
+cat("(Sigue: correr 01_webscrap_prep/02a_lista_alimentos.R con este panel.)\n")

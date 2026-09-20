@@ -19,7 +19,7 @@
 ##         fig_dir/02_composicion/fig04_contribucion_costo.png/.pdf
 ########################################################
 
-source("interno/04_figures/00_fig_config.R")
+source("C:/Users/danie/OneDrive/Escritorio/Least-cost-diets-and-affordability/Proyecto Interno/interno/04_figures/00_fig_config.R")
 library(tidyverse)
 library(scales)
 
@@ -92,10 +92,7 @@ fig1 <- ggplot(qty_heatmap, aes(x = ciudad_lbl, y = Food, fill = mean_qty)) +
   )
 
 fig_h <- max(8, length(all_foods) * 0.32)
-ggsave(file.path(fig_dir, "02_composicion", "fig03_heatmap_alimentos.png"),
-       fig1, width = 10, height = fig_h, dpi = 300, bg = "white")
-ggsave(file.path(fig_dir, "02_composicion", "fig03_heatmap_alimentos.pdf"),
-       fig1, width = 10, height = fig_h)
+guardar_fig(fig1, "fig03_heatmap_alimentos", "02_composicion", ancho = 10, alto = fig_h)
 message("Figura 3 (heatmap) guardada.")
 
 # -----------------------------------------------------------------------
@@ -126,87 +123,23 @@ if (n_sin_precio > 0) {
 cost_contrib <- cost_contrib %>% filter(!is.na(contrib), contrib > 0)
 
 # -----------------------------------------------------------------------
-# 6. Grupos GABA por alimento
-##   OJO: clasificacion propuesta a partir del nombre del alimento;
-##   revisar contra la clasificacion GABAS usada en 01_coca.R /
-##   02_cona.R (columna grupos_gabas del panel) antes de publicar.
+# 6. Grupos GABA por alimento (compartido con v1, no depende del
+##   metodo de precio -- ver 04_figures/aux-functions/food_groups_gaba.R)
 # -----------------------------------------------------------------------
-food_groups <- tribble(
-  ~Food,                             ~grupo,
-  "Leche en polvo",                  "Lácteos",
-  "Arveja enlatada",                 "Cárnicos, huevos y leguminosas",
-  "Carne de cerdo, tocino papada",   "Cárnicos, huevos y leguminosas",
-  "Carne de res, cogote",            "Cárnicos, huevos y leguminosas",
-  "Fríjol cabeza negra nacional","Cárnicos, huevos y leguminosas",
-  "Garbanzo importado",              "Cárnicos, huevos y leguminosas",
-  "Menudencias de pollo",            "Cárnicos, huevos y leguminosas",
-  "Arracacha blanca",                "Cereales, raíces, tubérculos y plátanos",
-  "Arroz de segunda",                "Cereales, raíces, tubérculos y plátanos",
-  "Arroz excelso",                   "Cereales, raíces, tubérculos y plátanos",
-  "Harina de trigo",                 "Cereales, raíces, tubérculos y plátanos",
-  "Harina precocida de maíz",   "Cereales, raíces, tubérculos y plátanos",
-  "Maíz amarillo cáscara", "Cereales, raíces, tubérculos y plátanos",
-  "Maíz amarillo trillado",     "Cereales, raíces, tubérculos y plátanos",
-  "Maíz blanco cáscara",   "Cereales, raíces, tubérculos y plátanos",
-  "Maíz blanco trillado",       "Cereales, raíces, tubérculos y plátanos",
-  "Maíz pira",                  "Cereales, raíces, tubérculos y plátanos",
-  "Plátano hartón verde",  "Cereales, raíces, tubérculos y plátanos",
-  "Ahuyama",                         "Frutas y verduras",
-  "Guanábana",                  "Frutas y verduras",
-  "Guayaba manzana",                 "Frutas y verduras",
-  "Guayaba pera",                    "Frutas y verduras",
-  "Limón Tahití",          "Frutas y verduras",
-  "Papaya Paulina",                  "Frutas y verduras",
-  "Pimentón",                   "Frutas y verduras",
-  "Pimentón verde",             "Frutas y verduras",
-  "Zanahoria",                       "Frutas y verduras",
-  "Aceite soya",                     "Grasas",
-  "Aceite vegetal mezcla",           "Grasas",
-  "Azúcar refinada",            "Azúcares",
-  "Azúcar sulfitada",           "Azúcares",
-  "Bocadillo veleño",           "Azúcares",
-  "Sal yodada",                      "Otro"
-)
-
-grupo_order <- c("Lácteos", "Cárnicos, huevos y leguminosas",
-                 "Cereales, raíces, tubérculos y plátanos",
-                 "Frutas y verduras", "Grasas", "Azúcares", "Otro")
+source("C:/Users/danie/OneDrive/Escritorio/Least-cost-diets-and-affordability/Proyecto Interno/interno/04_figures/aux-functions/food_groups_gaba.R")
 
 foods_sin_grupo <- setdiff(all_foods, food_groups$Food)
 if (length(foods_sin_grupo) > 0) {
-  warning("Alimentos sin grupo GABA asignado (revisar food_groups en el script): ",
+  warning("Alimentos sin grupo GABA asignado (agregarlos a 04_figures/aux-functions/food_groups_gaba.R): ",
          paste(foods_sin_grupo, collapse = ", "))
 }
 
-# -----------------------------------------------------------------------
-# 7. Paleta por grupo (tonos generados, no codigos manuales por alimento)
-# -----------------------------------------------------------------------
-grupo_hue_pair <- list(
-  "Lácteos"                                          = c("#D6EAF8", "#1A5276"),
-  "Cárnicos, huevos y leguminosas"                    = c("#F5B7B1", "#7B241C"),
-  "Cereales, raíces, tubérculos y plátanos"  = c("#FDEBD0", "#CA6F1E"),
-  "Frutas y verduras"                                     = c("#D5F5E3", "#1E8449"),
-  "Grasas"                                                = c("#FCF3CF", "#B7950B"),
-  "Azúcares"                                          = c("#E8DAEF", "#6C3483"),
-  "Otro"                                                  = c("#D5D8DC", "#5D6D7E")
-)
-
-food_groups <- food_groups %>%
-  mutate(grupo = factor(grupo, levels = grupo_order)) %>%
-  arrange(grupo, Food)
-
-food_palette <- food_groups %>%
-  group_by(grupo) %>%
-  group_map(~ {
-    pal <- grupo_hue_pair[[as.character(.y$grupo)]]
-    n   <- nrow(.x)
-    if (n == 1) tibble(Food = .x$Food, color = pal[2])
-    else tibble(Food = .x$Food, color = colorRampPalette(pal)(n))
-  }) %>%
-  bind_rows() %>%
-  deframe()
-
-food_order_contrib <- food_groups$Food
+## Solo los alimentos que de verdad aparecen en ESTA composicion --
+## food_groups ahora es una tabla compartida con muchos mas
+## alimentos de los que selecciona cualquier version puntual, asi
+## que hay que filtrar antes de usarla como niveles del factor (si
+## no, la leyenda sale con alimentos que ni siquiera se usaron).
+food_order_contrib <- food_groups$Food[food_groups$Food %in% all_foods]
 
 # -----------------------------------------------------------------------
 # 8. Agregar contribucion al trimestre y ordenar ciudades
@@ -260,12 +193,14 @@ fig2 <- ggplot(contrib_trim, aes(x = ciudad_lbl, y = contrib, fill = Food)) +
     legend.text     = element_text(size = 7),
     legend.key.size = unit(0.4, "cm")
   ) +
-  guides(fill = guide_legend(ncol = 1))
+  guides(fill = guide_legend(ncol = 2))
 
-ggsave(file.path(fig_dir, "02_composicion", "fig04_contribucion_costo.png"),
-       fig2, width = 13, height = 7, dpi = 300, bg = "white")
-ggsave(file.path(fig_dir, "02_composicion", "fig04_contribucion_costo.pdf"),
-       fig2, width = 13, height = 7)
+## Altura dinamica: con la tabla GABA compartida, el numero de
+## alimentos seleccionados varia segun la version (v1/v2), asi que
+## la leyenda (2 columnas) puede necesitar mas alto que un valor fijo.
+fig2_h <- max(7, length(food_order_contrib) / 2 * 0.28)
+
+guardar_fig(fig2, "fig04_contribucion_costo", "02_composicion", ancho = 13, alto = fig2_h)
 message("Figura 4 (contribucion al costo) guardada.")
 
 message("Listo. Figuras en: ", file.path(fig_dir, "02_composicion"))

@@ -1,5 +1,7 @@
 ########################################################
-## 04_figures/02_fig_costos_coca_cona.R
+## v1/04_figures/02_fig_costos_coca_cona.R
+## Version v1: mismo script, usando v1/04_figures/00_fig_config.R
+## (que apunta a v1/03_models y v1/output).
 ##
 ## Costo trimestral (promedio 3T 2025: julio, agosto,
 ## septiembre) de las dietas CoCA (adecuacion calorica) y CoNA
@@ -26,7 +28,7 @@
 ##         fig_dir/01_costos/fig03_razon_cona_coca_barras.png/.pdf
 ########################################################
 
-source("interno/04_figures/00_fig_config.R")
+source("C:/Users/danie/OneDrive/Escritorio/Least-cost-diets-and-affordability/Proyecto Interno/interno/v1/04_figures/00_fig_config.R")
 library(tidyverse)
 library(scales)
 
@@ -196,5 +198,106 @@ ggsave(file.path(fig_dir, "01_costos", "fig03_razon_cona_coca_barras.png"),
 ggsave(file.path(fig_dir, "01_costos", "fig03_razon_cona_coca_barras.pdf"),
        fig3, width = 9, height = 6)
 message("Figura 3 guardada.")
+
+
+# -----------------------------------------------------------------------
+# 7. Costo por 1000 kcal, por miembro x ciudad x modelo
+##   A diferencia de cost_day, Cost_1000kcal ya viene normalizado por el
+##   requerimiento energetico (EER) de cada miembro -- aisla que tan
+##   eficiente es el precio de la dieta, sin el efecto de que el hombre
+##   adulto simplemente necesita mas kcal que la nina. Mismo orden de
+##   ciudades que las figuras anteriores, para poder comparar entre si.
+# -----------------------------------------------------------------------
+avg_miembro_kcal <- df_costos %>%
+  group_by(model, ciudad, ciudad_lbl, member) %>%
+  summarise(cost_avg = mean(Cost_1000kcal, na.rm = TRUE), .groups = "drop") %>%
+  mutate(ciudad_lbl = factor(ciudad_lbl, levels = rev(orden_ciudades)))
+
+fig1_kcal <- ggplot(avg_miembro_kcal,
+              aes(x = cost_avg, y = ciudad_lbl, fill = ciudad_lbl)) +
+  geom_col(width = 0.72) +
+  geom_text(aes(label = comma(round(cost_avg), big.mark = ".")),
+            hjust = -0.12, size = 2.5, family = "serif", color = "grey20") +
+  facet_grid(member ~ model) +
+  city_scale_fill(guide = "none") +
+  scale_x_continuous(labels = cop_format(),
+                     expand = expansion(mult = c(0, 0.18))) +
+  labs(
+    title = "Costo de la dieta por 1000 kcal, por miembro del hogar",
+    x = "COP / 1000 kcal", y = NULL,
+    caption = "Fuente: cálculos propios. Costo normalizado por el requerimiento energético (EER) de cada miembro."
+  ) +
+  paper_theme() +
+  theme(
+    axis.text.y = element_text(size = 8),
+    strip.text  = element_text(size = 9),
+    legend.position = "none"
+  )
+
+ggsave(file.path(fig_dir, "01_costos", "fig01c_costo_miembro_1000kcal_barras.png"),
+       fig1_kcal, width = 10, height = 8, dpi = 300, bg = "white")
+ggsave(file.path(fig_dir, "01_costos", "fig01c_costo_miembro_1000kcal_barras.pdf"),
+       fig1_kcal, width = 10, height = 8)
+message("Figura 1c (1000 kcal) guardada.")
+
+# -----------------------------------------------------------------------
+# 8. Costo por 1000 kcal, promedio del hogar representativo x modelo
+##   Promedio simple entre los 3 miembros -- Cost_1000kcal ya es una
+##   medida de intensidad (precio por caloria), no de gasto total, asi
+##   que aqui NO se suma ni se divide por n_miembros como en la figura
+##   de costo per capita en COP/dia.
+# -----------------------------------------------------------------------
+hogar_kcal <- df_costos %>%
+  group_by(model, ciudad, ciudad_lbl) %>%
+  summarise(cost_1000kcal = mean(Cost_1000kcal, na.rm = TRUE), .groups = "drop") %>%
+  mutate(ciudad_lbl = factor(ciudad_lbl, levels = rev(orden_percapita)))
+
+fig2_kcal <- ggplot(hogar_kcal,
+              aes(x = cost_1000kcal, y = ciudad_lbl, fill = ciudad_lbl)) +
+  geom_col(width = 0.72) +
+  geom_text(aes(label = comma(round(cost_1000kcal), big.mark = ".")),
+            hjust = -0.12, size = 2.6, family = "serif", color = "grey20") +
+  facet_wrap(~ model, nrow = 1) +
+  city_scale_fill(guide = "none") +
+  scale_x_continuous(labels = cop_format(),
+                     expand = expansion(mult = c(0, 0.18))) +
+  labs(
+    title = "Costo de la dieta por 1000 kcal, hogar representativo",
+    x = "COP / 1000 kcal", y = NULL,
+    caption = "Fuente: cálculos propios. Promedio simple entre los 3 miembros del hogar (medida de intensidad, no de gasto total)."
+  ) +
+  paper_theme() +
+  theme(
+    axis.text.y = element_text(size = 9),
+    strip.text  = element_text(size = 10),
+    legend.position = "none"
+  )
+
+ggsave(file.path(fig_dir, "01_costos", "fig02c_costo_hogar_1000kcal_barras.png"),
+       fig2_kcal, width = 10, height = 6, dpi = 300, bg = "white")
+ggsave(file.path(fig_dir, "01_costos", "fig02c_costo_hogar_1000kcal_barras.pdf"),
+       fig2_kcal, width = 10, height = 6)
+message("Figura 2c (1000 kcal) guardada.")
+
+# -----------------------------------------------------------------------
+# 9. Verificacion: la razon CoNA/CoCA no cambia entre COP/dia y
+##   COP/1000kcal, porque ambos modelos se resuelven sujetos al MISMO
+##   EER (restriccion de igualdad) -- el EER se cancela en la razon.
+##   No se genera una figura nueva para esto; solo se deja el chequeo
+##   en el log para que quede documentado.
+# -----------------------------------------------------------------------
+razon_kcal_check <- hogar_kcal %>%
+  select(model, ciudad_lbl, cost_1000kcal) %>%
+  mutate(ciudad_lbl = as.character(ciudad_lbl)) %>%
+  pivot_wider(names_from = model, values_from = cost_1000kcal) %>%
+  mutate(razon_1000kcal = CoNA / CoCA) %>%
+  left_join(razon %>% mutate(ciudad_lbl = as.character(ciudad_lbl)) %>%
+              select(ciudad_lbl, razon_cona_coca),
+            by = "ciudad_lbl")
+
+diff_max <- max(abs(razon_kcal_check$razon_1000kcal - razon_kcal_check$razon_cona_coca), na.rm = TRUE)
+message(sprintf(
+  "Chequeo: diferencia maxima entre razon (COP/dia) y razon (COP/1000kcal) = %.4f (deberia ser ~0)",
+  diff_max))
 
 message("Listo. Figuras en: ", file.path(fig_dir, "01_costos"))

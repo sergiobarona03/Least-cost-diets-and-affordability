@@ -1,0 +1,10 @@
+name: 03_shiny_boxplots
+title:
+username: danielavaldesc
+account: danielavaldesc
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 17921964
+bundleId: 12564283
+url: https://danielavaldesc.shinyapps.io/03_shiny_boxplots/
+version: 1
