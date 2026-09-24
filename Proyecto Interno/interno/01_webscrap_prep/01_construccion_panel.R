@@ -33,7 +33,7 @@ library(openxlsx)
 # Rutas
 # ============================================================
 
-base_dir  <- "C:/Users/danie/OneDrive/Escritorio/Least-cost-diets-and-affordability/Proyecto Interno/interno/"
+base_dir  <- "C:/Users/Portatil/Desktop/Least-cost-diets-and-affordability/Proyecto Interno/interno/"
 panel_dir <- file.path(base_dir, "01_webscrap_prep")
 aux_dir   <- file.path(panel_dir, "aux-functions")
 
@@ -90,10 +90,10 @@ extraer_fecha_archivo <- function(archivo) {
 # ============================================================
 
 construir_panel <- function(ruta_rds, orden) {
-
+  
+  # Leer ruta
   readRDS(ruta_rds) %>%
     select(any_of(variables_panel), archivo_origen) %>%
-
     mutate(
       sipsa_name = as.character(sipsa_name),
 
@@ -163,18 +163,22 @@ panel_final_temp <- bind_rows(paneles) %>%
 
 lista_representativa <- panel_final_temp %>%
   mutate(
+    # Pasar el text
     texto_exito = str_to_lower(exito_name),
-
+    
+    # Variable de medida
     medida = str_extract(
       texto_exito,
       "\\d+(?:[\\.,]\\d+)?\\s*(g|gr|gramo|gramos|ml|mililitro|mililitros|litro|litros)"
     ),
-
+    
+    # Cantidad extraida
     cantidad_extraida = medida %>%
       str_extract("\\d+(?:[\\.,]\\d+)?") %>%
       str_replace(",", ".") %>%
       as.numeric(),
-
+    
+    
     unidad_extraida = medida %>%
       str_extract("g|gr|gramo|gramos|ml|mililitro|mililitros|litro|litros"),
 
@@ -225,7 +229,8 @@ umbral_fechas_ciudad <- panel_final_temp %>%
 # Elegir el sku representativo por alimento-ciudad
 # ============================================================
 
-lista_final <- seleccionar_sku_umbral(lista_representativa, umbral_gramos = umbral_gramos,
+lista_final <- seleccionar_sku_umbral(lista_representativa,
+                                      umbral_gramos = umbral_gramos,
                                       umbral_fechas_ciudad = umbral_fechas_ciudad) %>%
   select(-precio_mediano, -precio_gramo_sku, -gramos_sku)
 

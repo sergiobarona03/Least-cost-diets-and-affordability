@@ -36,12 +36,14 @@
 ##   los skus completos de los alimentos-ciudad sin medida (paso 4)
 ########################################################
 
-seleccionar_sku_umbral <- function(datos, umbral_gramos = 500, umbral_fechas_ciudad) {
-
+seleccionar_sku_umbral <- function(datos, umbral_gramos = 500, 
+                                   umbral_fechas_ciudad) {
+  
   # Por alimento-ciudad: ¿hay al menos un sku con medida conocida?
   grupos_con_medida <- datos %>%
     dplyr::group_by(sipsa_name, city) %>%
-    dplyr::summarise(tiene_medida = any(!is.na(gramos_sku)), .groups = "drop")
+    dplyr::summarise(tiene_medida = any(!is.na(gramos_sku)),
+                     .groups = "drop")
 
   datos <- datos %>%
     dplyr::left_join(grupos_con_medida, by = c("sipsa_name", "city"))
