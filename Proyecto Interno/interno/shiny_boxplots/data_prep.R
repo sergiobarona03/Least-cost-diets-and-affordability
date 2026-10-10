@@ -35,17 +35,18 @@ dir.create(shiny_dir, recursive = TRUE, showWarnings = FALSE)
 ALIMENTO_EXCLUIR <- "Bocadillo veleño"
 
 # ============================================================
-# Cargar panel de precios (precio_500g / precio_100g, nivel
+# Cargar panel de precios (precio_base / precio_100g, nivel
 # alimento-ciudad-mes) y construir precio por gramo
 # ============================================================
 
 panel <- readRDS(file.path(output_dir, "paneles/panel_mensual_cities_tcac.rds")) %>%
   mutate(
     fecha       = as.Date(fecha),
-    precio_gramo = precio_500g / 500
+    precio_gramo = precio_base / (objetivo_base * densidad),
+    base         = if_else(objetivo_base == 1000, "1000 ml", "500 g")
   ) %>%
   filter(!is.na(precio_gramo), precio_gramo > 0) %>%
-  select(articulo, ciudad, fecha, grupos_gabas, precio_500g, precio_100g, precio_gramo)
+  select(articulo, ciudad, fecha, grupos_gabas, precio_base, base, precio_100g, precio_gramo)
 
 message(sprintf("Panel cargado: %d filas | %d alimentos | %d ciudades",
                 nrow(panel), n_distinct(panel$articulo), n_distinct(panel$ciudad)))
@@ -53,7 +54,7 @@ message(sprintf("Panel cargado: %d filas | %d alimentos | %d ciudades",
 # ============================================================
 # Alimentos seleccionados: los que aparecen en la solucion
 # optima del CoNA (quantity > 0), sin importar ciudad/miembro/
-# fecha -- mismo universo que 04_figures/03_fig_cona_composicion.R
+# fecha -- mismo universo que 05_figures/03_fig_cona_composicion.R
 # ============================================================
 
 cona_comp <- readRDS(file.path(cona_dir, "cona_results.rds"))$comp %>%
@@ -110,5 +111,3 @@ saveRDS(
   ),
   file.path(shiny_dir, "data_boxplots.rds")
 )
-
-cat("\nListo. data_boxplots.rds guardado en", shiny_dir, "\n")

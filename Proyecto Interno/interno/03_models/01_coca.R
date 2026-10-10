@@ -3,6 +3,9 @@
 ## Cost of Caloric Adequacy (CoCA)
 ## Loop over cities x dates for the 13-city trimester panel.
 ##
+## Hogar de 3 miembros por defecto; con N_MIEMBROS = 4 o 5 usa el hogar de
+## 02_eer_4members.R o 02_eer_5members.R y los archivos llevan el sufijo _4m o _5m.
+##
 ## Reads:  output_dir/paneles/panel_mensual_cities_tcac.rds
 ##         household_dir/household_eer.rds
 ##         aux_dir/CoCA_paper.R
@@ -37,6 +40,18 @@ coca_dir      <- file.path(base_dir, "interno/03_models/coca")
 
 dir.create(coca_dir, recursive = TRUE, showWarnings = FALSE)
 
+# Tamano del hogar: 3 (base), 4 o 5 miembros. La variable de entorno N_MIEMBROS lo
+# cambia; los archivos de 4 y 5 miembros llevan el sufijo _4m o _5m.
+n_miembros   <- as.integer(Sys.getenv("N_MIEMBROS", unset = "3"))
+stopifnot(n_miembros %in% 3:5)
+# VARIANTE_HOGAR pruebas de sensibilidad de los requerimientos; vacia es la version base:
+#   "t3"  hogar de 4 con el incremento de energia del tercer trimestre de la gestacion
+#   "esc" minimos y maximos de macronutrientes escalados a la energia de cada miembro
+variante_hogar <- Sys.getenv("VARIANTE_HOGAR", unset = "")
+stopifnot(variante_hogar %in% c("", "t3", "esc"), !(variante_hogar == "t3" && n_miembros != 4L))
+sufijo_hogar <- paste0(if (n_miembros == 3L) "" else paste0("_", n_miembros, "m"),
+                       if (nzchar(variante_hogar)) paste0("_", variante_hogar))
+
 source(file.path(aux_dir, "CoCA_paper.R"))
 
 # -----------------------------------------------------------------------
@@ -52,7 +67,7 @@ data_paper <- readRDS(file.path(output_dir, "paneles/panel_mensual_cities_tcac.r
   # la columna "ciudad" original que usa el resto del panel.
   mutate(ciudad_norm = toupper(iconv(ciudad, from = "", to = "ASCII//TRANSLIT")))
 
-household_eer <- readRDS(file.path(household_dir, "household_eer.rds"))
+household_eer <- readRDS(file.path(household_dir, paste0("household_eer", sufijo_hogar, ".rds")))
 
 message(sprintf("  data_paper: %d rows | %d cities | %d dates",
                 nrow(data_paper),
@@ -120,7 +135,7 @@ message(sprintf("  Done. %d rows | %d city-month cells",
 # Save
 # -----------------------------------------------------------------------
 
-saveRDS(df.coca, file.path(coca_dir, "coca_results.rds"))
-write_xlsx(df.coca, file.path(coca_dir, "coca_results.xlsx"))
+saveRDS(df.coca, file.path(coca_dir, paste0("coca_results", sufijo_hogar, ".rds")))
+write_xlsx(df.coca, file.path(coca_dir, paste0("coca_results", sufijo_hogar, ".xlsx")))
 
 message("Done. Run 02_cona.R next.")

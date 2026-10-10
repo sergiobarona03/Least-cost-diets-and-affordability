@@ -1,6 +1,6 @@
 ########################################################
 ## v1/04_figures/00_fig_config.R
-## Version v1: mismas rutas y helpers que 04_figures/00_fig_config.R,
+## Version v1: mismas rutas y helpers que 05_figures/00_fig_config.R,
 ## apuntando a v1/output y v1/03_models en vez de los del pipeline
 ## en produccion. Colores, temas y funciones de recodificacion son
 ## identicos (no dependen del metodo de precio).

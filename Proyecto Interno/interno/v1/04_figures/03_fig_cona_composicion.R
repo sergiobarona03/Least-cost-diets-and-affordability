@@ -1,5 +1,5 @@
 ########################################################
-## 04_figures/03_fig_cona_composicion.R
+## 05_figures/03_fig_cona_composicion.R
 ##
 ## Composicion de la dieta CoNA (adecuacion nutricional) para
 ## el hogar representativo en las 13 ciudades principales de
@@ -128,13 +128,13 @@ cost_contrib <- cost_contrib %>% filter(!is.na(contrib), contrib > 0)
 # -----------------------------------------------------------------------
 # 6. Grupos GABA por alimento (compartido con la version en
 ##   produccion, no depende del metodo de precio -- ver
-##   04_figures/aux-functions/food_groups_gaba.R)
+##   05_figures/aux-functions/food_groups_gaba.R)
 # -----------------------------------------------------------------------
-source("C:/Users/danie/OneDrive/Escritorio/Least-cost-diets-and-affordability/Proyecto Interno/interno/04_figures/aux-functions/food_groups_gaba.R")
+source("C:/Users/danie/OneDrive/Escritorio/Least-cost-diets-and-affordability/Proyecto Interno/interno/05_figures/aux-functions/food_groups_gaba.R")
 
 foods_sin_grupo <- setdiff(all_foods, food_groups$Food)
 if (length(foods_sin_grupo) > 0) {
-  warning("Alimentos sin grupo GABA asignado (agregarlos a 04_figures/aux-functions/food_groups_gaba.R): ",
+  warning("Alimentos sin grupo GABA asignado (agregarlos a 05_figures/aux-functions/food_groups_gaba.R): ",
          paste(foods_sin_grupo, collapse = ", "))
 }
 

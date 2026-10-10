@@ -1,194 +1,154 @@
 ########################################################
-## SCRIPT 02_models/04_ccona.R
-## IPC-Constrained Cost of Nutritional Adequacy (CC-CoNA)
-## Alpha grid: 0, 0.25, 0.50, 0.75, 1.00
-##   alpha = 0    : standard CoNA (no IPC constraint)
-##   alpha = 1.00 : full IPC quantity share enforced
+## SCRIPT 03_models/04_cc_cona.R
+## CoNA restringido a la composicion del IPC (CC-CoNA).
+## Loop sobre alpha x ciudades x fechas del panel de 13 ciudades.
+##   alpha = 0    : CoNA sin restriccion de composicion
+##   alpha = 1    : la dieta reproduce las participaciones del IPC (sin
+##                  solucion en este panel; ver docs/workingpaper_041026)
 ##
-## Reads:  PREP_DIR/panel_food_paper.rds
-##         PREP_DIR/household_eer_ll.rds
-##         PREP_DIR/household_ul.rds
-##         BASE_DIR/food-security-paper/input/cpi-weights/
-##           cpi-weights-2024.xlsx
-##         IN_AUX_DIR/CoNA_IPC_paper.R
+## Hogar de 3 miembros por defecto; con N_MIEMBROS = 4 o 5 usa el hogar de
+## 02_eer_4members.R o 02_eer_5members.R y los archivos llevan el sufijo _4m o _5m.
 ##
-## Writes: CCONA_DIR/ccona_results.rds
-##         CCONA_DIR/ccona_results.xlsx
-##         CCONA_DIR/ccona_alpha{N}.rds  ← one per alpha value
+## Reads:  output_dir/paneles/panel_mensual_cities_tcac.rds
+##         output_dir/ipc/mapeo_ipc_subclase.csv
+##         output_dir/ipc/ipc_participaciones.rds
+##         household_dir/household_eer_ll.rds, household_ul.rds
+##         aux_dir/CoNA_IPC.R
+##
+## Writes: ccona_dir/ccona_results.rds
+##         ccona_dir/ccona_results.xlsx
 ########################################################
 
-source("00_config.R")
 library(tidyverse)
-library(readxl)
 library(writexl)
-library(FoodpriceR)
 
-source(file.path(IN_AUX_DIR, "CoNA_IPC_paper.R"))
+# ============================================================
+# Rutas
+# ============================================================
+
+dirs <- c(
+  "C:/Users/Portatil/Desktop/Least-cost-diets-and-affordability/Proyecto Interno",
+  "C:/Users/danie/OneDrive/Escritorio/Least-cost-diets-and-affordability/Proyecto Interno"
+)
+
+base_dir <- dirs[dir.exists(dirs)][1]
+
+if (is.na(base_dir)) {
+  stop("Ninguno de los directorios existe")
+}
+
+output_dir    <- file.path(base_dir, "interno/output")
+aux_dir       <- file.path(base_dir, "interno/03_models/aux-functions")
+household_dir <- file.path(base_dir, "interno/02_dataprep/household eer")
+ccona_dir     <- file.path(base_dir, "interno/03_models/ccona")
+
+dir.create(ccona_dir, recursive = TRUE, showWarnings = FALSE)
+
+# Tamano del hogar: 3 (base), 4 o 5 miembros. La variable de entorno N_MIEMBROS lo
+# cambia; los archivos de 4 y 5 miembros llevan el sufijo _4m o _5m.
+n_miembros   <- as.integer(Sys.getenv("N_MIEMBROS", unset = "3"))
+stopifnot(n_miembros %in% 3:5)
+# VARIANTE_HOGAR pruebas de sensibilidad de los requerimientos; vacia es la version base:
+#   "t3"  hogar de 4 con el incremento de energia del tercer trimestre de la gestacion
+#   "esc" minimos y maximos de macronutrientes escalados a la energia de cada miembro
+variante_hogar <- Sys.getenv("VARIANTE_HOGAR", unset = "")
+stopifnot(variante_hogar %in% c("", "t3", "esc"), !(variante_hogar == "t3" && n_miembros != 4L))
+sufijo_hogar <- paste0(if (n_miembros == 3L) "" else paste0("_", n_miembros, "m"),
+                       if (nzchar(variante_hogar)) paste0("_", variante_hogar))
+
+source(file.path(aux_dir, "CoNA_IPC.R"))
+
+ALPHAS <- c(0, 0.25, 0.50, 0.75, 0.90, 1.00)
+
+normalise_eer <- function(df) {
+  if ("rango" %in% names(df)) names(df)[names(df) == "rango"] <- "Age"
+  if ("sex"   %in% names(df)) names(df)[names(df) == "sex"]   <- "Sex"
+  if ("eer"   %in% names(df)) names(df)[names(df) == "eer"]   <- "Energy"
+  if ("Sex"   %in% names(df) && is.character(df$Sex))
+    df$Sex <- if_else(df$Sex == "Masculino", 0L, 1L)
+  df
+}
 
 # -----------------------------------------------------------------------
 # Load inputs
 # -----------------------------------------------------------------------
+
 message("Loading inputs...")
 
-data_paper <- readRDS(file.path(PREP_DIR, "panel_food_paper.rds"))
+mapeo <- read_csv(file.path(output_dir, "ipc/mapeo_ipc_subclase.csv"),
+                  col_types = cols(.default = col_character())) %>%
+  select(articulo, Group = subclase_codigo)
 
-# panel_food_paper.rds does not contain subclase_ipc
-# Recover from panel_city_cod_subclase.csv via ciudad + articulo
-subclase_lookup <- read.csv(
-  file.path(REVIEW_DIR, "input", "prices", "panel_city_cod_subclase.csv"),
-  sep = ";") %>%
-  select(ciudad, articulo, subclase_ipc) %>%
-  distinct()
-
-data_paper <- data_paper %>%
-  left_join(subclase_lookup, by = c("ciudad", "articulo")) %>%
-  mutate(Group = subclase_ipc)
-
-message(sprintf(
-  "  subclase_ipc coverage: %d/%d rows have Group",
-  sum(!is.na(data_paper$Group)), nrow(data_paper)))
-
-message(sprintf(
-  "  subclase_ipc coverage: %d/%d rows have Group",
-  sum(!is.na(data_paper$Group)), nrow(data_paper)))
-
-household_eer_ll <- readRDS(file.path(PREP_DIR, "household_eer_ll.rds"))
-household_ul     <- readRDS(file.path(PREP_DIR, "household_ul.rds"))
-
-# IPC expenditure share weights (2024 base)
-in_weights <- file.path(BASE_DIR,
-                        "food-security-paper", "input", "cpi-weights", "cpi-weights-2024.xlsx")
-
-weights_24 <- read_excel(in_weights) %>%
-  janitor::clean_names() %>%
-  select(nivel, codigo, nombre, total_ingresos)
-
-# subclase_ipc is numeric short code (e.g. 11501)
-# weights_24$codigo is DANE format (e.g. "01110101" = "0" + "11501" + "00" → "01150100"? )
-# Correct mapping: pad to 8 digits as "0" + 5-digit code + "00"
-subclases_v <- unique(data_paper$subclase_ipc)
-subclases_v_fmt <- sprintf("0%05d00", as.integer(subclases_v))
-
-message(sprintf("  subclase codes (formatted): %s",
-                paste(head(subclases_v_fmt, 5), collapse = ", ")))
-message(sprintf("  weights_24 sample codes:    %s",
-                paste(head(weights_24$codigo, 5), collapse = ", ")))
-message(sprintf("  Intersection: %d codes match",
-                length(intersect(subclases_v_fmt, weights_24$codigo))))
-
-ipc_shares <- weights_24 %>%
-  filter(nivel == "Subclase", codigo %in% subclases_v_fmt) %>%
-  mutate(
-    share = total_ingresos / sum(total_ingresos),
-    Group = codigo
-  ) %>%
-  select(Group, nombre, share) %>%
+ipc_shares <- readRDS(file.path(output_dir, "ipc/ipc_participaciones.rds")) %>%
+  transmute(Group = subclase_codigo, share) %>%
   as.data.frame()
 
-# Map data_paper$Group to formatted codes
-data_paper <- data_paper %>%
-  mutate(Group = sprintf("0%05d00", as.integer(subclase_ipc)))
+data_paper <- readRDS(file.path(output_dir, "paneles/panel_mensual_cities_tcac.rds")) %>%
+  mutate(ciudad_norm = toupper(iconv(ciudad, from = "", to = "ASCII//TRANSLIT"))) %>%
+  left_join(mapeo, by = "articulo")
 
-stopifnot(abs(sum(ipc_shares$share) - 1) < 1e-6)
+stopifnot(!anyNA(data_paper$Group))
 
-missing_groups <- setdiff(ipc_shares$Group, unique(data_paper$Group))
-if (length(missing_groups) > 0)
-  warning("Groups in ipc_shares not in data_paper$Group: ",
-          paste(missing_groups, collapse = ", "))
+household_eer_ll <- readRDS(file.path(household_dir, paste0("household_eer_ll", sufijo_hogar, ".rds")))
+household_ul     <- readRDS(file.path(household_dir, paste0("household_ul", sufijo_hogar, ".rds")))
 
-message(sprintf(
-  "  data_paper: %d rows | %d cities | %d dates | %d IPC groups",
-  nrow(data_paper),
-  n_distinct(data_paper$ciudad),
-  n_distinct(data_paper$fecha),
-  nrow(ipc_shares)))
-
-# -----------------------------------------------------------------------
-# Alpha grid
-# -----------------------------------------------------------------------
-alphas   <- c(0, 0.25, 0.50, 0.75, 1.00)
 dominios <- sort(unique(household_eer_ll$ciudad))
 fechas   <- sort(unique(data_paper$fecha))
 
-message(sprintf(
-  "Estimating CC-CoNA: %d alphas × %d cities × %d dates...",
-  length(alphas), length(dominios), length(fechas)))
+message(sprintf("  data_paper: %d rows | %d IPC subclasses | %d alphas x %d cities x %d dates",
+                nrow(data_paper), nrow(ipc_shares), length(ALPHAS),
+                length(dominios), length(fechas)))
 
 # -----------------------------------------------------------------------
-# Loop: alpha × city × date
+# Loop: alpha x ciudad x fecha
 # -----------------------------------------------------------------------
-out_cost  <- list()
-out_comp  <- list()
-out_limit <- list()
-out_spe   <- list()
 
-for (alp in alphas) {
-  
-  message(sprintf("\n  alpha = %.2f", alp))
-  n_ok <- 0L; n_fail <- 0L
-  
+out_cost <- list(); out_comp <- list(); out_shares <- list()
+n_ok <- 0L; n_fail <- 0L
+
+for (alp in ALPHAS) {
   for (i in dominios) {
-    
-    eer_ll.aux <- household_eer_ll %>%
-      filter(ciudad == i) %>%
-      select(-ciudad, -any_of("cod_mun")) %>%
-      as.data.frame()
+
+    eer.aux <- household_eer_ll %>%
+      filter(ciudad == i) %>% select(-ciudad, -any_of("cod_mun")) %>%
+      as.data.frame() %>% normalise_eer()
     ul.aux <- household_ul %>%
-      filter(ciudad == i) %>%
-      select(-ciudad, -any_of("cod_mun")) %>%
-      as.data.frame()
-    
+      filter(ciudad == i) %>% select(-ciudad, -any_of("cod_mun")) %>%
+      as.data.frame() %>% normalise_eer()
+
     for (t in fechas) {
-      
+
       data.aux <- data_paper %>%
-        filter(ciudad == i, fecha == t, !is.na(precio_100g)) %>%
+        filter(ciudad_norm == i, fecha == t, !is.na(precio_100g)) %>%
         filter(articulo != "ARROZ PARA SOPA") %>%
         dplyr::rename(
-          Food          = articulo,
-          Price_100g    = precio_100g,
-          Energy        = energia_kcal,
-          Protein       = proteina_g,
-          Lipids        = lipidos_g,
-          Carbohydrates = carbohidratos_totales_g,
-          VitaminC      = vitamina_c_mg,
-          Folate        = folatos_mcg,
-          VitaminA      = vitamina_a_er,
-          Thiamine      = tiamina_mg,
-          Riboflavin    = riboflavina_mg,
-          Niacin        = niacina_mg,
-          VitaminB12    = vitamina_b12_mcg,
-          Magnesium     = magnesio_mg,
-          Phosphorus    = fosforo_mg,
-          Sodium        = sodio_mg,
-          Calcium       = calcio_mg,
-          Iron          = hierro_mg,
-          Zinc          = zinc_mg
+          Food = articulo, Price_100g = precio_100g, Energy = energia_kcal,
+          Protein = proteina_g, Lipids = lipidos_g,
+          Carbohydrates = carbohidratos_totales_g, VitaminC = vitamina_c_mg,
+          Folate = folatos_mcg, VitaminA = vitamina_a_er, Thiamine = tiamina_mg,
+          Riboflavin = riboflavina_mg, Niacin = niacina_mg,
+          VitaminB12 = vitamina_b12_mcg, Magnesium = magnesio_mg,
+          Phosphorus = fosforo_mg, Sodium = sodio_mg, Calcium = calcio_mg,
+          Iron = hierro_mg, Zinc = zinc_mg
         ) %>%
         as.data.frame()
-      
+
       if (nrow(data.aux) == 0) next
-      
-      result <- tryCatch(
-        CoNA_IPC_paper(
-          data       = data.aux,
-          EER_LL     = eer_ll.aux,
-          UL         = ul.aux,
-          IPC_shares = ipc_shares,
-          alpha      = alp),
+
+      res <- tryCatch(
+        CoNA_IPC(data = data.aux, EER_LL = eer.aux, UL = ul.aux,
+                 IPC_shares = ipc_shares, alpha = alp),
         error = function(e) {
-          warning("Error — ", i, " | ", t,
-                  " | alpha=", alp, " | ", conditionMessage(e))
+          warning("Error - ", i, " | ", t, " | alpha=", alp, " | ", conditionMessage(e))
           NULL
         })
-      
-      if (!is.null(result)) {
-        out_cost[[length(out_cost) + 1]] <- result$cost %>%
+
+      if (!is.null(res)) {
+        out_cost[[length(out_cost) + 1]] <- res$cost %>%
           mutate(ciudad = i, fecha = t, alpha_val = alp)
-        out_comp[[length(out_comp) + 1]] <- result$comp %>%
+        out_comp[[length(out_comp) + 1]] <- res$comp %>%
           mutate(ciudad = i, fecha = t, alpha_val = alp)
-        out_limit[[length(out_limit) + 1]] <- result$limit %>%
-          mutate(ciudad = i, fecha = t, alpha_val = alp)
-        out_spe[[length(out_spe) + 1]] <- result$spe %>%
+        out_shares[[length(out_shares) + 1]] <- res$shares %>%
           mutate(ciudad = i, fecha = t, alpha_val = alp)
         n_ok <- n_ok + 1L
       } else {
@@ -196,43 +156,25 @@ for (alp in alphas) {
       }
     }
   }
-  message(sprintf("    %d OK | %d failed", n_ok, n_fail))
+  message(sprintf("  alpha = %.2f done", alp))
 }
 
-# -----------------------------------------------------------------------
-# Consolidate
-# -----------------------------------------------------------------------
-df.cost  <- bind_rows(out_cost)  %>% mutate(fecha = as.Date(fecha))
-df.comp  <- bind_rows(out_comp)  %>% mutate(fecha = as.Date(fecha))
-df.limit <- bind_rows(out_limit) %>% mutate(fecha = as.Date(fecha))
-df.spe   <- bind_rows(out_spe)   %>% mutate(fecha = as.Date(fecha))
+df.cost <- bind_rows(out_cost) %>%
+  mutate(fecha = as.Date(fecha), year = year(fecha), mes = month(fecha))
+df.comp   <- bind_rows(out_comp)   %>% mutate(fecha = as.Date(fecha))
+df.shares <- bind_rows(out_shares) %>% mutate(fecha = as.Date(fecha))
 
-message(sprintf("\n  Total rows in df.cost: %d", nrow(df.cost)))
+message(sprintf("  Done. %d OK | %d failed | %d cost rows (%d without solution)",
+                n_ok, n_fail, nrow(df.cost), sum(is.na(df.cost$cost_day))))
 
 # -----------------------------------------------------------------------
-# Save — combined + one file per alpha
+# Save
 # -----------------------------------------------------------------------
-saveRDS(list(cost  = df.cost,
-             comp  = df.comp,
-             limit = df.limit,
-             spe   = df.spe),
-        file.path(CCONA_DIR, "ccona_results.rds"))
 
-write_xlsx(list(cost  = df.cost,
-                comp  = df.comp,
-                limit = df.limit,
-                spe   = df.spe),
-           file.path(CCONA_DIR, "ccona_results.xlsx"))
+saveRDS(list(cost = df.cost, comp = df.comp, shares = df.shares),
+        file.path(ccona_dir, paste0("ccona_results", sufijo_hogar, ".rds")))
 
-# One RDS per alpha for convenience
-for (alp in alphas) {
-  alp_tag <- gsub("\\.", "", as.character(alp))
-  saveRDS(
-    list(cost  = df.cost  %>% filter(alpha_val == alp),
-         comp  = df.comp  %>% filter(alpha_val == alp),
-         limit = df.limit %>% filter(alpha_val == alp),
-         spe   = df.spe   %>% filter(alpha_val == alp)),
-    file.path(CCONA_DIR, paste0("ccona_alpha", alp_tag, ".rds")))
-}
+write_xlsx(list(cost = df.cost, comp = df.comp, shares = df.shares),
+           file.path(ccona_dir, paste0("ccona_results", sufijo_hogar, ".xlsx")))
 
-message("Done. Run 05_hcost.R next.")
+message("Done.")

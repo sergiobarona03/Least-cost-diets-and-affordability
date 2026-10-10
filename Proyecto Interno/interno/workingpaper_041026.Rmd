@@ -1,0 +1,1314 @@
+---
+title: "Costo mínimo y asequibilidad de los hogares urbanos a cinco niveles de calidad de la dieta en las trece ciudades principales de Colombia y sus áreas metropolitanas en 2025"
+author: "Working paper"
+date: "8 de octubre de 2026"
+lang: es
+geometry: margin=2cm
+output:
+  pdf_document:
+    toc: true
+    toc_depth: 2
+    number_sections: true
+    fig_caption: true
+    latex_engine: pdflatex
+header-includes:
+  - \usepackage{booktabs}
+  - \usepackage{longtable}
+  - \usepackage{float}
+  - \usepackage{amsmath}
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, warning = FALSE, message = FALSE,
+                      fig.align = "center", out.width = "100%", fig.pos = "H")
+
+options(knitr.table.format = "latex")
+
+library(tidyverse)
+library(scales)
+library(knitr)
+library(kableExtra)
+library(readxl)
+library(lubridate)
+
+interno_dir <- "C:/Users/danie/OneDrive/Escritorio/Least-cost-diets-and-affordability/Proyecto Interno/interno/"
+
+source(file.path(interno_dir, "05_figures/00_fig_config.R"))
+source(file.path(interno_dir, "05_figures/aux-functions/modelos_costos.R"))
+source(file.path(interno_dir, "02_dataprep/aux-functions/eer_iom.R"), encoding = "UTF-8")
+
+cop0 <- function(x) format(round(x), big.mark = ".", decimal.mark = ",", trim = TRUE)
+dec  <- function(x, d = 1) format(round(x, d), nsmall = d, decimal.mark = ",", trim = TRUE)
+pct  <- function(nuevo, base) 100 * (nuevo / base - 1)
+mas  <- function(x, d = 1) paste0(ifelse(x >= 0, "+", "-"), dec(abs(x), d), "%")
+lista_es <- function(x) if (length(x) < 2) x else paste0(paste(head(x, -1), collapse = ", "), " y ", tail(x, 1))
+fig  <- function(ruta) file.path(interno_dir, "output/figuras", ruta)
+tabla <- function(df, ...) {
+  kable(df, booktabs = TRUE, format.args = list(big.mark = ".", decimal.mark = ","), ...) %>%
+    kable_styling(latex_options = c("hold_position", "striped"), font_size = 9)
+}
+
+SMMLV_2025 <- 1423500
+ALFA_MATH <- sub(",", "{,}", dec(ALFA_REFERENCIA, 1), fixed = TRUE)
+DIETAS <- c("CoCA", "CoNA", "CC-CoNA", "CoRD", "CoAHD")
+```
+
+```{r cargar}
+# Precios y datos del scraper
+panel <- readRDS(file.path(interno_dir, "output/paneles/panel_mensual_cities_tcac.rds"))
+panel_dia <- readRDS(file.path(interno_dir, "output/paneles/raw_mensual/panel_v1.rds"))
+skus <- readRDS(file.path(interno_dir, "output/lista_alimentos/skus_todos.rds"))
+elegidos <- read_excel(file.path(interno_dir, "output/lista_alimentos/lista_alimentos.xlsx"))
+auditoria <- readRDS(file.path(interno_dir, "output/auditoria/auditoria_productos.rds"))
+desc <- readRDS(file.path(interno_dir, "output/descriptivas/scraping.rds"))
+sens <- readRDS(file.path(interno_dir, "output/sensibilidad_umbral/tablas.rds"))
+
+# Costos de las cinco dietas para los hogares de 3, 4 y 5 miembros
+co3 <- leer_costos_modelos(3)
+co4 <- leer_costos_modelos(4)
+co5 <- leer_costos_modelos(5)
+pc3 <- costo_percapita(co3) %>% recode_city()
+pc_modelo <- pc3 %>% group_by(modelo) %>% summarise(pc = mean(pc), .groups = "drop")
+pcm <- function(m) pc_modelo$pc[pc_modelo$modelo == m]
+
+# Resultados de cada modelo
+cona <- readRDS(file.path(interno_dir, "03_models/cona/cona_results.rds"))
+coca <- readRDS(file.path(interno_dir, "03_models/coca/coca_results.rds"))
+cord <- readRDS(file.path(interno_dir, "03_models/cord/cord_results.rds"))
+coahd <- readRDS(file.path(interno_dir, "03_models/coahd/coahd_results.rds"))
+cc <- readRDS(file.path(interno_dir, "03_models/ccona/ccona_results.rds"))
+
+# Requerimientos
+aud <- readRDS(file.path(interno_dir, "02_dataprep/eer/output/081026_auditoria_eer.rds"))
+agg_eer <- read_excel(file.path(interno_dir, "02_dataprep/eer/output/230726_agg_eer.xlsx")) %>% mutate(cod_mun = as.character(cod_mun))
+adult_eer <- read_excel(file.path(interno_dir, "02_dataprep/eer/output/230726_adult_eer.xlsx"))
+gest <- readRDS(file.path(interno_dir, "02_dataprep/eer/output/041026_gestantes_incremento.rds"))
+hh_dir <- file.path(interno_dir, "02_dataprep/household eer")
+ll5 <- readRDS(file.path(hh_dir, "household_eer_ll_5m.rds"))
+ll4 <- readRDS(file.path(hh_dir, "household_eer_ll_4m.rds"))
+ul5 <- readRDS(file.path(hh_dir, "household_ul_5m.rds"))
+ul4 <- readRDS(file.path(hh_dir, "household_ul_4m.rds"))
+gaba_ex <- readRDS(file.path(interno_dir, "output/gabas/gaba_exchanges_base.rds"))
+gaba_en <- readRDS(file.path(interno_dir, "output/gabas/gaba_energy_base.rds")) %>% filter(tipo_fila == "recomendacion")
+ipc <- readRDS(file.path(interno_dir, "output/ipc/ipc_participaciones.rds"))
+mapeo_ipc <- read_csv(file.path(interno_dir, "output/ipc/mapeo_ipc_subclase.csv"), col_types = cols(.default = col_character()))
+
+# Revision alimento por alimento, sensibilidad de los requerimientos y asequibilidad
+zoom <- readRDS(file.path(interno_dir, "03_models/zoom/zoom_alimentos.rds"))
+req <- readRDS(file.path(interno_dir, "03_models/requerimientos/requerimientos_results.rds"))
+afford <- readRDS(file.path(interno_dir, "04_income/asequibilidad/asequibilidad.rds"))
+
+# Pruebas de robustez
+az <- readRDS(file.path(interno_dir, "03_models/azucar/azucar_results.rds"))
+subp <- readRDS(file.path(interno_dir, "03_models/subproductos/subproductos_results.rds"))
+ac_sens <- readRDS(file.path(interno_dir, "output/sensibilidad_umbral/aceites.rds"))$costos
+```
+
+# Presentación
+
+Este documento reúne la estimación del costo mínimo de cinco dietas para los hogares urbanos de las trece ciudades principales de Colombia, con precios de supermercado de julio a septiembre de 2025, y mide su asequibilidad con los microdatos de ingreso de la Gran Encuesta Integrada de Hogares de 2025. Las cinco dietas de costo mínimo son el costo de adecuación calórica (CoCA), el costo de adecuación nutricional (CoNA), el costo de adecuación nutricional consistente con el consumo (CC-CoNA), el costo de la dieta recomendada (CoRD) y el costo de una dieta saludable (CoAHD). Se ordenan, de menor a mayor exigencia sobre lo que el hogar debe comer, en cinco niveles de calidad de la dieta: el primero solo pide energía, el segundo agrega los nutrientes, el tercero agrega que la dieta se parezca a lo que los hogares compran, y los dos últimos piden que la dieta cumpla con una guía alimentaria.
+
+```{r tabla-dietas}
+dietas <- tribble(
+  ~Dieta, ~`Qué es`, ~`Qué se le exige`,
+  "CoCA", "Costo de adecuación calórica", "Cubrir la energía del hogar con alimentos de cereales, raíces, tubérculos y plátanos. No mira los nutrientes.",
+  "CoNA", "Costo de adecuación nutricional", "Cubrir la energía y 16 nutrientes, dentro de sus mínimos y máximos, con cualquier alimento del panel.",
+  "CC-CoNA", "CoNA consistente con el consumo", "Lo del CoNA, y además que las cantidades de la dieta se repartan entre los alimentos como el IPC reparte el gasto de los hogares.",
+  "CoRD", "Costo de la dieta recomendada", "Seguir la guía alimentaria colombiana: un número de intercambios de cada uno de siete grupos, con los alimentos más baratos por intercambio.",
+  "CoAHD", "Costo de una dieta saludable", "Lo mismo que el CoRD, pero cada grupo se compra por sus kilocalorías y los alimentos se eligen por precio por kilocaloría (adaptación de la canasta de la FAO)."
+)
+kable(dietas, booktabs = TRUE, caption = "Las dietas de costo mínimo") %>%
+  kable_styling(latex_options = c("hold_position", "striped"), font_size = 9) %>%
+  column_spec(1, width = "1.6cm") %>% column_spec(2, width = "4cm") %>% column_spec(3, width = "9cm")
+```
+
+Las dietas se estiman para un hogar de tres personas (un hombre adulto, una mujer adulta y una niña), con los requerimientos de cada ciudad, y se reporta el costo por persona y por día. Después se repiten para hogares de cuatro y cinco personas que incluyen una mujer gestante, una adolescente y una mujer mayor, para ver cómo cambia el costo con el tamaño y la composición del hogar. La sección de datos describe el origen de los precios y de los requerimientos, la de métodos define cada dieta, la de resultados presenta los costos, lo que compra cada dieta y la asequibilidad, la de robustez somete los resultados a pruebas (el tratamiento de los azúcares, el grado de parecido con el consumo del CC-CoNA, la diferencia entre CoAHD y CoRD, los requerimientos, el método con el que se eligen los precios y los alimentos con mapeo dudoso) y la última reúne las decisiones de diseño que quedan por confirmar.
+
+# Datos
+
+## Precios de supermercado
+
+Los precios vienen de una recolección diaria de los productos que el supermercado Éxito vende en línea en las 13 ciudades. El scraper guarda, cada día, una fila por producto y tienda con el nombre del producto, su código de referencia, el precio, el precio por unidad de medida, la unidad en que se vende y el alimento de SIPSA y de la Tabla de Composición de Alimentos Colombiana (TCAC) con el que el proyecto lo asocia. El supermercado reporta cero cuando el producto no está disponible en la tienda, y por eso una parte grande de las filas no tiene precio.
+
+```{r datos-scraping}
+raw_n <- tribble(
+  ~Característica, ~Valor,
+  "Archivos diarios del scraper (julio a septiembre de 2025)", cop0(desc$total$archivos),
+  "Filas del scraper", cop0(desc$total$filas),
+  "Productos distintos (código de referencia)", cop0(desc$total$productos),
+  "Alimentos de SIPSA con al menos un producto", cop0(desc$total$alimentos_sipsa),
+  "Filas con precio cero (producto no disponible)", paste0(dec(desc$total$pct_precio_cero, 0), "%"),
+  "Observaciones de precio después de la limpieza (producto, ciudad y día)", cop0(nrow(panel_dia)),
+  "Alimentos del panel mensual", as.character(n_distinct(panel$articulo)),
+  "Observaciones del panel mensual (alimento, ciudad y mes)", cop0(nrow(panel))
+)
+kable(raw_n, booktabs = TRUE, align = "lr", caption = "Los datos del scraping en cifras") %>%
+  kable_styling(latex_options = c("hold_position", "striped"), font_size = 9)
+```
+
+Las fechas con precio van del `r format(min(panel_dia$fecha), "%d de %B")` al `r format(max(panel_dia$fecha), "%d de %B de %Y")`: `r desc$por_mes_panel$fechas[1]` fechas en julio, `r desc$por_mes_panel$fechas[2]` en agosto y `r desc$por_mes_panel$fechas[3]` en septiembre. Todas las ciudades tienen `r max(desc$por_ciudad$fechas)` fechas, salvo `r lista_es(desc$por_ciudad$ciudad[desc$por_ciudad$fechas < max(desc$por_ciudad$fechas)])`, que tiene `r min(desc$por_ciudad$fechas)`. La disponibilidad de productos varía más entre ciudades que el número de fechas, como muestra el cuadro siguiente.
+
+```{r tabla-ciudades-datos}
+n_alim_panel <- panel %>% distinct(ciudad, articulo) %>% count(ciudad, name = "alimentos_panel")
+tc <- desc$por_ciudad %>%
+  left_join(n_alim_panel, by = "ciudad") %>%
+  transmute(Ciudad = ciudad, `Fechas con precio` = fechas, `Productos distintos` = productos,
+            `Observaciones de precio` = observaciones, `Alimentos con precio` = alimentos_con_precio,
+            `Alimentos en el panel` = alimentos_panel)
+kable(tc, booktabs = TRUE, align = "lrrrrr", format.args = list(big.mark = ".", decimal.mark = ","),
+      caption = "Cobertura del scraping por ciudad") %>%
+  kable_styling(latex_options = c("hold_position", "striped", "scale_down"), font_size = 9)
+```
+
+Bogotá es la ciudad con más productos y observaciones (`r cop0(desc$por_ciudad$productos[desc$por_ciudad$ciudad == "Bogotá"])` productos y `r cop0(desc$por_ciudad$observaciones[desc$por_ciudad$ciudad == "Bogotá"])` observaciones) y Manizales la que menos observaciones tiene (`r cop0(desc$por_ciudad$observaciones[desc$por_ciudad$ciudad == "Manizales"])`), mientras que Pasto es la que menos productos distintos tiene (`r cop0(desc$por_ciudad$productos[desc$por_ciudad$ciudad == "Pasto"])`). Esa diferencia es un primer indicio de que las ciudades pequeñas tendrán menos alimentos disponibles para los modelos, algo que se vuelve relevante en las dietas que dependen del grupo, como el CoRD.
+
+## Limpieza
+
+Del archivo diario al panel de precios hay cuatro pasos. Primero se tipifican las columnas (el precio como número, los códigos de producto como texto) y la fecha se toma del nombre del archivo de origen. Segundo, se unifican los nombres de ciudad, de modo que Bogotá y Bogotá D.C. son una sola ciudad, y las variantes de Cartagena también. Tercero, se descartan las filas sin alimento, ciudad o código de producto, las que traen un código no numérico, las cuya ciudad es una dirección web, las que traen una marca de tiempo en lugar de la unidad de precio y las de precio cero o negativo. Cuarto, se excluyen del panel trece alimentos que no son alimentos base, como los colorantes, las salsas en sobre, la gelatina, la margarina, los chocolates, el vinagre, las galletas saladas, el jugo instantáneo y el bocadillo veleño.
+
+## Del producto al precio de un alimento
+
+### Estandarización de unidades
+
+Un mismo alimento se vende en presentaciones distintas, así que todos los precios se llevan a una base común: el precio de 500 g de producto para los sólidos y el de 1.000 ml para los líquidos. Cuando el nombre del producto trae su tamaño ("380 gr", "900 ml"), el precio se lleva a la base en proporción. Los productos que se venden por kilogramo o por gramo se llevan a 500 g, y los que se venden por unidad, como los huevos, usan una tabla de gramos por unidad. Los únicos líquidos del panel son los aceites de girasol, soya y mezcla.
+
+La composición nutricional de la TCAC está expresada por 100 g de parte comestible, así que el precio del litro de aceite debe pasarse a gramos. Esto se hace con la densidad del aceite, de 0,92 g/ml, que está dentro de los rangos del Codex Stan 210-1999 (0,918 a 0,923 en el aceite de girasol y 0,919 a 0,925 en el de soya). El precio por 100 g de parte comestible, que es el que usan los modelos, es
+
+$$p_{100} = \frac{\text{precio base}}{\text{tamaño base} \times \text{densidad} / 100 \times \text{parte comestible}},$$
+
+donde la parte comestible viene de la TCAC y la densidad es 1 para los sólidos.
+
+### Selección del producto representativo
+
+Para cada alimento y ciudad hay varios productos, con marcas y tamaños distintos, y el panel necesita un precio. En el conjunto de alimentos y ciudades, la mediana de productos por alimento y ciudad es `r median(skus %>% count(sipsa_name, city) %>% pull(n))`, `r dec(100 * mean(skus %>% count(sipsa_name, city) %>% pull(n) == 1), 0)`% de las combinaciones tienen un solo producto y el máximo es de `r max(skus %>% count(sipsa_name, city) %>% pull(n))`. La regla de selección tiene cuatro pasos.
+
+El primero es la cobertura de fechas: solo compiten los productos con precio en al menos dos fechas de cada mes. Cumplen esa condición `r cop0(sum(!is.na(skus$gramos_sku) & skus$fechas_mes_min >= 2))` de las `r cop0(sum(!is.na(skus$gramos_sku)))` combinaciones de producto y ciudad con tamaño conocido; si en una ciudad ninguno la cumple, compiten todos. El segundo paso descarta los valores atípicos: se quitan los productos cuyo precio por gramo es menor que $Q_1 - 1{,}5\,\text{IQR}$ o mayor que $Q_3 + 1{,}5\,\text{IQR}$, con los cuartiles de todos los productos del alimento en las 13 ciudades; la regla se aplica solo a los alimentos con cuatro productos o más. El tercero es el tamaño: se prefieren los productos de hasta 500 g, o de hasta 1.000 ml en los líquidos, y si ninguno cumple se comparan todos los tamaños. El cuarto es el precio: gana el producto cuyo precio por gramo está más cerca de la mediana de los que quedaron. La preferencia por los tamaños pequeños evita que el precio de un alimento sea el de un empaque grande que se vende con descuento por volumen, y la mediana evita que el precio sea el más barato del mercado, que no es representativo.
+
+Los alimentos que no traen tamaño en el nombre, porque se venden por kilogramo o por unidad, no pasan por esta regla. Un caso particular es el de los alimentos con un solo producto, que son casi la mitad de las combinaciones: ahí la regla no tiene nada que elegir, y el producto es el único que hay, del tamaño que tenga. El maíz blanco trillado es el ejemplo más visible, porque su único producto es un empaque de 1.000 g, y el precio por gramo de un empaque grande puede incluir un descuento por volumen que la regla no puede evitar.
+
+### Revisión contra los datos originales
+
+La limpieza y la estandarización se revisaron producto por producto contra los archivos originales del scraper: se rehízo el precio por 100 g de cada producto elegido y se comparó con el del panel. En las `r cop0(sum(!is.na(auditoria$dif_original)))` combinaciones de alimento y ciudad con tamaño conocido, la diferencia máxima es de `r dec(100 * max(auditoria$dif_original, na.rm = TRUE), 2)`%, de modo que el procesamiento no altera los precios. La revisión también marca los productos que cuestan más del doble o menos de la mitad por gramo que la mediana de los de su alimento y ciudad (`r sum(auditoria$marca_caro_barato_sku)` casos), y los alimentos cuyo precio por 100 g se aleja 1,5 veces de la mediana entre ciudades (`r sum(auditoria$marca_caro_barato_ciudades)` casos); son los casos que conviene revisar a mano.
+
+## Del día al mes
+
+El panel que usan los modelos es mensual: para cada alimento y ciudad, la mediana del precio base entre las fechas de cada mes. Un alimento entra al panel de una ciudad si tiene precio en al menos dos fechas de cada mes en que la ciudad tiene datos. La regla pide lo mínimo para que el valor mensual no dependa de un solo día y no depende de cuántos días capturó el scraper en cada ciudad.
+
+```{r tabla-alimentos}
+grupo_corto <- c(
+  "CEREALES, RAÍCES, TUBÉRCULOS Y PLÁTANOS" = "Cereales, raíces\ny plátanos",
+  "FRUTAS Y VERDURAS" = "Frutas y\nverduras",
+  "CARNES, HUEVOS, LEGUMINOSAS SECAS, FRUTOS SECOS Y SEMILLAS" = "Carnes, huevos y\nleguminosas",
+  "LECHE Y PRODUCTOS LACTEOS" = "Lácteos",
+  "GRASAS" = "Grasas",
+  "AZUCARES" = "Azúcares"
+)
+alim_ciudad <- panel %>%
+  distinct(ciudad, articulo, grupos_gabas) %>%
+  mutate(grupo = coalesce(grupo_corto[grupos_gabas], "Otros"))
+tab_alim <- alim_ciudad %>%
+  count(ciudad, grupo) %>%
+  pivot_wider(names_from = grupo, values_from = n, values_fill = 0) %>%
+  mutate(Total = rowSums(across(-ciudad))) %>%
+  arrange(desc(Total)) %>%
+  rename(Ciudad = ciudad)
+names(tab_alim) <- gsub("\n", " ", names(tab_alim))
+kable(tab_alim, booktabs = TRUE, align = "lrrrrrrrr",
+      caption = "Alimentos del panel de cada ciudad, por grupo de la guía alimentaria") %>%
+  kable_styling(latex_options = c("hold_position", "striped", "scale_down"), font_size = 8)
+```
+
+En total hay `r n_distinct(panel$articulo)` alimentos distintos, y cada ciudad tiene entre `r min(tab_alim$Total)` y `r max(tab_alim$Total)`. La diferencia viene sobre todo de las frutas y verduras (de `r max(tab_alim[["Frutas y verduras"]])` en `r tab_alim$Ciudad[which.max(tab_alim[["Frutas y verduras"]])]` a `r min(tab_alim[["Frutas y verduras"]])` en `r tab_alim$Ciudad[which.min(tab_alim[["Frutas y verduras"]])]`) y de las carnes, huevos y leguminosas. Los alimentos sin grupo de la guía, que aparecen como "Otros" (cilantro, sal yodada, café y, en algunas ciudades, la trucha entera, el bagre entero y una variedad de uva), entran al CoNA pero no al CoRD ni al CoAHD, que dependen del grupo.
+
+```{r tabla-precios-grupo}
+pg <- panel %>%
+  filter(!is.na(precio_100g), energia_kcal > 0) %>%
+  mutate(grupo = coalesce(gsub("\n", " ", grupo_corto[grupos_gabas]), "Otros"),
+         cop_100kcal = precio_100g / energia_kcal * 100) %>%
+  group_by(grupo) %>%
+  summarise(Alimentos = n_distinct(articulo),
+            `Mediana por 100 g` = median(precio_100g),
+            `Percentil 10 por 100 g` = quantile(precio_100g, 0.1),
+            `Percentil 90 por 100 g` = quantile(precio_100g, 0.9),
+            `Mediana por 100 kcal` = median(cop_100kcal), .groups = "drop") %>%
+  arrange(desc(`Mediana por 100 g`)) %>%
+  rename(Grupo = grupo)
+kable(pg %>% mutate(across(where(is.numeric) & !matches("Alimentos"), ~ cop0(.x))), booktabs = TRUE, align = "lrrrrr", label = "tab-precios-grupo",
+      caption = "Precios del panel por grupo de la guía (COP)") %>%
+  kable_styling(latex_options = c("hold_position", "striped", "scale_down"), font_size = 9)
+```
+
+La energía más barata está en los azúcares (`r cop0(pg[["Mediana por 100 kcal"]][pg$Grupo == "Azúcares"])` COP por 100 kcal en la mediana) y en los cereales, raíces y plátanos (`r cop0(pg[["Mediana por 100 kcal"]][pg$Grupo == "Cereales, raíces y plátanos"])`), seguidos de las grasas (`r cop0(pg[["Mediana por 100 kcal"]][pg$Grupo == "Grasas"])`). Los lácteos cuestan `r cop0(pg[["Mediana por 100 kcal"]][pg$Grupo == "Lácteos"])` por 100 kcal, y las carnes, huevos y leguminosas y las frutas y verduras más de 2.000: ese orden de precios por kilocaloría es el que organiza los resultados de todas las dietas.
+
+## Composición nutricional
+
+A cada alimento se le asocia su composición de la TCAC mediante un archivo de mapeo entre los nombres de SIPSA y los de la tabla. El CoNA usa la energía y 16 nutrientes: proteína, lípidos, carbohidratos, calcio, hierro, sodio, fósforo, zinc, magnesio, tiamina, riboflavina, niacina, folato, vitamina B12, vitamina C y vitamina A. Cada alimento trae también su parte comestible y su grupo de la guía alimentaria. Como el mapeo asocia a cada alimento de SIPSA un solo código de la tabla, alimentos distintos pueden compartir composición (por ejemplo, todos los cortes de res magra comparten la del código F118), y algunos alimentos se representan con la composición de un alimento cercano; los casos que más afectan los resultados se analizan en la sección de robustez.
+
+## Hogar de referencia y requerimientos
+
+### Los miembros del hogar
+
+El hogar de referencia tiene tres personas, que corresponde al tamaño medio de los hogares urbanos en el Censo de 2018: un hombre adulto de 31 a 50 años, una mujer adulta de 31 a 50 años y una niña de 9 a 13. Para explorar el efecto del tamaño y la composición se definen otros dos hogares. El de cuatro personas tiene un hombre adulto, una mujer gestante de 31 a 50 años, una adolescente de 14 a 18 años y la niña de 9 a 13. El de cinco tiene un hombre adulto, una mujer adulta, una adolescente, la niña y una mujer mayor de 51 a 70 años. Cada persona se costea con sus propios requerimientos, de modo que el costo del hogar es la suma de los costos de sus miembros y no depende de con quién viva. El Cuadro \ref{tab:tab-eer} reúne los requerimientos de energía de los seis tipos de miembro.
+
+```{r eer-datos}
+res_eer <- aud$resumen
+re <- function(m, col) res_eer[[col]][res_eer$miembro == m]
+M_H <- "Hombre adulto (31-50)"; M_M <- "Mujer adulta (31-50)"; M_G <- "Mujer gestante (31-50)"
+M_N <- "Niña (9-13)"; M_A <- "Adolescente mujer (14-18)"; M_V <- "Mujer adulta mayor (51-70)"
+tray <- aud$trimestres
+mc <- aud$miembros_ciudad
+dif_max <- aud$controles$valor[aud$controles$control == "max |EER usado - EER recalculado| (kcal)"]
+rien_f <- agg_eer$eer[agg_eer$cod_mun == "11001" & agg_eer$sex == "Femenino" & agg_eer$rango == "[14, 18)"]
+rien_m <- agg_eer$eer[agg_eer$cod_mun == "11001" & agg_eer$sex == "Masculino" & agg_eer$rango == "[14, 18)"]
+
+# cambio del costo del hogar de 4 con el incremento del tercer trimestre frente al promedio ponderado
+sens_t3 <- function(m) {
+  x <- req$costos %>% filter(hogar == 4, modelo == m) %>% group_by(variante, ciudad, fecha) %>% summarise(h = sum(costo), .groups = "drop") %>%
+    group_by(variante) %>% summarise(h = mean(h), .groups = "drop")
+  100 * (x$h[x$variante == "t3"] / x$h[x$variante == "base"] - 1)
+}
+```
+
+### Requerimiento de energía
+
+El requerimiento de energía estimado (EER) de cada miembro se calcula por ciudad con dos fuentes, según la edad. Para las personas de 14 años o más se usan las ecuaciones de las Dietary Reference Intakes for Energy de las National Academies of Sciences, Engineering, and Medicine (NASEM, 2023), que dan el EER como una función lineal de la edad, la talla y el peso, con coeficientes distintos por sexo, grupo de edad y nivel de actividad física:
+
+$$\text{EER} = \beta_0 + \beta_1 \,\text{edad} + \beta_2 \,\text{talla} + \beta_3 \,\text{peso} + \beta_4,$$
+
+donde $\beta_4$ es de 20 kcal al día entre los 14 y los 18 años, por el depósito de energía del crecimiento, y de cero desde los 19. Los coeficientes no son propios del proyecto: son los de la tabla S-3 de NASEM (2023) para los adultos y los de su tabla para los 14 a 18,99 años, transcritos en el Cuadro \ref{tab:tab-coef} del Apéndice A, que se imprime directamente del objeto con el que el código calcula. Como control, el código recalcula el EER de cada miembro y ciudad a partir de la antropometría con esa tabla y lo compara con el que usan los modelos; los dos coinciden exactamente (la diferencia máxima es menor que una milésima de kcal). Para los niños de 9 a 13 años no hay ecuaciones de esa familia en el proyecto: se usan los requerimientos de la resolución colombiana de recomendaciones de ingesta de energía y nutrientes (RIEN; Ministerio de Salud y Protección Social, 2016), que dan las kilocalorías por edad simple y sexo para una actividad moderada.
+
+La edad, el peso y la talla de las personas de 14 años o más son los promedios ponderados de cada grupo de edad (14 a 18, 19 a 30, 31 a 50 y 51 a 69) y sexo en cada ciudad, calculados con la antropometría de la Encuesta Nacional de la Situación Nutricional (ENSIN 2015) y su factor de expansión. La ecuación se evalúa en esos promedios, y como es lineal da lo mismo que promediar los EER individuales cuando todos tienen el mismo nivel de actividad. La ENSIN agrupa algunas ciudades en la misma subregión, de modo que Bucaramanga y Cúcuta comparten la antropometría de los Santanderes y Manizales y Pereira la del Eje Cafetero, y por eso sus requerimientos de energía son idénticos. La ENSIN llega hasta los 64 años, así que la mujer mayor de 51 a 70 años de cada ciudad representa en realidad a las mujeres de 51 a 64 (edad promedio de `r dec(re(M_V, "edad_rep"), 0)` años); la encuesta SABE, que sí cubre a los mayores de 60 años, solo tiene representatividad nacional y se usa en la fila nacional del archivo de requerimientos, que los modelos no usan.
+
+El nivel de actividad física es el predominante entre las personas de cada grupo y ciudad en la ENSIN: las que cumplen las recomendaciones de actividad física se clasifican como activas, y las demás como poco activas, y el nivel que reúne más población expandida es el que se asigna al grupo. Con esa regla las mujeres de 31 a 50 años quedan como poco activas en `r re(M_M, "ciudades_ligera")` de las 13 ciudades y los hombres como activos en `r re(M_H, "ciudades_moderada")`, y las adolescentes como poco activas en `r re(M_A, "ciudades_ligera")`; el hogar de referencia no es entonces el de una mujer, un hombre y una niña moderadamente activos, que es como se describió en estimaciones previas del proyecto, sino el que sale de lo que reporta la encuesta en cada ciudad. Para la niña se toma la actividad moderada de la RIEN, y el EER de cada ciudad es el promedio de las kilocalorías por edad simple ponderado por la población de cada edad en el Censo de 2018.
+
+```{r tabla-eer}
+act_txt <- function(m) {
+  if (m == M_N) return("Moderada (RIEN)")
+  paste0(re(m, "ciudades_ligera"), " poco activa / ", re(m, "ciudades_moderada"), " activa")
+}
+t_eer <- res_eer %>%
+  mutate(miembro = factor(miembro, levels = c(M_H, M_M, M_G, M_A, M_N, M_V))) %>% arrange(miembro) %>%
+  transmute(Miembro = sub(" \\(.*", "", miembro),
+            Edad = ifelse(is.nan(edad_rep), "10 a 13", dec(edad_rep, 0)),
+            `Peso (kg)` = ifelse(is.nan(peso_prom), "-", dec(peso_prom, 0)),
+            `Talla (cm)` = ifelse(is.nan(talla_prom), "-", dec(talla_prom, 0)),
+            Actividad = vapply(as.character(miembro), act_txt, ""),
+            `EER (kcal/día)` = paste0(cop0(eer_min), " a ", cop0(eer_max)),
+            `Promedio` = cop0(eer),
+            `FoodpriceR` = cop0(eer_foodpricer),
+            `GABA` = cop0(eer_gaba))
+kable(t_eer, booktabs = TRUE, align = "lrrrlrrrr", label = "tab-eer",
+      caption = "Requerimiento de energía de los miembros del hogar y su antropometría (promedio de las 13 ciudades; EER en el rango entre ciudades, promedio y valores de referencia)") %>%
+  kable_styling(latex_options = c("hold_position", "striped", "scale_down"), font_size = 8)
+```
+
+El Cuadro \ref{tab:tab-eer} permite ver tres cosas. La primera es que el requerimiento varía poco entre ciudades, porque la antropometría es parecida: el del hombre adulto va de `r cop0(re(M_H, "eer_min"))` a `r cop0(re(M_H, "eer_max"))` kcal y el de la mujer adulta de `r cop0(re(M_M, "eer_min"))` a `r cop0(re(M_M, "eer_max"))`, y el de la niña casi no cambia, `r cop0(re(M_N, "eer_min"))` a `r cop0(re(M_N, "eer_max"))`, porque viene de una tabla de referencia y solo cambia la estructura de edades de cada ciudad. La segunda es que los EER están por encima de la energía de referencia que trae FoodpriceR para cada grupo (`r dec(100 * (re(M_H, "razon_foodpricer") - 1), 0)`% en el hombre, `r dec(100 * (re(M_M, "razon_foodpricer") - 1), 0)`% en la mujer, `r dec(100 * (re(M_V, "razon_foodpricer") - 1), 0)`% en la mujer mayor y `r dec(100 * (re(M_N, "razon_foodpricer") - 1), 0)`% en la niña), porque la antropometría de la ENSIN y la actividad de cada ciudad dan requerimientos mayores que esa energía de referencia, cuyo origen el paquete no documenta, y porque la actividad de la niña es moderada; esa diferencia pesa en los límites de macronutrientes, como se explica más abajo. La tercera es que el requerimiento de la niña (`r cop0(re(M_N, "eer"))` kcal) es mayor que el de la adolescente (`r cop0(re(M_A, "eer"))`) y que el de la mujer adulta (`r cop0(re(M_M, "eer"))`), lo que no es una regularidad fisiológica sino el resultado de combinar dos fuentes: la RIEN supone actividad moderada para la niña, y la ENSIN indica que las mujeres adolescentes y adultas son poco activas. La energía de la guía alimentaria para la niña es de `r cop0(re(M_N, "eer_gaba"))` kcal, `r dec(100 * (1 - re(M_N, "eer_gaba") / re(M_N, "eer")), 0)`% menos que el EER que usan los modelos.
+
+Hay dos decisiones de diseño que conviene dejar escritas, una sobre la niña y otra sobre la adolescente. La primera es que los cortes de edad con que se promedian los requerimientos de los niños son 2, 6, 10, 14 y 18 años, de modo que el grupo de la niña reúne las edades de 10 a 13, y no de 9 a 13 como el grupo de nutrientes de FoodpriceR; incluir los 9 años bajaría su EER cerca de 3%, y se dejó como en la estimación previa del proyecto para poder compararlas. La segunda es que la adolescente de 14 a 18 años usa las ecuaciones de NASEM con la antropometría de la ENSIN, y no la tabla de la RIEN: con la RIEN, el EER de una mujer de 14 a 17 años sería de `r cop0(rien_f)` kcal en Bogotá, `r dec(100 * (rien_f / mc$eer[mc$miembro == M_A & mc$ciudad == "BOGOTA"] - 1), 0)`% más que con las ecuaciones, y el del hombre de la misma edad (`r cop0(rien_m)` kcal) superaría al del hombre adulto. Con las ecuaciones la adolescente queda cerca de la mujer adulta, que es lo que se espera de dos mujeres con peso y talla parecidos y la misma actividad.
+
+Los datos de peso y talla de la ENSIN y de la SABE traen valores de no respuesta que se deben filtrar. La SABE codifica con 777 el peso o la talla que no se midió, y esos valores entraban al promedio como si fueran mediciones: en la fila nacional de los mayores de 70 años daban una talla promedio de 270 cm. El código descarta ahora los pesos de 250 kg o más y las tallas fuera de 100 a 250 cm. El cambio no afecta a los modelos porque ninguno usa esa fila, y en las ciudades mueve el requerimiento de los miembros del hogar en menos de 5 kcal (el mayor cambio es el del hombre adulto de Barranquilla, de 4 kcal). Las mujeres gestantes que la ENSIN incluye en la antropometría de las mujeres de 14 a 50 años elevan el peso promedio de las no gestantes en menos de 0,2 kg, y el EER de la mujer adulta en menos de 2 kcal, por lo que no se excluyen.
+
+### La mujer gestante
+
+La mujer gestante tiene el requerimiento de una mujer no gestante de 31 a 50 años de su ciudad más un incremento de energía por trimestre de embarazo: 0, 340 y 452 kcal diarias en el primero, segundo y tercer trimestre (IOM, 2006). La ENSIN 2015 registra el trimestre de embarazo de `r cop0(sum(tray$mujeres))` mujeres gestantes: `r dec(100 * tray$participacion[1], 0)`% en el primer trimestre, `r dec(100 * tray$participacion[2], 0)`% en el segundo y `r dec(100 * tray$participacion[3], 0)`% en el tercero. El incremento que se usa es el promedio de los tres valores ponderado por esa distribución, `r round(gest$incremento)` kcal al día; la distribución es nacional porque la muestra de gestantes por ciudad es pequeña. Yoshioka et al. (2026) suman, en cambio, solo el incremento del tercer trimestre. Los dos criterios se compararon: con el incremento del tercer trimestre (452 kcal) el hogar de cuatro personas cuesta `r mas(sens_t3("CoCA"))` en el CoCA, `r mas(sens_t3("CoNA"))` en el CoNA, `r mas(sens_t3("CC-CoNA"))` en el CC-CoNA, `r mas(sens_t3("CoRD"))` en el CoRD y `r mas(sens_t3("CoAHD"))` en el CoAHD frente al que usa el promedio ponderado. La energía importa poco en el CoNA y el CC-CoNA porque su costo lo fijan los nutrientes, y casi proporcionalmente en las otras tres dietas, donde la energía es lo que se compra.
+
+FoodpriceR trae mínimos y máximos de nutrientes para tres grupos de gestantes (menores de 18 años, de 19 a 30 y de 31 a 50), igual que Yoshioka et al. (2026), que encuentran el CoNA más alto para las gestantes menores de 18 años. El hogar de cuatro usa el grupo de 31 a 50 años, que es el de la mujer adulta del hogar de referencia. Un hogar con una gestante adolescente se puede construir cambiando el miembro en el código, y es una extensión natural del ejercicio. El patrón de la guía alimentaria de la gestante es el de la mujer adulta escalado a su EER, porque la guía colombiana no tiene un patrón para gestantes. Las gestantes de la ENSIN tienen en promedio `r dec(weighted.mean(gest$por_trimestre$edad_prom, gest$por_trimestre$poblacion), 0)` años y un índice de masa corporal de `r dec(weighted.mean(gest$por_trimestre$imc_prom, gest$por_trimestre$poblacion), 1)`.
+
+### Mínimos y máximos de nutrientes
+
+```{r macros-datos}
+fp_ll <- FoodpriceR::EER_LL; fp_ul <- FoodpriceR::UL
+ll_todos <- bind_rows(ll5 %>% filter(ciudad == "BOGOTA"), ll4 %>% filter(ciudad == "BOGOTA", Age == "[31,51) gest"))
+ul_todos <- bind_rows(ul5 %>% filter(ciudad == "BOGOTA"), ul4 %>% filter(ciudad == "BOGOTA", Age == "[31,51) gest")) %>%
+  left_join(ll_todos %>% select(Sex, Age, Energy), by = c("Sex", "Age"))
+fp_clave <- c("Hombre adulto" = "0_31 a 50 años", "Mujer adulta" = "1_31 a 50 años", "Mujer gestante" = "1_gestantes 31 a 50 años",
+              "Adolescente mujer" = "1_14 a 18 años", "Niña" = "1_9 a 13 años", "Mujer mayor" = "1_51 a 70 años")
+pct_macro <- function(df, nombre) {
+  df %>% mutate(clave = paste0(Sex, "_", Age), Miembro = sub(" \\(.*", "", MEMBER_LABS[clave])) %>%
+    transmute(Miembro, En = Energy, P = 4 * Protein / Energy * 100, L = 9 * Lipids / Energy * 100, C = 4 * Carbohydrates / Energy * 100) %>%
+    rename_with(~ paste0(.x, "_", nombre), c(P, L, C))
+}
+macro <- pct_macro(ll_todos, "min") %>% left_join(pct_macro(ul_todos, "max") %>% select(-En), by = "Miembro")
+ref_macro <- bind_rows(fp_ll %>% mutate(tipo = "min"), fp_ul %>% mutate(tipo = "max")) %>%
+  filter(paste0(Sex, "_", Age) %in% fp_clave) %>%
+  mutate(Miembro = names(fp_clave)[match(paste0(Sex, "_", Age), fp_clave)],
+         P = 4 * Protein / Energy * 100, L = 9 * Lipids / Energy * 100, C = 4 * Carbohydrates / Energy * 100) %>%
+  select(Miembro, tipo, P, L, C) %>% pivot_wider(names_from = tipo, values_from = c(P, L, C))
+rng <- function(a, b) paste0(dec(a, 0), " a ", dec(b, 0))
+tmacro <- macro %>%
+  left_join(ref_macro, by = "Miembro", suffix = c("", "_ref")) %>%
+  mutate(Miembro = factor(Miembro, levels = c("Hombre adulto", "Mujer adulta", "Mujer gestante", "Adolescente mujer", "Niña", "Mujer mayor"))) %>%
+  arrange(Miembro) %>%
+  transmute(Miembro, `EER (kcal)` = cop0(En),
+            `Proteína` = rng(P_min, P_max), `Proteína (FoodpriceR)` = rng(P_min_ref, P_max_ref),
+            `Lípidos` = rng(L_min, L_max), `Lípidos (FoodpriceR)` = rng(L_min_ref, L_max_ref),
+            `Carbohidratos` = rng(C_min, C_max), `Carbohidratos (FoodpriceR)` = rng(C_min_ref, C_max_ref))
+```
+
+Los mínimos y máximos de nutrientes no los fija el proyecto: vienen de las tablas de requerimientos de energía y nutrientes y de límites superiores del paquete FoodpriceR (versión 1.0.0, de la Pontificia Universidad Javeriana Cali y la Alianza Bioversity-CIAT), que es la misma fuente de Yoshioka et al. (2026) y de la estimación previa del proyecto. Yoshioka et al. (2026) describen su construcción: para los micronutrientes el mínimo es el requerimiento promedio estimado (EAR) y el máximo el nivel superior de ingesta tolerable (UL), para el sodio el mínimo es la ingesta adecuada (AI) y para los macronutrientes se usan los rangos aceptables de distribución. Se revisó que los valores del paquete correspondan a esa descripción. Casi todos coinciden con las ingestas dietéticas de referencia del IOM: por ejemplo, calcio de 800 mg, vitamina C de 75 y 60 mg, folato de 320 mcg y magnesio de 350 y 265 mg para el hombre y la mujer de 31 a 50 años. Dos nutrientes no coinciden con el EAR del IOM: el hierro (`r dec(ll_todos$Iron[ll_todos$Age == "[31,51)" & ll_todos$Sex == 1], 1)` mg para la mujer adulta frente a un EAR de 8,1, y `r ll_todos$Iron[ll_todos$Age == "[31,51) gest"]` mg para la gestante frente a 22) y el zinc del hombre (12 mg frente a 9,4). La diferencia sugiere que esos dos nutrientes se tomaron de la tabla colombiana de recomendaciones, que ajusta por biodisponibilidad, pero el paquete no lo documenta y el origen exacto debe confirmarse con sus autores. Importa para los resultados: el hierro de la gestante es la razón principal de que su dieta sea la más cara del hogar.
+
+Los límites de proteína, lípidos y carbohidratos requieren una aclaración. FoodpriceR los entrega en gramos, calculados como un porcentaje de la energía de referencia de cada grupo (por ejemplo, 1.916 kcal para la mujer de 31 a 50 años), y el modelo los usa en gramos, sin ajustarlos a la energía de cada ciudad. El Cuadro \ref{tab:tab-macros} muestra el resultado: con el EER de la ciudad, que es mayor que el de referencia, los porcentajes de la energía que quedan permitidos son más estrechos que los que se pretendía (en la niña, el máximo de carbohidratos es `r dec(macro$C_max[macro$Miembro == "Niña"], 0)`% de su energía y no 65%). Como se verá en los resultados, el máximo de carbohidratos es una de las restricciones que más pesan en el CoNA, por lo que se midió qué pasa si los gramos se escalan a la energía de cada miembro; el resultado está en la sección de robustez.
+
+```{r tabla-macros}
+kable(tmacro, booktabs = TRUE, align = "lrcccccc", label = "tab-macros",
+      caption = "Mínimo y máximo de macronutrientes como porcentaje de la energía del miembro (Bogotá) y rango del que se calcularon en FoodpriceR") %>%
+  kable_styling(latex_options = c("hold_position", "striped", "scale_down"), font_size = 7.5)
+```
+
+Los demás mínimos y máximos se presentan completos en el Apéndice B (Cuadro \ref{tab:tab-limites}). Las diferencias que más importan para los costos son el calcio, más alto para la niña, la adolescente y la mujer mayor que para los adultos (1.100 y 1.000 mg frente a 800), y el hierro y el folato de la gestante (`r ll_todos$Iron[ll_todos$Age == "[31,51) gest"]` mg y `r ll_todos$Folate[ll_todos$Age == "[31,51) gest"]` mcg, frente a `r dec(ll_todos$Iron[ll_todos$Age == "[31,51)" & ll_todos$Sex == 1], 1)` mg y `r ll_todos$Folate[ll_todos$Age == "[31,51)" & ll_todos$Sex == 1]` mcg de la mujer no gestante). El máximo de magnesio de 350 mg es el del suplemento y aquí se aplica a todo el magnesio de la dieta; para el hombre adulto y para la adolescente coincide con su mínimo, de modo que la dieta tiene que cumplirlo exactamente.
+
+## La guía alimentaria colombiana
+
+El CoRD y el CoAHD siguen las guías alimentarias basadas en alimentos para la población colombiana (GABA), que recomiendan, para cada grupo de edad y sexo, un número de intercambios diarios de siete grupos de alimentos: cereales, raíces, tubérculos y plátanos; frutas; verduras; leche y productos lácteos; carnes, huevos, leguminosas secas, frutos secos y semillas; grasas, y azúcares. Un intercambio es la cantidad de un alimento que aporta la energía de referencia de su grupo. La guía fija la energía a la que corresponden sus recomendaciones (por ejemplo, `r cop0(gaba_en$energia_kcal[gaba_en$edad == "19 to 59" & gaba_en$sexo == "female"])` kcal para una mujer adulta), y como el requerimiento de cada ciudad es distinto, los intercambios se multiplican por el factor $\text{EER de la ciudad} / \text{energía de la guía}$.
+
+```{r tabla-gaba}
+gb <- gaba_ex %>% filter(edad == "19 to 59", sexo == "female") %>%
+  transmute(Grupo = str_to_sentence(grupo_principal), Intercambios = n_exchanges, `kcal del grupo` = e_kcal,
+            `% de la energía` = 100 * e_kcal / sum(e_kcal))
+nfo <- c(3, 2, 2, 1, 2, 1, 1)
+gb <- gb %>% mutate(Grupo = gsub("Carnes, huevos, leguminosas, frutos secos y semillas", "Carnes, huevos, leguminosas, frutos secos y semillas", Grupo))
+tabla(gb %>% mutate(across(where(is.numeric), ~ dec(.x, 1))), align = "lrrr",
+      caption = "Recomendación de la guía para una mujer adulta de 19 a 59 años")
+```
+
+En cada grupo el modelo elige un número fijo de alimentos (3 cereales, 2 frutas, 2 verduras, 1 lácteo, 2 de carnes, huevos y leguminosas, 1 grasa y 1 azúcar, 12 en total), siguiendo el criterio de la literatura de incluir más de un alimento en los grupos que más pesan en la dieta. El CoRD y el CoAHD excluyen el ajo y el ají (ajo, ajo importado y ají topito dulce): la tabla suplementaria de Herforth et al. (2024) los lista, junto con la sal, el té, el café, el agua embotellada y el jengibre, entre los alimentos excluidos.
+
+## Composición del gasto del IPC
+
+El CC-CoNA necesita saber cómo reparte el IPC los alimentos. La ponderación del IPC de alimentos y bebidas no alcohólicas del DANE se asocia a las subclases del índice, y cada alimento del panel se asigna a la subclase a la que pertenece por su nombre. Hay `r nrow(ipc)` subclases con alimentos en el panel, de las 59 de alimentos y bebidas no alcohólicas, y sus participaciones se reescalan para que sumen 1. Las más pesadas son `r lista_es(paste0(tolower(sub(" \\(.*", "", head(ipc$subclase_nombre[order(-ipc$share)], 4))), " (", dec(100 * head(sort(ipc$share, decreasing = TRUE), 4), 1), "%)"))`.
+
+# Métodos
+
+## Notación
+
+Sea $i$ un alimento del panel de una ciudad y un mes, $p_i$ su precio por 100 g de parte comestible y $x_i \ge 0$ la cantidad comprada en unidades de 100 g. Cada miembro $k$ del hogar tiene un requerimiento de energía $E_k$ y, para cada nutriente $n$, un mínimo $\underline{r}_{nk}$ y, cuando existe, un máximo $\overline{r}_{nk}$. Las cinco dietas se estiman para cada miembro, ciudad y mes (el enfoque de hogar representativo con dietas individualizadas), y el costo del hogar es la suma de los costos de sus miembros. El costo por persona es el del hogar dividido entre su número de miembros, y el costo mensual es el diario por 30.
+
+## Costo de adecuación calórica (CoCA)
+
+El CoCA es el costo mínimo de cubrir la energía del miembro con alimentos de cereales, raíces, tubérculos y plátanos:
+
+$$\text{CoCA}_k = \min_{x \ge 0} \sum_i p_i x_i \quad \text{sujeto a} \quad \sum_i e_i x_i \ge E_k,$$
+
+donde $e_i$ son las kilocalorías por 100 g. Con una sola restricción la solución es trivial: se compra solo el alimento de menor precio por kilocaloría, y el CoCA es el requerimiento de energía por ese precio. Por eso el CoCA no mide una dieta sino el precio de la energía más barata del grupo, y es muy sensible al precio de un solo producto.
+
+## Costo de adecuación nutricional (CoNA)
+
+El CoNA amplía el problema con los nutrientes. Con cualquier alimento del panel, cubre la energía exactamente y cada uno de los 16 nutrientes dentro de sus límites:
+
+$$\text{CoNA}_k = \min_{x \ge 0} \sum_i p_i x_i \quad \text{sujeto a} \quad \sum_i e_i x_i = E_k, \quad \underline{r}_{nk} \le \sum_i a_{ni} x_i \le \overline{r}_{nk} \;\; \forall n,$$
+
+con $a_{ni}$ el contenido del nutriente $n$ en 100 g del alimento $i$. Si el problema no tiene solución, el modelo relaja un mínimo a la vez, de 99% a 91% del requerimiento, hasta encontrarla; en este panel eso no ocurre en ninguna de las `r nrow(cona$cost)` combinaciones de miembro, ciudad y mes. El CoNA no excluye ningún alimento ni impone cantidades máximas por alimento, de modo que la dieta resultante es la más barata posible y no tiene por qué parecerse a lo que los hogares comen.
+
+La solución del CoNA permite identificar los nutrientes limitantes, que son aquellos cuya restricción de mínimo se cumple con igualdad en el óptimo: su requerimiento determina qué alimentos se eligen y presiona el costo hacia arriba (Frega et al., 2012; Masters et al., 2018). La importancia económica de cada restricción se mide con su precio sombra, el cambio en el costo mínimo por una unidad adicional del requerimiento. Como los nutrientes tienen unidades distintas, se usa la elasticidad del precio sombra (SPE):
+
+$$\text{SPE}_n = \frac{\Delta \% \,\text{CoNA}^{*}}{\Delta \% \,\underline{r}_{n}},$$
+
+que es el cambio porcentual del costo mínimo cuando el requerimiento del nutriente $n$ sube 1%.
+
+## CoNA consistente con el consumo (CC-CoNA)
+
+El CoNA elige los alimentos que cubren los nutrientes al menor costo, y esa dieta no se parece a lo que compran los hogares. El CC-CoNA agrega una restricción para que la dieta reparta sus cantidades entre las subclases del IPC como lo hace el IPC. Con $g$ una subclase, $s_g$ su participación (reescalada sobre las subclases con alimentos con precio en la ciudad y el mes) y $\alpha \in [0, 1]$:
+
+$$\sum_{i \in g} x_i \;\ge\; \alpha \, s_g \sum_i x_i \qquad \forall g.$$
+
+Con $\alpha = 0$ el problema es el CoNA y con $\alpha = 1$ la dieta reproduce las participaciones del IPC. La ponderación del IPC es una participación en el gasto y aquí se usa como participación en las cantidades, que es la definición del CC-CoNA de la literatura previa del proyecto; eso le da más peso a los grupos caros (la carne de res pesa `r dec(100 * max(ipc$share), 1)`% de las cantidades, casi el doble que la leche). Con $\alpha = 1$ el problema no tiene solución en ninguna ciudad, y con $\alpha = 0{,}9$ la tiene solo en algunas; por eso en las comparaciones entre dietas el CC-CoNA entra con $\alpha = `r ALFA_MATH`$, y los resultados para todos los $\alpha$ están en la sección de robustez. La función que resuelve el problema reproduce el CoNA con $\alpha = 0$ con una diferencia máxima de $2{,}5 \times 10^{-10}$ pesos.
+
+## Costo de la dieta recomendada (CoRD)
+
+El CoRD no es un problema de programación lineal sino una regla de selección. Cada grupo $g$ de la guía tiene un número de intercambios al día $s_{gk}$, ajustado al requerimiento de la ciudad, y un número $n_g$ de alimentos a elegir. En cada grupo se eligen los $n_g$ alimentos de menor precio por intercambio, y cada uno aporta $s_{gk}/n_g$ intercambios:
+
+$$\text{CoRD}_k = \sum_g \sum_{i \in S_g} q_i \, \frac{s_{gk}}{n_g},$$
+
+con $q_i$ el precio de un intercambio del alimento $i$ y $S_g$ el conjunto de los $n_g$ alimentos más baratos del grupo (Herforth et al., 2022). La dieta no tiene restricciones de nutrientes, pero al seguir la guía cubre la mayoría de los requerimientos, como se verifica en la sección de resultados.
+
+## Costo de una dieta saludable (CoAHD)
+
+El CoAHD sigue la misma estructura con una diferencia en la unidad. Cada grupo aporta las kilocalorías $\kappa_{gk}$ de los intercambios de la guía, los alimentos se ordenan por precio por kilocaloría $\pi_i = p_i / e_i$, y el costo es
+
+$$\text{CoAHD}_k = \sum_g \sum_{i \in S'_g} \pi_i \, \frac{\kappa_{gk}}{n_g}.$$
+
+La canasta de dieta saludable de la FAO (FAO, 2025; Herforth et al., 2022) tiene seis grupos y 11 alimentos y una energía fija de 2.330 kcal para todas las personas, con precios nacionales anuales. Aquí se adapta a la guía colombiana: siete grupos, 12 alimentos, la energía de cada miembro y los precios mensuales de cada ciudad. Por eso las cifras no son comparables de forma directa con las que publica la FAO.
+
+## El tratamiento de los azúcares
+
+El azúcar entra de forma distinta en cada dieta, y es una decisión de diseño con consecuencias, así que se deja registrada. El panel tiene cinco alimentos en el grupo de azúcares: azúcar morena, azúcar refinada, azúcar sulfitada, panela cuadrada y panela redonda.
+
+```{r tabla-azucar-metodo}
+azm <- tribble(
+  ~Dieta, ~`Cómo entra el azúcar`, ~`Consecuencia`,
+  "CoCA", "No entra: solo se usa el grupo de cereales, raíces, tubérculos y plátanos.", "Ninguna.",
+  "CoNA", "Los cinco alimentos son candidatos como cualquier otro, sin tope.", "El modelo compra azúcar si ayuda a cubrir nutrientes al menor costo.",
+  "CC-CoNA", "Igual que el CoNA, y además el IPC tiene una subclase de azúcar y otra de panela que la dieta debe cubrir.", "La dieta compra azúcar o panela en todas las ciudades.",
+  "CoRD", "Es un grupo de la guía, con 3 intercambios al día y un alimento.", "Aporta cerca de 11% de la energía de la dieta.",
+  "CoAHD", "Igual que el CoRD, pero el alimento se elige por precio por kilocaloría.", "Aporta la misma energía que en el CoRD."
+)
+kable(azm, booktabs = TRUE, caption = "Cómo entra el azúcar en cada dieta") %>%
+  kable_styling(latex_options = c("hold_position", "striped"), font_size = 9) %>%
+  column_spec(1, width = "1.6cm") %>% column_spec(2, width = "7.2cm") %>% column_spec(3, width = "5.8cm")
+```
+
+La literatura trata los azúcares de dos maneras. La canasta de dieta saludable de la FAO y el Banco Mundial no los incluye: aportan calorías pero casi ningún micronutriente, las guías recomiendan limitarlos y, al dejarlos fuera, el costo funciona como una cota inferior comparable entre países (Herforth et al., 2022). Los estudios que modelan la dieta actual o la transición hacia una saludable sí los incluyen (Vandevijvere et al., 2018). Los resultados principales de este documento mantienen los azúcares, porque el CoRD y el CoAHD siguen la guía colombiana, que sí los incluye, y la sección de robustez muestra qué pasa sin ellos.
+
+## Asequibilidad
+
+Un hogar no puede pagar una dieta si su gasto mensual en alimentos por persona es menor que el costo mensual por persona de la dieta, $z = 30 \times$ costo diario. Con los factores de expansión de la Gran Encuesta Integrada de Hogares (GEIH) se calculan los indicadores de Foster, Greer y Thorbecke (1984):
+
+$$\text{FGT}_{\gamma} = \frac{1}{N} \sum_{j} \omega_j \left(\frac{z - y_j}{z}\right)^{\gamma} \mathbb{1}[y_j < z], \qquad \gamma = 0, 1, 2,$$
+
+con $y_j$ el gasto en alimentos por persona del hogar de la persona $j$ y $\omega_j$ su factor de expansión. El indicador con $\gamma = 0$ es la proporción de la población que no puede pagar la dieta, el de $\gamma = 1$ es la brecha relativa media y el de $\gamma = 2$ es la severidad, que pesa más a quienes están más lejos del umbral (Foster et al., 2010; Gundersen, 2008). El gasto en alimentos de cada hogar es el ingreso del hogar multiplicado por la participación del gasto en alimentos de su decil de ingreso, y los indicadores se calculan por decil, ciudad y mes. Se calculan tres ejercicios: el base, con el costo del hogar de tres personas; el que usa el costo del hogar del mismo tamaño que el hogar observado, con los costos de las dietas de hogares de 3, 4 y 5 personas; y un contrafactual en el que el hogar dedica todo su ingreso a alimentos, que separa la restricción de ingreso de la de la participación del gasto. Los resultados están en la sección 4.6.
+
+# Resultados principales
+
+## El costo de las cinco dietas
+
+```{r resumen-costos}
+pc_mes <- co3 %>%
+  group_by(modelo, ciudad, fecha) %>% summarise(h = sum(costo), .groups = "drop") %>%
+  group_by(modelo, fecha) %>% summarise(pc = mean(h) / 3, .groups = "drop")
+k1000 <- co3 %>% group_by(modelo) %>% summarise(k = mean(kcal1000), .groups = "drop")
+rng <- pc3 %>% group_by(modelo) %>% summarise(min = min(pc), max = max(pc), .groups = "drop")
+tab_res <- pc_modelo %>%
+  left_join(k1000, by = "modelo") %>% left_join(rng, by = "modelo") %>%
+  transmute(Dieta = modelo, `Por persona y día` = cop0(pc), `Al mes (30 días)` = cop0(30 * pc),
+            `Por 1.000 kcal` = cop0(k), `Mínimo entre ciudades` = cop0(min), `Máximo entre ciudades` = cop0(max))
+kable(tab_res, booktabs = TRUE, align = "lrrrrr", label = "tab-resumen",
+      caption = "Costo per cápita de las cinco dietas (COP), promedio de las 13 ciudades y del trimestre") %>%
+  kable_styling(latex_options = c("hold_position", "striped"), font_size = 9)
+```
+
+El Cuadro \ref{tab:tab-resumen} reúne el costo de las cinco dietas. El CoCA es la dieta más barata, con `r cop0(pcm("CoCA"))` COP por persona al día, y le siguen el CoNA (`r cop0(pcm("CoNA"))`), el CoAHD (`r cop0(pcm("CoAHD"))`), el CoRD (`r cop0(pcm("CoRD"))`) y, con $\alpha = `r ALFA_MATH`$, el CC-CoNA (`r cop0(pcm("CC-CoNA"))`). Al mes, una persona necesita `r cop0(30 * pcm("CoCA"))` pesos para cubrir las calorías, `r cop0(30 * pcm("CoNA"))` para cubrir los nutrientes y `r cop0(30 * pcm("CoRD"))` para seguir la guía, que equivalen a `r dec(30 * pcm("CoCA") / SMMLV_2025, 2)`, `r dec(30 * pcm("CoNA") / SMMLV_2025, 2)` y `r dec(30 * pcm("CoRD") / SMMLV_2025, 2)` salarios mínimos de 2025 por persona. Las diferencias entre dietas son mucho mayores que las diferencias entre ciudades.
+
+```{r primas}
+prm <- function(a, b) pcm(a) / pcm(b)
+cv_ciudad <- pc3 %>% group_by(modelo) %>% summarise(rango = max(pc) / min(pc) - 1, .groups = "drop")
+```
+
+Cubrir los nutrientes cuesta `r dec(prm("CoNA", "CoCA"), 2)` veces lo que cuesta cubrir solo las calorías, una prima mayor que la del promedio mundial de `r dec(2.66, 2)` que estiman Bai et al. (2021) con precios al detal de 177 países. Seguir la guía alimentaria cuesta `r dec(pct(pcm("CoRD"), pcm("CoNA")), 0)`% más que cubrir los nutrientes al menor costo en el CoRD y `r dec(pct(pcm("CoAHD"), pcm("CoNA")), 0)`% más en el CoAHD; es decir, la guía obliga a comprar alimentos de siete grupos aunque no sean los más baratos por nutriente. Hirvonen et al. (2020) encuentran un resultado del mismo tipo para la dieta de referencia de EAT-Lancet, que cuesta 1,6 veces la dieta mínima que cubre los nutrientes, y la razón del CoRD frente al CoNA aquí es `r dec(prm("CoRD", "CoNA"), 2)`. Exigir además que la dieta se parezca al consumo del IPC con $\alpha = `r ALFA_MATH`$ cuesta `r dec(pct(pcm("CC-CoNA"), pcm("CoNA")), 0)`% más que el CoNA, más que seguir la guía, lo que ya dice que la composición del IPC no es una dieta barata de cubrir con 16 nutrientes dentro de sus límites. Entre ciudades, el CoNA de la ciudad más cara es `r dec(100 * cv_ciudad$rango[cv_ciudad$modelo == "CoNA"], 0)`% mayor que el de la más barata; en el CoCA la brecha es de `r dec(100 * cv_ciudad$rango[cv_ciudad$modelo == "CoCA"], 0)`%, en el CoRD de `r dec(100 * cv_ciudad$rango[cv_ciudad$modelo == "CoRD"], 0)`% y en el CC-CoNA de `r dec(100 * cv_ciudad$rango[cv_ciudad$modelo == "CC-CoNA"], 0)`%.
+
+```{r fig-5dietas, fig.cap="Costo per cápita de las cinco dietas de costo mínimo por ciudad"}
+knitr::include_graphics(fig("01_costos/fig05_costo_5dietas_percapita.png"))
+```
+
+```{r tabla-5dietas}
+tab5 <- pc3 %>% mutate(pc = cop0(pc)) %>%
+  select(Ciudad = ciudad_lbl, modelo, pc) %>%
+  pivot_wider(names_from = modelo, values_from = pc) %>% arrange(Ciudad)
+kable(tab5, booktabs = TRUE, align = "lrrrrr", longtable = TRUE, label = "tab-5dietas",
+      caption = "Costo per cápita por dieta y ciudad (COP/día)") %>%
+  kable_styling(latex_options = c("hold_position", "striped", "repeat_header"), font_size = 9)
+```
+
+```{r orden-dietas}
+orden_esperado <- c("CoCA", "CoNA", "CoAHD", "CoRD", "CC-CoNA")
+orden_ciudad <- pc3 %>% group_by(ciudad) %>% summarise(ord = paste(modelo[order(pc)], collapse = ">"), .groups = "drop")
+n_orden <- sum(orden_ciudad$ord == paste(orden_esperado, collapse = ">"))
+rk <- pc3 %>% group_by(modelo) %>% mutate(r = rank(pc)) %>% group_by(ciudad) %>% summarise(r = mean(r), .groups = "drop") %>% arrange(r)
+rel_ciudad <- pc3 %>% group_by(modelo) %>% mutate(rel = pc / mean(pc)) %>% ungroup()
+```
+
+La Figura \ref{fig:fig-5dietas} y el Cuadro \ref{tab:tab-5dietas} muestran el costo de cada dieta en cada ciudad. Las cinco dietas se ordenan igual (de menor a mayor, `r lista_es(orden_esperado)`) en `r n_orden` de las 13 ciudades, de modo que la jerarquía entre dietas es una propiedad del panel y no de una ciudad. Lo que sí cambia entre ciudades es el tamaño de cada barra. Según el promedio del lugar que ocupa cada ciudad entre las cinco dietas, las más baratas son `r lista_es(CITY_LABS[head(rk$ciudad, 3)])` y las más caras `r lista_es(CITY_LABS[tail(rk$ciudad, 3)])`, pero ninguna ciudad es la más barata o la más cara en todas: el CC-CoNA de Pasto, por ejemplo, es `r dec(100 * (rel_ciudad$rel[rel_ciudad$modelo == "CC-CoNA" & rel_ciudad$ciudad == "PASTO"] - 1), 0)`% mayor que el promedio de las ciudades, y su CoRD `r dec(abs(100 * (rel_ciudad$rel[rel_ciudad$modelo == "CoRD" & rel_ciudad$ciudad == "PASTO"] - 1)), 0)`% `r ifelse(rel_ciudad$rel[rel_ciudad$modelo == "CoRD" & rel_ciudad$ciudad == "PASTO"] < 1, "menor", "mayor")`.
+
+```{r ciudades}
+w <- pc3 %>% select(ciudad, modelo, pc) %>% pivot_wider(names_from = modelo, values_from = pc)
+cmax <- function(m) CITY_LABS[w$ciudad[which.max(w[[m]])]]
+cmin <- function(m) CITY_LABS[w$ciudad[which.min(w[[m]])]]
+rho <- cor(w$CoNA, w$CoRD, method = "spearman")
+caribe <- w %>% filter(ciudad %in% c("BARRANQUILLA", "CARTAGENA", "MONTERIA"))
+```
+
+El orden de las ciudades cambia según la dieta. El CoCA es más caro en las tres ciudades del Caribe (`r lista_es(CITY_LABS[caribe$ciudad])`, con `r cop0(mean(caribe$CoCA))` COP frente a `r cop0(mean(w$CoCA[!w$ciudad %in% caribe$ciudad]))` en las demás), porque el maíz blanco trillado, que es el alimento más barato por kilocaloría, cuesta 3.150 COP el kilo allí y 2.770 en el resto del país. El CoNA es más caro en `r cmax("CoNA")` y más barato en `r cmin("CoNA")`; el CoRD, en `r cmax("CoRD")` y `r cmin("CoRD")`; el CoAHD, en `r cmax("CoAHD")` y `r cmin("CoAHD")`; y el CC-CoNA, en `r cmax("CC-CoNA")` y `r cmin("CC-CoNA")`. La correlación de rangos entre el CoNA y el CoRD por ciudad es de solo `r dec(rho, 2)`: las ciudades caras para cubrir los nutrientes no son necesariamente las caras para seguir la guía, porque las dos dietas dependen de precios de alimentos distintos (la leche en polvo y la harina de trigo en el CoNA, la leche, las verduras y las frutas en el CoRD). El CC-CoNA es el más disperso entre ciudades: su costo es de `r dec(min(w$"CC-CoNA" / w$CoNA), 2)` veces el CoNA en `r CITY_LABS[w$ciudad[which.min(w$"CC-CoNA" / w$CoNA)]]` y de `r dec(max(w$"CC-CoNA" / w$CoNA), 2)` en `r CITY_LABS[w$ciudad[which.max(w$"CC-CoNA" / w$CoNA)]]`, porque las subclases del IPC que obliga a comprar tienen precios muy distintos entre ciudades.
+
+```{r tabla-mes}
+tm <- pc_mes %>% mutate(Mes = str_to_sentence(format(fecha, "%B"))) %>%
+  select(Mes, modelo, pc) %>% mutate(pc = cop0(pc)) %>%
+  pivot_wider(names_from = modelo, values_from = pc)
+cm <- pc_mes %>% group_by(modelo) %>% summarise(d = 100 * (pc[fecha == max(fecha)] / pc[fecha == min(fecha)] - 1), .groups = "drop")
+kable(tm, booktabs = TRUE, align = "lrrrrr", label = "tab-mes",
+      caption = "Costo per cápita por mes (COP/día), promedio de las 13 ciudades") %>%
+  kable_styling(latex_options = c("hold_position", "striped"), font_size = 9)
+```
+
+El Cuadro \ref{tab:tab-mes} muestra el costo de cada mes. Entre julio y septiembre el costo cambia entre `r dec(min(cm$d))`% y `r dec(max(cm$d))`% según la dieta (`r paste0(cm$modelo, " ", dec(cm$d), "%", collapse = ", ")`). Con tres meses de datos no se puede distinguir una tendencia de la variación mensual, pero llama la atención que el CoAHD sube más que las demás dietas, y más que el CoRD, que elige casi los mismos alimentos: la diferencia está en que el CoAHD los elige por precio por kilocaloría.
+
+```{r fig-primas, fig.cap="Cuántas veces cuesta cada dieta frente al CoCA y frente al CoNA"}
+knitr::include_graphics(fig("01_costos/fig06_primas_modelos.png"))
+```
+
+La Figura \ref{fig:fig-primas} muestra la misma jerarquía ciudad por ciudad: cada barra es cuántas veces cuesta una dieta frente al CoCA o frente al CoNA. La prima del CoRD frente al CoNA va de `r dec(min(w$CoRD / w$CoNA), 2)` en `r CITY_LABS[w$ciudad[which.min(w$CoRD / w$CoNA)]]` a `r dec(max(w$CoRD / w$CoNA), 2)` en `r CITY_LABS[w$ciudad[which.max(w$CoRD / w$CoNA)]]`, y la del CoAHD de `r dec(min(w$CoAHD / w$CoNA), 2)` a `r dec(max(w$CoAHD / w$CoNA), 2)`: seguir la guía cuesta entre `r dec(100 * (min(w$CoAHD / w$CoNA) - 1), 0)`% y `r dec(100 * (max(w$CoRD / w$CoNA) - 1), 0)`% más que cubrir los nutrientes, según la ciudad y la dieta. La prima del CoNA frente al CoCA va de `r dec(min(w$CoNA / w$CoCA), 2)` a `r dec(max(w$CoNA / w$CoCA), 2)`, con el valor más bajo en `r CITY_LABS[w$ciudad[which.min(w$CoNA / w$CoCA)]]` y el más alto en `r CITY_LABS[w$ciudad[which.max(w$CoNA / w$CoCA)]]`. El denominador pesa: el CoCA es más caro en el Caribe, lo que baja la prima allí.
+
+```{r fig-miembros-barras, fig.cap="Costo diario de cada miembro del hogar por dieta y ciudad"}
+knitr::include_graphics(fig("01_costos/fig01_costo_miembro_barras.png"))
+```
+
+```{r miembros3}
+mb <- co3 %>% group_by(modelo, Demo_Group, Sex) %>% summarise(c = mean(costo), k = mean(kcal1000), .groups = "drop")
+mbf <- function(m, dg, sx, col = "c") mb[[col]][mb$modelo == m & mb$Demo_Group == dg & mb$Sex == sx]
+```
+
+La Figura \ref{fig:fig-miembros-barras} desagrega el costo por miembro. Por miembro, el CoNA de la niña (`r cop0(mbf("CoNA", "[10, 14)", 1))` COP al día) es el más alto, por encima del del hombre adulto (`r cop0(mbf("CoNA", "[31,51)", 0))`) y de la mujer adulta (`r cop0(mbf("CoNA", "[31,51)", 1))`), aunque requiere menos energía que el hombre adulto. Eso pasa porque la niña necesita 1.100 mg de calcio, más que los adultos, con menos energía para llevarlos, de modo que su dieta debe ser más densa en nutrientes: su CoNA por 1.000 kcal es de `r cop0(mbf("CoNA", "[10, 14)", 1, "k"))` COP, frente a `r cop0(mbf("CoNA", "[31,51)", 0, "k"))` del hombre y `r cop0(mbf("CoNA", "[31,51)", 1, "k"))` de la mujer. Entre los adultos, el CoNA de la mujer es `r dec(abs(pct(mbf("CoNA", "[31,51)", 1), mbf("CoNA", "[31,51)", 0))), 0)`% menor que el del hombre porque come menos, pero por kilocaloría es más caro, un resultado que coincide con el de Yoshioka et al. (2026) para Cali, donde las mujeres necesitan dietas más densas en nutrientes que los hombres. En el CoRD y el CoAHD, en cambio, el costo es proporcional a la energía, y por eso el hombre es el más caro y la niña y la mujer cuestan parecido.
+
+## Qué compra cada dieta
+
+### CoCA
+
+```{r coca-comp}
+coca_celdas <- coca %>% distinct(ciudad, fecha, Food) %>% count(Food, name = "celdas") %>% arrange(desc(celdas))
+pr_cereales <- panel %>% filter(grepl("CEREALES", grupos_gabas)) %>%
+  group_by(articulo) %>% summarise(cop_100kcal = mean(precio_100g / energia_kcal * 100), .groups = "drop") %>%
+  arrange(cop_100kcal)
+maiz_sku <- elegidos %>% filter(sipsa_name == "Maíz blanco trillado") %>% distinct(exito_name) %>% pull(exito_name) %>% str_squish()
+# CoCA recalculado a mano: requerimiento de energia por el menor precio por kilocaloria
+eer_hogar3 <- readRDS(file.path(interno_dir, "02_dataprep/household eer/household_eer.rds")) %>% group_by(ciudad) %>% summarise(E = sum(eer), .groups = "drop")
+min_kcal <- function(excluir = character()) {
+  panel %>% filter(grepl("CEREALES", grupos_gabas), articulo != "ARROZ PARA SOPA", !is.na(precio_100g), !articulo %in% excluir) %>%
+    mutate(ciudad_norm = toupper(iconv(ciudad, from = "", to = "ASCII//TRANSLIT")), p_kcal = precio_100g / energia_kcal) %>%
+    group_by(ciudad = ciudad_norm, fecha) %>% summarise(p = min(p_kcal), .groups = "drop") %>%
+    group_by(ciudad) %>% summarise(p = mean(p), .groups = "drop") %>%
+    left_join(eer_hogar3, by = "ciudad") %>% mutate(pc = p * E / 3)
+}
+coca_base <- min_kcal(); coca_sinmaiz <- min_kcal(c("Maíz blanco trillado", "Maíz blanco cáscara"))
+```
+
+El CoCA compra un solo alimento por ciudad y mes: `r str_to_lower(coca_celdas$Food[1])` en `r coca_celdas$celdas[1]` de las 39 combinaciones de ciudad y mes y `r str_to_lower(coca_celdas$Food[2])` en las `r coca_celdas$celdas[2]` restantes. Ambos son los alimentos de cereales con menor precio por kilocaloría (`r cop0(pr_cereales$cop_100kcal[1])` y `r cop0(pr_cereales$cop_100kcal[2])` COP por 100 kcal, frente a `r cop0(pr_cereales$cop_100kcal[pr_cereales$articulo == "Arroz excelso"])` del arroz excelso y `r cop0(pr_cereales$cop_100kcal[pr_cereales$articulo == "Harina de trigo"])` de la harina de trigo). El CoCA depende entonces del precio de un producto, y conviene ver ese precio paso a paso, desde el dato original del supermercado hasta el precio por kilocaloría. El Cuadro \ref{tab:tab-cereales} lo hace para los seis cereales más baratos de Bogotá y de Barranquilla, que tienen el precio del maíz en dos niveles distintos.
+
+```{r tabla-cereales}
+z_cer <- zoom$cereales %>%
+  filter(ciudad_norm %in% c("BOGOTA", "BARRANQUILLA"), articulo != "ARROZ PARA SOPA") %>%
+  group_by(ciudad_norm) %>% slice_min(cop_100kcal, n = 6) %>% ungroup()
+t_cer <- z_cer %>%
+  transmute(Ciudad = unname(CITY_LABS[ciudad_norm]), Alimento = articulo,
+            Presentación = ifelse(is.na(gramos_sku), "por kg", paste0(cop0(gramos_sku), " g")),
+            `Precio original (COP)` = cop0(precio_original_mediano),
+            `Precio por 500 g` = cop0(precio_base),
+            `Precio por 100 g` = cop0(precio_100g),
+            `kcal por 100 g` = cop0(energia_kcal),
+            `COP por 100 kcal` = dec(cop_100kcal, 0)) %>%
+  arrange(factor(Ciudad, levels = c("Bogotá", "Barranquilla")))
+kable(t_cer, booktabs = TRUE, align = "llrrrrrr", label = "tab-cereales",
+      caption = "Los seis cereales más baratos por kilocaloría en Bogotá y Barranquilla: del precio original al precio por 100 kcal") %>%
+  kable_styling(latex_options = c("hold_position", "striped", "scale_down"), font_size = 8.5)
+mz <- zoom$producto %>% filter(sipsa_name %in% c("Maíz blanco trillado", "Maíz blanco cáscara"))
+mzb <- function(a, ciu, col) mz[[col]][mz$sipsa_name == a & mz$ciudad_norm == ciu]
+```
+
+La lectura del cuadro es la siguiente. El maíz blanco trillado es un empaque de 1.000 g de una sola marca (`r maiz_sku`), y el precio original que registra el scraper es de `r cop0(mzb("Maíz blanco trillado", "BOGOTA", "precio_original_mediano"))` COP en Bogotá y de `r cop0(mzb("Maíz blanco trillado", "BARRANQUILLA", "precio_original_mediano"))` en Barranquilla. Como el empaque es de 1.000 g, el precio por 500 g es la mitad, `r cop0(mzb("Maíz blanco trillado", "BOGOTA", "precio_base"))` en Bogotá, y el precio por 100 g es de `r cop0(mzb("Maíz blanco trillado", "BOGOTA", "precio_100g"))`; con las `r cop0(mzb("Maíz blanco trillado", "BOGOTA", "energia_kcal"))` kcal por 100 g de la tabla de composición, cada 100 kcal cuestan `r dec(mzb("Maíz blanco trillado", "BOGOTA", "cop_100kcal"), 0)` COP. El maíz blanco con cáscara es un producto de 500 g con un precio original de `r cop0(mzb("Maíz blanco cáscara", "BOGOTA", "precio_original_mediano"))` COP, que baja a 1.380 cuando el scraper registra un descuento de 320 pesos (`r mzb("Maíz blanco cáscara", "BOGOTA", "obs_con_descuento")` de las `r mzb("Maíz blanco cáscara", "BOGOTA", "observaciones")` observaciones de Bogotá). En el trillado, el precio de 2.770 COP coincide con el de 3.150 menos un descuento de 380 pesos, que el scraper registra en `r mzb("Maíz blanco trillado", "BOGOTA", "obs_con_descuento")` de las `r mzb("Maíz blanco trillado", "BOGOTA", "observaciones")` observaciones de Bogotá; en las tres ciudades del Caribe el precio mediano es el de 3.150. La regla de elegir un producto de hasta 500 g no puede actuar aquí, porque no hay otro producto de maíz trillado que elegir, de modo que el precio que mide el CoCA es en parte un precio con descuento.
+
+Si el CoCA se calculara sin esos dos maíces, el alimento más barato sería `r str_to_lower(pr_cereales$articulo[3])` y el CoCA subiría `r dec(pct(mean(coca_sinmaiz$pc), mean(coca_base$pc)), 0)`%, de `r cop0(mean(coca_base$pc))` a `r cop0(mean(coca_sinmaiz$pc))` COP por persona al día. Esa diferencia importa para la comparación con la literatura. Bai et al. (2021) estiman, con precios al detal de 177 países, que cubrir los nutrientes cuesta en promedio 2,66 veces lo que cuesta cubrir solo las calorías; en este panel la razón es de `r dec(prm("CoNA", "CoCA"), 2)` con el maíz y de `r dec(pcm("CoNA") / mean(coca_sinmaiz$pc), 2)` sin él, de modo que la prima alta frente a la referencia internacional depende en buena parte del precio de un solo producto, y debe leerse como una medida de cuán barata es la energía del maíz trillado frente a cualquier otra fuente del panel y no como un rasgo del conjunto de los precios.
+
+### CoNA
+
+```{r cona-comp}
+cc_cona <- readRDS(file.path(interno_dir, "output/figuras/02_composicion/composicion_cona.rds"))
+contrib <- cc_cona$contrib
+tot_contrib <- contrib %>% group_by(Food) %>%
+  summarise(total = sum(contrib), g = sum(qty_pc), celdas = n(), ciudades = n_distinct(ciudad), .groups = "drop") %>%
+  mutate(pct_costo = 100 * total / sum(total)) %>% arrange(desc(total))
+n_alim_cona <- n_distinct(cona$comp$Food[cona$comp$quantity > 0])
+n_por_celda <- cona$comp %>% filter(quantity > 0) %>% group_by(ciudad, fecha) %>% summarise(n = n_distinct(Food), .groups = "drop") %>% pull(n)
+tg <- contrib %>% left_join(cc_cona$grupos, by = "Food") %>% group_by(grupo) %>%
+  summarise(total = sum(contrib), .groups = "drop") %>% mutate(pct = 100 * total / sum(total)) %>% arrange(desc(pct))
+pv <- function(f) tot_contrib$pct_costo[tot_contrib$Food == f]
+```
+
+El CoNA compra `r n_alim_cona` alimentos distintos en las 13 ciudades, entre `r min(n_por_celda)` y `r max(n_por_celda)` en cada ciudad y mes. La leche en polvo es el alimento que más pesa, con `r dec(pv("Leche en polvo"), 0)`% del costo total, y la compra en las 13 ciudades; es la fuente más barata de calcio del panel (940 mg por 100 g), que es el nutriente que más presiona el costo. Le siguen la harina de trigo (`r dec(pv("Harina de trigo"), 0)`%), la azúcar morena (`r dec(pv("Azúcar morena"), 0)`%), la harina precocida de maíz (`r dec(pv("Harina precocida de maíz"), 0)`%) y la carne de res, cogote (`r dec(pv("Carne de res, cogote"), 0)`%), que se compra en `r tot_contrib$ciudades[tot_contrib$Food == "Carne de res, cogote"]` ciudades. Por grupos de la guía, `r paste0(tolower(tg$grupo[1:3]), " (", dec(tg$pct[1:3], 0), "%)", collapse = ", ")` explican la mayor parte del costo. El Cuadro 
+ef{tab:tab-cona-top} lista los doce alimentos que más pesan y la Figura 
+ef{fig:fig-contrib-cona} muestra cómo se reparte entre alimentos el costo de cada ciudad.
+
+```{r tabla-cona-top}
+top <- tot_contrib %>% head(12) %>%
+  transmute(Alimento = Food, `% del costo` = dec(pct_costo), `Ciudades` = ciudades,
+            `Gramos al día por persona` = round(g / 39))
+kable(top, booktabs = TRUE, align = "lrrr", label = "tab-cona-top", format.args = list(big.mark = ".", decimal.mark = ","),
+      caption = "Los doce alimentos que más pesan en el costo del CoNA") %>%
+  kable_styling(latex_options = c("hold_position", "striped"), font_size = 9)
+```
+
+```{r fig-contrib-cona, fig.cap="Contribución de cada alimento al costo per cápita del CoNA; el punto es el costo total"}
+knitr::include_graphics(fig("02_composicion/fig04_contribucion_costo.png"))
+```
+
+### CoNA: cuatro alimentos que conviene revisar de cerca
+
+Cuatro de los alimentos que compra el CoNA son subproductos o cortes de poco aprovechamiento: la carne de res, cogote; las menudencias de pollo; las cabezas de pescado y las rabadillas de pollo. Son productos reales del supermercado, pero su composición y su precio por 100 g se prestan a dudas, y se revisaron uno por uno: el producto que toma el panel, su precio original en el scraper, cómo se convierte ese precio al precio por 100 g de parte comestible, su composición, cuánto aportan a la dieta del CoNA, cómo se compara su precio con el de otras fuentes del mismo nutriente y cuánto sube el costo si se sacan del panel.
+
+```{r zoom-subproductos}
+SUB <- c("Carne de res, cogote", "Menudencias de pollo", "Pescado cabezas", "Rabadillas de pollo")
+zu <- function(f, col) zoom$uso[[col]][zoom$uso$Food == f]
+zsn <- function(f, col) zoom$sin_alimento[[col]][zoom$sin_alimento$escenario == paste("Sin", f)]
+zpn <- function(f, nut, col) zoom$precio_nutriente[[col]][zoom$precio_nutriente$articulo == f & zoom$precio_nutriente$nutriente == nut]
+zpr <- function(f, ciu, col) zoom$producto[[col]][zoom$producto$sipsa_name == f & zoom$producto$ciudad_norm == ciu][1]
+eti <- c("Carne de res, cogote" = "Carne de res, cogote", "Menudencias de pollo" = "Menudencias de pollo",
+         "Pescado cabezas" = "Cabezas de pescado", "Rabadillas de pollo" = "Rabadillas de pollo")
+t_prod <- zoom$producto %>% filter(sipsa_name %in% SUB, !is.na(precio_100g)) %>%
+  group_by(sipsa_name) %>%
+  summarise(Producto = sub(" +", " ", first(exito_name)),
+            Presentación = ifelse(all(is.na(gramos_sku)), "por kg", paste0(cop0(median(gramos_sku, na.rm = TRUE)), " g")),
+            Obs = sum(observaciones, na.rm = TRUE),
+            Original = median(precio_original_mediano, na.rm = TRUE),
+            p100 = mean(precio_100g), pc = first(parte_comestible), tcac = first(codigo_tcac),
+            kcal = first(energia_kcal), prot = first(proteina_g), fe = first(hierro_mg), zn = first(zinc_mg),
+            b12 = first(vitamina_b12_mcg), va = first(vitamina_a_er), .groups = "drop") %>%
+  mutate(sipsa_name = factor(sipsa_name, levels = SUB)) %>% arrange(sipsa_name)
+tp <- t_prod %>% transmute(Alimento = eti[as.character(sipsa_name)], `Producto del supermercado` = Producto, Presentación,
+                           `Precio original (COP)` = cop0(Original),
+                           `COP por 100 g comestible` = cop0(p100), `Parte comestible (%)` = cop0(pc), `Código TCAC` = tcac)
+kable(tp, booktabs = TRUE, align = "lllrrrl", label = "tab-sub-producto",
+      caption = "El producto del supermercado que representa a cada alimento y su precio (mediana de las ciudades con precio)") %>%
+  kable_styling(latex_options = c("hold_position", "striped", "scale_down"), font_size = 8) %>%
+  column_spec(2, width = "5cm")
+```
+
+El Cuadro \ref{tab:tab-sub-producto} muestra el producto que toma el panel en cada caso. El precio original es el que el scraper registra, y se interpreta según la presentación: en la carne de res, cogote, las cabezas de pescado y las rabadillas es el precio de un kilo, y en las menudencias el de una bandeja de 450 g. Para llevarlo al precio por 100 g de parte comestible, el precio de un kilo se divide entre 10 y el de la bandeja entre 4,5, y el resultado se divide entre la parte comestible de la tabla de composición, que es de 100% en la carne de res y las menudencias, de `r cop0(t_prod$pc[t_prod$sipsa_name == "Pescado cabezas"])`% en las cabezas de pescado y de `r cop0(t_prod$pc[t_prod$sipsa_name == "Rabadillas de pollo"])`% en las rabadillas. Los precios de estos productos se mueven más que los de otros alimentos: el kilo de cogote vale entre `r cop0(zpr("Carne de res, cogote", "BOGOTA", "precio_original_min"))` y `r cop0(zpr("Carne de res, cogote", "BOGOTA", "precio_original_max"))` COP en Bogotá según el día, y las cabezas de pescado entre `r cop0(zpr("Pescado cabezas", "BOGOTA", "precio_original_min"))` y `r cop0(zpr("Pescado cabezas", "BOGOTA", "precio_original_max"))`.
+
+```{r tabla-sub-aporte}
+ta <- zoom$uso %>% mutate(Food = factor(Food, levels = SUB)) %>% arrange(Food) %>%
+  left_join(zoom$sin_alimento %>% mutate(Food = sub("^Sin ", "", escenario)), by = "Food") %>%
+  transmute(Alimento = eti[as.character(Food)], Ciudades = ciudades, `g al día` = cop0(gramos_dia), `% del costo` = dec(pct_costo, 1),
+            `% de la proteína` = dec(pct_proteina_g, 0), `% del hierro` = dec(pct_hierro_mg, 0), `% del zinc` = dec(pct_zinc_mg, 0),
+            `% de la B12` = dec(pct_vitamina_b12_mcg, 0), `% de la vit. A` = dec(pct_vitamina_a_er, 0),
+            `CoNA sin el alimento` = paste0(mas(100 * cambio_medio), " (hasta ", dec(100 * cambio_max, 1), "%)"))
+kable(ta, booktabs = TRUE, align = "lrrrrrrrrr", label = "tab-sub-aporte",
+      caption = "Qué aportan a la dieta del CoNA donde la compra (promedio de los casos de miembro, ciudad y mes) y cuánto sube el CoNA si se saca del panel") %>%
+  kable_styling(latex_options = c("hold_position", "striped", "scale_down"), font_size = 8)
+```
+
+El Cuadro \ref{tab:tab-sub-aporte} resume lo que cada alimento aporta en los casos en que el CoNA lo compra, y el Cuadro \ref{tab:tab-sub-precio} compara su precio por unidad de nutriente con el de los demás alimentos del grupo de carnes, huevos y leguminosas, que es donde compiten.
+
+```{r tabla-sub-precio}
+nut_orden <- c("Proteína", "Hierro", "Zinc", "Vitamina B12", "Vitamina A")
+unid <- c("Proteína" = "COP por g", "Hierro" = "COP por mg", "Zinc" = "COP por mg", "Vitamina B12" = "COP por mcg", "Vitamina A" = "COP por mcg ER")
+tpn <- zoom$precio_nutriente %>% mutate(nutriente = factor(nutriente, levels = nut_orden), articulo = factor(articulo, levels = SUB)) %>%
+  arrange(nutriente, articulo) %>%
+  transmute(Nutriente = paste0(nutriente, " (", unid[as.character(nutriente)], ")"), Alimento = eti[as.character(articulo)],
+            `Precio del alimento` = ifelse(p_alimento < 10, dec(p_alimento, 1), cop0(p_alimento)),
+            `Posición entre los alimentos del grupo` = paste0(dec(rango_medio, 0), " de ", dec(n_alimentos, 0)),
+            `Mediana del grupo` = ifelse(p_mediana < 10, dec(p_mediana, 1), cop0(p_mediana)),
+            `Más barato del grupo` = ifelse(p_min < 10, dec(p_min, 1), cop0(p_min)))
+kable(tpn, booktabs = TRUE, align = "llrrrr", label = "tab-sub-precio",
+      caption = "Precio por unidad de nutriente de cada alimento frente al grupo de carnes, huevos y leguminosas (promedio de ciudades y meses)") %>%
+  kable_styling(latex_options = c("hold_position", "striped", "scale_down"), font_size = 8) %>%
+  collapse_rows(columns = 1, latex_hline = "major", valign = "top")
+```
+
+La carne de res, cogote es el caso más delicado. El producto es hueso de res para sustancia, pero el mapeo le asigna la composición de la carne de res con grasa del código `r t_prod$tcac[t_prod$sipsa_name == "Carne de res, cogote"]` de la tabla de composición (`r cop0(t_prod$kcal[t_prod$sipsa_name == "Carne de res, cogote"])` kcal y `r dec(t_prod$prot[t_prod$sipsa_name == "Carne de res, cogote"], 1)` g de proteína por 100 g), de modo que cada gramo de hueso cuenta como un gramo de carne. Por eso el cogote es la fuente de proteína más barata del panel: `r dec(zpn("Carne de res, cogote", "Proteína", "p_alimento"), 0)` COP por gramo de proteína, frente a una mediana de `r cop0(zpn("Carne de res, cogote", "Proteína", "p_mediana"))` en el grupo, y también la del zinc (posición `r dec(zpn("Carne de res, cogote", "Zinc", "rango_medio"), 0)` entre `r dec(zpn("Carne de res, cogote", "Zinc", "n_alimentos"), 0)`). El CoNA lo compra en `r zu("Carne de res, cogote", "ciudades")` ciudades, `r cop0(zu("Carne de res, cogote", "gramos_dia"))` g al día en promedio cuando lo compra, y aporta `r dec(zu("Carne de res, cogote", "pct_proteina_g"), 0)`% de la proteína y `r dec(zu("Carne de res, cogote", "pct_zinc_mg"), 0)`% del zinc de esas dietas con solo `r dec(zu("Carne de res, cogote", "pct_costo"), 0)`% de su costo. Sin el cogote el CoNA sube `r dec(100 * zsn("Carne de res, cogote", "cambio_medio"), 1)`% en promedio y hasta `r dec(100 * zsn("Carne de res, cogote", "cambio_max"), 1)`% en `r CITY_LABS[zsn("Carne de res, cogote", "ciudad_max")]`. Si el hueso se comprara de verdad como carne, el costo estaría subestimado; si la composición correcta fuera la de un hueso con poca carne, el CoNA estaría subestimado todavía más. La decisión de qué hacer con este mapeo (corregir la composición, asignarle otro producto o dejarlo) está pendiente de una consulta con el equipo de nutrición del proyecto, y por eso los resultados se reportan con el cogote y también sin él en la sección de robustez.
+
+Las menudencias de pollo son, junto con las cabezas de pescado, la fuente más barata de vitamina B12 del grupo (`r dec(zpn("Menudencias de pollo", "Vitamina B12", "p_alimento"), 0)` COP por mcg, posición `r dec(zpn("Menudencias de pollo", "Vitamina B12", "rango_medio"), 0)` de `r dec(zpn("Menudencias de pollo", "Vitamina B12", "n_alimentos"), 0)`) y la principal fuente de vitamina A en las ciudades donde se compran: aportan `r dec(zu("Menudencias de pollo", "pct_vitamina_a_er"), 0)`% de la vitamina A y `r dec(zu("Menudencias de pollo", "pct_vitamina_b12_mcg"), 0)`% de la B12 de esas dietas con `r dec(zu("Menudencias de pollo", "pct_costo"), 0)`% del costo, en solo `r cop0(zu("Menudencias de pollo", "gramos_dia"))` g diarios, porque la composición que el mapeo les asigna (código `r t_prod$tcac[t_prod$sipsa_name == "Menudencias de pollo"]`, con `r cop0(t_prod$va[t_prod$sipsa_name == "Menudencias de pollo"])` mcg ER de vitamina A y `r dec(t_prod$b12[t_prod$sipsa_name == "Menudencias de pollo"], 1)` mcg de B12 por 100 g) es la de una menudencia con hígado, que concentra esos dos nutrientes. Se compran en `r zu("Menudencias de pollo", "ciudades")` ciudades y su efecto sobre el costo total es mínimo (`r mas(100 * zsn("Menudencias de pollo", "cambio_medio"), 2)` sin ellas), porque el nutriente que aportan tiene sustitutos de precio parecido. Es un alimento que se consume en Colombia, de modo que su presencia en la dieta es plausible; lo que hay que confirmar es que esa composición corresponda a la bandeja que se vende, porque el nombre del producto ("menudencia fina") no permite saber qué proporción es hígado.
+
+Las cabezas de pescado son la fuente más barata de vitamina B12 del grupo, casi empatada con las menudencias (`r dec(zpn("Pescado cabezas", "Vitamina B12", "p_alimento"), 0)` COP por mcg frente a una mediana de `r cop0(zpn("Pescado cabezas", "Vitamina B12", "p_mediana"))` en el grupo), y por eso el CoNA las compra en `r zu("Pescado cabezas", "ciudades")` ciudades, `r cop0(zu("Pescado cabezas", "gramos_dia"))` g al día, con `r dec(zu("Pescado cabezas", "pct_costo"), 0)`% del costo y `r dec(zu("Pescado cabezas", "pct_vitamina_b12_mcg"), 0)`% de la B12 de esas dietas. Su precio por 100 g de parte comestible (`r cop0(t_prod$p100[t_prod$sipsa_name == "Pescado cabezas"])` COP) es alto porque solo `r cop0(t_prod$pc[t_prod$sipsa_name == "Pescado cabezas"])`% de la cabeza se come, y aun así es barato por microgramo de B12. Sin ellas el CoNA sube `r dec(100 * zsn("Pescado cabezas", "cambio_medio"), 1)`%.
+
+Las rabadillas de pollo son el caso más frágil por la cantidad de información que lo respalda. Solo entran al CoNA en una ciudad (`r zu("Rabadillas de pollo", "celdas")` casos de miembro, ciudad y mes), y en esos casos el modelo compra `r cop0(zu("Rabadillas de pollo", "gramos_dia"))` g al día, que aportan `r dec(zu("Rabadillas de pollo", "pct_proteina_g"), 0)`% de la proteína de la dieta. El precio de Bogotá, la única ciudad donde el CoNA las compra, sale de `r zpr("Rabadillas de pollo", "BOGOTA", "observaciones")` observaciones del scraper en todo el trimestre, y otras dos del mismo producto, con precios del orden de 1.500 COP el kilo, parecen un error de captura. El efecto sobre el costo es pequeño en promedio (`r mas(100 * zsn("Rabadillas de pollo", "cambio_medio"), 1)`), pero llega a `r dec(100 * zsn("Rabadillas de pollo", "cambio_max"), 1)`% en `r CITY_LABS[zsn("Rabadillas de pollo", "ciudad_max")]`, y es el resultado de una ciudad que depende de un precio observado muy pocas veces.
+
+### CC-CoNA
+
+```{r ccona-comp}
+shares_cc <- cc$shares %>% filter(alpha_val %in% c(0, ALFA_REFERENCIA)) %>%
+  group_by(alpha_val, Group) %>% summarise(s = mean(share_observada), .groups = "drop") %>%
+  left_join(ipc %>% select(Group = subclase_codigo, nombre = subclase_nombre, ipc = share), by = "Group")
+sh <- function(a, nom) shares_cc$s[shares_cc$alpha_val == a & grepl(nom, shares_cc$nombre)][1]
+n_alim_cc <- n_distinct(cc$comp$Food[cc$comp$alpha_val == ALFA_REFERENCIA & cc$comp$quantity > 0])
+n_alim_cona0 <- n_distinct(cc$comp$Food[cc$comp$alpha_val == 0 & cc$comp$quantity > 0])
+cc_costo <- co3 %>% filter(modelo == "CC-CoNA") %>% group_by(Demo_Group, Sex) %>% summarise(c = mean(costo), .groups = "drop")
+```
+
+```{r ccona-prima075}
+prima_a075 <- cc$cost %>% group_by(alpha_val, ciudad, fecha) %>% summarise(h = sum(cost_day), ok = all(!is.na(cost_day)), .groups = "drop") %>%
+  filter(ok) %>% group_by(alpha_val, ciudad) %>% summarise(pc = mean(h) / 3, m = n(), .groups = "drop") %>% filter(m == 3) %>%
+  group_by(ciudad) %>% mutate(prima = pc / pc[alpha_val == 0]) %>% ungroup() %>% filter(alpha_val == 0.75) %>% summarise(p = mean(prima)) %>% pull(p)
+```
+
+El CC-CoNA agrega al CoNA una restricción por subclase del IPC: la cantidad que la dieta compra de cada subclase debe ser al menos $\alpha$ veces la participación que esa subclase tiene en el IPC. Con $\alpha = `r ALFA_MATH`$, cada subclase tiene que ocupar al menos la mitad de lo que ocupa en el IPC, y el modelo es libre de comprar más. La elección de $\alpha$ es una decisión de método y no un resultado, y se tomó así: con $\alpha = 1$ la dieta tendría que reproducir exactamente la composición del IPC y el problema no tiene solución en ninguna ciudad, porque, en el ensayo de Bogotá en julio, esa composición, con mucha carne, huevo, queso y aceite, supera el máximo de lípidos de los miembros; con $\alpha = 0{,}75$ hay solución en las 13 ciudades, pero el costo ya es `r dec(prima_a075, 2)` veces el del CoNA; y $\alpha = `r ALFA_MATH`$ es el valor intermedio que se lee de forma directa ("al menos la mitad del IPC") y que se puede cumplir en todas las ciudades y meses. La sección de robustez muestra los resultados para todos los valores, y la elección del valor de referencia queda como decisión pendiente de discutir con el equipo.
+
+El CC-CoNA con $\alpha = `r ALFA_MATH`$ compra `r n_alim_cc` alimentos distintos, frente a `r n_alim_cona0` del CoNA, porque cada una de las `r nrow(ipc)` subclases del IPC exige al menos un alimento. La Figura \ref{fig:fig-ccona-comp} muestra qué cambia, y se lee por barras: cada fila es una subclase del IPC, la barra gris es su peso en el IPC y las de color son el peso que tiene en la dieta del CoNA y del CC-CoNA. El CoNA queda por debajo del IPC en las carnes y los derivados, y por encima en la leche, los aceites y las hortalizas. No compra arroz ni derivados cárnicos y compra poca carne de aves, pescado, cerdo y queso, que el IPC pesa mucho. Con $\alpha = `r ALFA_MATH`$, la carne de aves pasa de `r dec(100 * sh(0, "Carne de aves"), 1)`% a `r dec(100 * sh(ALFA_REFERENCIA, "Carne de aves"), 1)`% de las cantidades de la dieta, el arroz de `r dec(100 * sh(0, "Arroz"), 1)`% a `r dec(100 * sh(ALFA_REFERENCIA, "Arroz"), 1)`%, los productos de río y mar de `r dec(100 * sh(0, "Productos de rio"), 1)`% a `r dec(100 * sh(ALFA_REFERENCIA, "Productos de rio"), 1)`%, la carne de cerdo de `r dec(100 * sh(0, "Carne de cerdo"), 1)`% a `r dec(100 * sh(ALFA_REFERENCIA, "Carne de cerdo"), 1)`% y los quesos de `r dec(100 * sh(0, "Quesos"), 1)`% a `r dec(100 * sh(ALFA_REFERENCIA, "Quesos"), 1)`%. La carne de res ya ocupa `r dec(100 * sh(0, "Carne de res"), 1)`% de la dieta del CoNA, por el cogote, y queda en `r dec(100 * sh(ALFA_REFERENCIA, "Carne de res"), 1)`%, que es justo la mitad de su participación en el IPC (`r dec(100 * ipc$share[ipc$subclase_nombre == "Carne de res y derivados"], 1)`%): es la restricción que se cumple con igualdad, y la que fija el valor de $\alpha$ para esa subclase.
+
+```{r ccona-costo-subclase}
+pn <- panel %>% transmute(Food = articulo, ciudad = toupper(iconv(ciudad, from = "", to = "ASCII//TRANSLIT")), fecha = as.Date(fecha), p = precio_100g)
+n_pers <- 117
+cc_sub <- cc$comp %>% filter(alpha_val %in% c(0, ALFA_REFERENCIA)) %>% mutate(fecha = as.Date(fecha)) %>%
+  left_join(pn, by = c("Food", "ciudad", "fecha")) %>%
+  mutate(costo = quantity / 100 * p) %>%
+  group_by(alpha_val, Group) %>% summarise(costo = sum(costo, na.rm = TRUE) / n_pers, g = sum(quantity) / n_pers, .groups = "drop") %>%
+  pivot_wider(names_from = alpha_val, values_from = c(costo, g), values_fill = 0)
+names(cc_sub) <- c("Group", "costo_0", "costo_a", "g_0", "g_a")
+cc_sub <- cc_sub %>% left_join(ipc %>% select(Group = subclase_codigo, nombre = subclase_nombre, ipc = share), by = "Group") %>%
+  mutate(dif = costo_a - costo_0, parte = 100 * dif / sum(dif)) %>% arrange(desc(dif))
+tcs <- cc_sub %>% head(7) %>%
+  transmute(Subclase = gsub("^(.)", "\\U\\1", tolower(nombre), perl = TRUE), `Peso en el IPC (%)` = dec(100 * ipc, 1),
+            `CoNA` = cop0(costo_0), `CC-CoNA` = cop0(costo_a), `Aumento` = cop0(dif), `% del aumento total` = dec(parte, 0))
+kable(tcs, booktabs = TRUE, align = "lrrrrr", label = "tab-ccona-sub",
+      caption = "Las siete subclases del IPC que más explican el costo adicional del CC-CoNA (COP por persona y día)") %>%
+  kable_styling(latex_options = c("hold_position", "striped"), font_size = 9)
+```
+
+El Cuadro \ref{tab:tab-ccona-sub} descompone el costo adicional. El CC-CoNA cuesta `r cop0(sum(cc_sub$dif))` COP al día más que el CoNA por persona, y `r dec(sum(cc_sub$parte[1:3]), 0)`% de ese aumento viene de tres subclases: `r lista_es(tolower(head(cc_sub$nombre, 3)))`. La primera, el café, es la más reveladora. El IPC le da `r dec(100 * cc_sub$ipc[1], 1)`% de las cantidades, y con $\alpha = `r ALFA_MATH`$ la dieta debe tener al menos `r dec(100 * as.numeric(ALFA_REFERENCIA) * cc_sub$ipc[1], 1)`% de sus gramos en café, unos `r dec(cc_sub$g_a[1], 0)` g por persona y día que, a `r cop0(100 * cc_sub$costo_a[1] / cc_sub$g_a[1])` COP por 100 g, cuestan `r cop0(cc_sub$costo_a[1])` COP al día, sin aportar energía ni nutrientes que el CoNA necesite. Es una consecuencia de la definición del CC-CoNA que se usa: el IPC pondera el gasto, y aquí esa ponderación se aplica a las cantidades, de modo que las subclases caras por gramo (el café, las carnes preparadas, la carne de aves) quedan con una cantidad obligatoria mayor que la que compran los hogares. Una conversión de la ponderación de gasto a cantidades con los precios daría una restricción más baja para esas subclases y probablemente una prima menor, y es la primera revisión que conviene hacer del modelo. Los demás aumentos vienen de alimentos caros por unidad de energía (las carnes, huevos y leguminosas tienen una mediana de `r cop0(pg[["Mediana por 100 kcal"]][pg$Grupo == "Carnes, huevos y leguminosas"])` COP por 100 kcal, frente a `r cop0(pg[["Mediana por 100 kcal"]][pg$Grupo == "Cereales, raíces y plátanos"])` de los cereales). Por eso el CC-CoNA cuesta `r dec(pct(pcm("CC-CoNA"), pcm("CoNA")), 0)`% más que el CoNA y más que el CoRD, que también exige variedad, pero la exige entre los grupos de la guía y no entre las subclases del IPC.
+
+```{r fig-ccona-comp, fig.cap="Composición de la dieta del CoNA y del CC-CoNA frente a la del IPC"}
+knitr::include_graphics(fig("07_robustez/fig24_ccona_composicion.png"))
+```
+
+### CoRD y CoAHD
+
+```{r cord-comp}
+cc_g <- readRDS(file.path(interno_dir, "output/figuras/02_composicion/composicion_cord_coahd.rds"))
+por_g <- cc_g$comp %>%
+  group_by(modelo, ciudad, fecha, Demo_Group, Sex, grupo) %>% summarise(costo = sum(Cost), .groups = "drop") %>%
+  group_by(modelo, grupo) %>% summarise(costo = mean(costo), .groups = "drop") %>%
+  group_by(modelo) %>% mutate(pct = 100 * costo / sum(costo)) %>% ungroup()
+pg2 <- function(m, g) por_g$pct[por_g$modelo == m & por_g$grupo == g]
+sets <- function(x) x %>% group_by(ciudad, fecha, Group) %>% summarise(a = paste(sort(unique(Food)), collapse = "|"), .groups = "drop")
+coinc <- inner_join(sets(cord$comp), sets(coahd$comp), by = c("ciudad", "fecha", "Group"), suffix = c("_cord", "_coahd")) %>%
+  mutate(igual = a_cord == a_coahd)
+coinc_g <- coinc %>% group_by(Group) %>% summarise(p = 100 * mean(igual), .groups = "drop")
+carnes_cord <- cord$comp %>% filter(grepl("Carnes", Group)) %>% distinct(ciudad, fecha, Food) %>% count(Food, sort = TRUE)
+carnes_ahd  <- coahd$comp %>% filter(grepl("Carnes", Group)) %>% distinct(ciudad, fecha, Food) %>% count(Food, sort = TRUE)
+cord_paper <- tryCatch(readRDS(file.path(interno_dir, "../review-food-security-paper/02_models/cord/cord_results.rds"))$comp, error = function(e) NULL)
+n_celdas <- n_distinct(paste(cord$comp$ciudad, cord$comp$fecha))
+```
+
+En los dos modelos el número de alimentos por grupo está fijo, así que lo que cambia entre ciudades es cuáles alimentos se eligen y cuánto cuestan. Los lácteos, que son un solo alimento por ciudad, pesan `r dec(pg2("CoRD", "Lácteos"), 0)`% del costo del CoRD y `r dec(pg2("CoAHD", "Lácteos"), 0)`% del CoAHD: el grupo pide unas 380 kcal y hay un solo alimento en el que ponerlas. Les siguen las carnes, huevos y leguminosas (`r dec(pg2("CoRD", "Carnes, huevos y leguminosas"), 0)`% y `r dec(pg2("CoAHD", "Carnes, huevos y leguminosas"), 0)`%), las verduras, las frutas y los cereales; las grasas pesan `r dec(pg2("CoRD", "Grasas"), 0)`% y los azúcares `r dec(pg2("CoRD", "Azúcares"), 0)`% en el CoRD. Es una estructura parecida a la que encuentran Yoshioka et al. (2026) para Cali, donde la carne, los huevos y las leguminosas, los lácteos y las frutas y verduras suman cerca de 70% del CoRD. La Figura 
+ef{fig:fig-grupos} muestra ese reparto en cada ciudad.
+
+```{r fig-grupos, fig.cap="Costo per cápita de CoRD y CoAHD por grupo de alimentos"}
+knitr::include_graphics(fig("02_composicion/fig07_costo_por_grupo.png"))
+```
+
+CoRD y CoAHD eligen exactamente los mismos alimentos en `r sum(coinc$igual)` de las `r nrow(coinc)` combinaciones de ciudad, mes y grupo. La Figura 
+ef{fig:fig-elegidos} muestra los alimentos que elige cada dieta en cada ciudad. Las diferencias están en los lácteos (coinciden en `r dec(coinc_g$p[grepl("Leche", coinc_g$Group)], 0)`% de los casos: en algunas ciudades el CoRD escoge el queso campesino y el CoAHD la leche en polvo) y en las carnes, huevos y leguminosas (`r dec(coinc_g$p[grepl("Carnes", coinc_g$Group)], 0)`%).
+
+El grupo de carnes, huevos y leguminosas se llena casi todo con leguminosas. En el CoRD, `r lista_es(paste0(str_to_lower(carnes_cord$Food[1:3]), " (", carnes_cord$n[1:3], ")"))` son los alimentos elegidos más seguido entre las `r n_celdas` combinaciones de ciudad y mes, y no entra ninguna carne de res, cerdo ni pescado; el huevo (blanquillo) es el único alimento de origen animal que aparece de forma recurrente, en `r carnes_cord$n[carnes_cord$Food == "Blanquillo entero fresco"]` combinaciones, y las rabadillas de pollo aparecen en `r carnes_cord$n[carnes_cord$Food == "Rabadillas de pollo"]`. En el CoAHD, que ordena por kilocaloría, entran además la carne de res, cogote en `r carnes_ahd$n[carnes_ahd$Food == "Carne de res, cogote"]` combinaciones y el tocino de papada en `r carnes_ahd$n[carnes_ahd$Food == "Carne de cerdo, tocino papada"]`. La razón es que el fríjol y el garbanzo cuestan menos por intercambio que las carnes del panel, y como el modelo elige los dos alimentos más baratos del grupo, las leguminosas lo llenan; en el CoAHD, que ordena por kilocaloría, el cogote y el tocino resultan más baratos que el garbanzo. `r if (!is.null(cord_paper)) paste0("El mismo resultado se obtuvo en el CoRD de la estimación previa para Bogotá, Cali y Medellín entre 2019 y 2024, donde el grupo se llenó solo con ", lista_es(str_to_lower(unique(cord_paper$Food[grepl("Carnes", cord_paper$Group)]))), ", de modo que no es una consecuencia de los datos de 2025.") else ""` En la práctica, elegir los dos alimentos más baratos del grupo lo llena con las leguminosas más baratas, y el grupo cumple con los intercambios que pide la guía sin incluir carne ni pescado. La sección de adecuación nutricional muestra la consecuencia de esa elección sobre la vitamina B12.
+
+```{r fig-elegidos, fig.cap="Alimentos elegidos por CoRD y CoAHD en cada ciudad"}
+knitr::include_graphics(fig("02_composicion/fig09_alimentos_elegidos.png"))
+```
+
+## Qué restringe al CoNA
+
+```{r restricciones}
+cona4 <- readRDS(file.path(interno_dir, "03_models/cona/cona_results_4m.rds"))
+sp_g_tab <- cona4$spe %>% filter(constraint == "Min", Age == "[31,51) gest") %>% group_by(Nutrients) %>% summarise(spe = mean(SPE), .groups = "drop")
+sp_g <- function(n) sp_g_tab$spe[sp_g_tab$Nutrients == n]
+spe_all <- cona$spe %>% group_by(Nutrients, constraint) %>% summarise(activa = mean(abs(SPE) > 1e-9), spe = mean(SPE), .groups = "drop")
+spe_miembro <- cona$spe %>% group_by(Nutrients, constraint, Age, Sex) %>% summarise(spe = mean(SPE), activa = mean(abs(SPE) > 1e-9), .groups = "drop")
+NUT_ES <- c(Calcium = "calcio", Sodium = "sodio", VitaminC = "vitamina C", Magnesium = "magnesio", VitaminA = "vitamina A",
+            Protein = "proteína", Zinc = "zinc", Iron = "hierro", Folate = "folato", Phosphorus = "fósforo", Niacin = "niacina",
+            Thiamine = "tiamina", Riboflavin = "riboflavina", VitaminB12 = "vitamina B12", Lipids = "lípidos", Carbohydrates = "carbohidratos")
+sv <- function(n, tipo = "Min") spe_all$spe[spe_all$Nutrients == n & spe_all$constraint == tipo]
+lim_min <- cona$limit %>% group_by(Nutrients) %>% summarise(freq = mean(Limiting == 1, na.rm = TRUE), .groups = "drop")
+spe_all <- spe_all %>% left_join(lim_min, by = "Nutrients") %>% mutate(activa = ifelse(constraint == "Min", freq, activa)) %>% select(-freq)
+av <- function(n, tipo = "Min") 100 * spe_all$activa[spe_all$Nutrients == n & spe_all$constraint == tipo]
+sm <- function(n, tipo, age, sex) spe_miembro$spe[spe_miembro$Nutrients == n & spe_miembro$constraint == tipo & spe_miembro$Age == age & spe_miembro$Sex == sex]
+tl <- spe_all %>% filter(activa > 0.01 | abs(spe) > 0.001) %>% arrange(desc(abs(spe))) %>%
+  transmute(Nutriente = gsub("Vitamina ([abc])", "Vitamina \\U\\1", str_to_sentence(NUT_ES[Nutrients]), perl = TRUE),
+            Límite = ifelse(constraint == "Min", "Mínimo", "Máximo"),
+            `Restricción activa (% de los casos)` = dec(100 * activa, 0),
+            `Elasticidad del precio sombra` = dec(spe, 3))
+```
+
+Una restricción está activa cuando la dieta de mínimo costo cumple el requerimiento justo en el límite (en los máximos, cuando su precio sombra es distinto de cero), y es lo que obliga a gastar más de lo que costaría cubrir solo las calorías. Como el modelo tiene mínimos y máximos, hay restricciones activas de los dos tipos, y el Cuadro \ref{tab:tab-spe} las ordena por la elasticidad de su precio sombra, que mide cuántos puntos porcentuales cambia el costo mínimo cuando el límite sube 1%. En un mínimo la elasticidad es positiva (exigir más nutriente encarece la dieta) y en un máximo es negativa (permitir más nutriente la abarata).
+
+```{r tabla-spe}
+kable(tl, booktabs = TRUE, align = "llrr", label = "tab-spe",
+      caption = "Restricciones activas del CoNA y elasticidad de su precio sombra, promedio de miembros, ciudades y meses") %>%
+  kable_styling(latex_options = c("hold_position", "striped"), font_size = 9)
+```
+
+La lectura del Cuadro \ref{tab:tab-spe} cambia lo que se esperaría mirando solo los mínimos. Entre los mínimos, el calcio, el sodio y la vitamina C están activos en todos los casos de miembro, ciudad y mes, la vitamina A en `r dec(av("VitaminA"), 0)`%, la proteína en `r dec(av("Protein"), 0)`%, el magnesio en `r dec(av("Magnesium"), 0)`% y el zinc en `r dec(av("Zinc"), 0)`%. El calcio es el mínimo que más pesa, con una elasticidad de `r dec(sv("Calcium"), 2)`: subir 10% el mínimo de calcio subiría el costo cerca de `r dec(10 * sv("Calcium"), 1)`%. Le siguen la proteína (`r dec(sv("Protein"), 2)`), la vitamina C (`r dec(sv("VitaminC"), 3)`) y el zinc (`r dec(sv("Zinc"), 3)`). Aunque el sodio y la vitamina C están activos siempre, su precio sombra es bajo: el mínimo de sodio de 1.500 mg se cubre con sal, que cuesta muy poco.
+
+Pero la restricción de mayor elasticidad no es un mínimo: es el máximo de carbohidratos, que está activo en `r dec(av("Carbohydrates", "Max"), 0)`% de los casos con una elasticidad de `r dec(sv("Carbohydrates", "Max"), 2)`, es decir, que relajar ese máximo en 1% abarataría el CoNA `r dec(abs(sv("Carbohydrates", "Max")), 2)`%. La razón es económica: la energía más barata del panel está en cereales, raíces y azúcares, que son carbohidratos casi puros, y un tope a los carbohidratos obliga al modelo a comprar parte de su energía en grasas y proteínas, que cuestan más por kilocaloría. Siguen el máximo de lípidos (activo en `r dec(av("Lipids", "Max"), 0)`% de los casos, elasticidad de `r dec(sv("Lipids", "Max"), 2)`), el máximo de magnesio (`r dec(av("Magnesium", "Max"), 0)`%, `r dec(sv("Magnesium", "Max"), 2)`) y el de folato (`r dec(av("Folate", "Max"), 0)`%, `r dec(sv("Folate", "Max"), 2)`). El máximo de magnesio está activo sobre todo para el hombre adulto y la adolescente, cuyo mínimo coincide con el máximo de 350 mg, y no porque el alimento que lo aporta sea caro.
+
+El peso del máximo de carbohidratos depende de cómo se fije su nivel. Como se explicó en la sección de datos, los límites de macronutrientes están en gramos calculados con la energía de referencia de FoodpriceR y no con la de cada miembro, y para la niña, cuyo EER es `r dec(100 * (re(M_N, "razon_foodpricer") - 1), 0)`% mayor que esa referencia, el máximo permitido es solo `r dec(macro$C_max[macro$Miembro == "Niña"], 0)`% de su energía. En ella la elasticidad del máximo de carbohidratos es de `r dec(sm("Carbohydrates", "Max", "[10, 14)", 1), 2)`, más del doble que la del promedio, y es la restricción con mayor influencia sobre su costo. La sección de robustez mide qué pasa si los gramos se escalan a la energía de cada miembro.
+
+El calcio pesa más para las mujeres y la niña, que necesitan más de él por kilocaloría que el hombre adulto: su elasticidad es de `r dec(sm("Calcium", "Min", "[10, 14)", 1), 2)` para la niña, `r dec(sm("Calcium", "Min", "[31,51)", 1), 2)` para la mujer adulta y `r dec(sm("Calcium", "Min", "[31,51)", 0), 2)` para el hombre adulto. La lista de mínimos activos coincide en lo esencial con la de Yoshioka et al. (2026) para Cali, que encuentran la vitamina C, la vitamina A, la B12 y el calcio como nutrientes limitantes, y con la de otros modelos de programación lineal en la literatura, donde el calcio y la vitamina C limitan el costo en Dinamarca (Parlesak et al., 2016) y el calcio y el sodio en Brasil (Verly-Jr et al., 2019). El peso del calcio coincide también con la literatura internacional, donde es el nutriente al que más responde el costo de la dieta (Bai et al., 2021).
+
+```{r fig-binding, fig.cap="Restricciones nutricionales activas en el CoNA"}
+knitr::include_graphics(fig("03_restricciones/fig10_restricciones_activas.png"))
+```
+
+```{r fig-sombra, fig.cap="Precio sombra de las restricciones nutricionales"}
+knitr::include_graphics(fig("03_restricciones/fig11_precios_sombra.png"))
+```
+
+La Figura \ref{fig:fig-binding} muestra, por miembro y ciudad, qué mínimos están activos, y la Figura \ref{fig:fig-sombra} la elasticidad de su precio sombra. El patrón se repite en las 13 ciudades en lo esencial, lo que sugiere que el requerimiento de cada miembro pesa más que el precio local para saber qué restringe al CoNA: el calcio pesa más en la niña que en los adultos, y la gestante, cuyo mínimo de hierro es de `r ll_todos$Iron[ll_todos$Age == "[31,51) gest"]` mg, tiene en el hierro una restricción que no existe para los demás. Para esa persona la elasticidad del hierro es de `r dec(sp_g("Iron"), 2)`, más que la del calcio (`r dec(sp_g("Calcium"), 2)`).
+
+Que el calcio determine buena parte del costo tiene una consecuencia de política: el costo de una dieta con nutrientes depende sobre todo del precio de la fuente de calcio más barata, aquí la leche en polvo, así que un cambio en el precio de los lácteos mueve el CoNA mucho más que un cambio en el precio de los cereales. El resultado depende además de que la tabla de composición asigna 940 mg de calcio a 100 g de leche en polvo; si el panel tuviera otra fuente barata de calcio, por ejemplo un alimento fortificado, el costo sería menor.
+
+## Adecuación nutricional del CoRD y el CoAHD
+
+```{r adecuacion}
+ad <- readRDS(file.path(interno_dir, "output/figuras/04_adecuacion/adecuacion.rds")) %>%
+  filter(!is.na(etiqueta))
+bajos <- ad %>% filter(ratio < 100, etiqueta != "Sodio", etiqueta != "Energía") %>%
+  group_by(etiqueta, member) %>% slice_min(ratio, n = 1, with_ties = FALSE) %>% ungroup() %>%
+  mutate(txt = gsub("b12", "B12", paste0(str_to_lower(etiqueta), " de ", str_to_lower(sub(" \\(.*", "", as.character(member))), " (", round(ratio), "% en ", modelo, ")")))
+adn <- ad %>% group_by(etiqueta, modelo) %>% summarise(med = median(ratio), mn = min(ratio), mx = max(ratio), .groups = "drop")
+adv <- function(n, m, col = "med") adn[[col]][adn$etiqueta == n & adn$modelo == m]
+adm <- function(n, m, quien) ad$ratio[ad$etiqueta == n & ad$modelo == m & grepl(quien, ad$member)]
+n_ad <- nrow(ad %>% filter(etiqueta != "Sodio", etiqueta != "Energía"))
+```
+
+El CoRD y el CoAHD no tienen los nutrientes como restricción, pero al seguir la guía cubren casi todos los requerimientos mínimos, como muestra la Figura \ref{fig:fig-adecuacion}. La energía queda en `r round(min(ad$ratio[ad$etiqueta == "Energía"]))`% a `r round(max(ad$ratio[ad$etiqueta == "Energía"]))`% del requerimiento, porque las kilocalorías salen de los intercambios de la guía, que no llegan exactamente al EER de la ciudad. Entre los nutrientes, quedan por debajo de 100% del requerimiento `r nrow(bajos)` de las `r n_ad` combinaciones de dieta, nutriente y miembro, y las más bajas son `r lista_es(head(arrange(bajos, ratio)$txt, 4))`.
+
+Esos casos tienen explicaciones distintas. La vitamina B12 es el más revelador: el CoRD cubre `r round(adm("Vitamina B12", "CoRD", "Mujer adulta"))`% del requerimiento de la mujer adulta, mientras que el CoAHD cubre `r round(adm("Vitamina B12", "CoAHD", "Mujer adulta"))`%. La diferencia no es de energía ni de cantidad de alimentos, sino de cuáles se eligen: la B12 solo está en los alimentos de origen animal, el CoAHD compra carne de res, cogote y tocino en algunas ciudades y el CoRD llena el grupo de carnes, huevos y leguminosas con fríjol y garbanzo, que no la aportan. Es decir, una dieta que cumple los intercambios de la guía puede no cumplir el requerimiento de un nutriente esencial si el criterio de elección es el precio, y el CoRD de este panel es un ejemplo. El segundo caso es el calcio de la niña, que queda en `r round(adm("Calcio", "CoRD", "Niña"))`% en el CoRD y `r round(adm("Calcio", "CoAHD", "Niña"))`% en el CoAHD: es coherente con que el calcio sea el mínimo que más pesa en el CoNA, porque el CoRD y el CoAHD eligen un solo alimento lácteo y con las cantidades de la guía no se alcanza el mínimo de 1.100 mg de una niña de 9 a 13 años, mientras que el CoNA lo cubre comprando leche en polvo. El tercero es la niacina de la mujer adulta, en `r round(adm("Niacina", "CoRD", "Mujer adulta"))`% en el CoRD.
+
+Los demás nutrientes superan el requerimiento con holgura: la mediana del CoRD es de `r round(adv("Folato", "CoRD"))`% en folato, `r round(adv("Vitamina A", "CoRD"))`% en vitamina A, `r round(adv("Tiamina", "CoRD"))`% en tiamina y `r round(adv("Magnesio", "CoRD"))`% en magnesio, porque la guía obliga a comprar frutas, verduras y leguminosas que el CoNA no necesita. Esa holgura es una forma de leer el costo adicional de la guía: la diferencia entre el CoRD y el CoNA paga, en parte, nutrientes que el CoNA no compra porque ya cumple el mínimo con alimentos más baratos. Los macronutrientes también quedan por encima de su mínimo (carbohidratos `r round(adv("Carbohidratos", "CoRD"))`%, lípidos `r round(adv("Lípidos", "CoRD"))`%), y la proteína en `r round(adv("Proteína", "CoRD"))`%, justo en el mínimo. La adecuación del CoAHD es parecida en todo salvo en la vitamina A (`r round(adv("Vitamina A", "CoAHD"))`% frente a `r round(adv("Vitamina A", "CoRD"))`%) y la B12, otra vez por los alimentos de origen animal que compra.
+
+```{r fig-adecuacion, fig.cap="Adecuación nutricional de las dietas saludables (CoRD y CoAHD)"}
+knitr::include_graphics(fig("04_adecuacion/fig12_adecuacion_nutricional.png"))
+```
+
+## Tamaño y composición del hogar
+
+### Qué cuesta cada tipo de miembro
+
+```{r hogares-miembros}
+co_todos <- bind_rows(co3 %>% mutate(hogar = 3), co4 %>% mutate(hogar = 4), co5 %>% mutate(hogar = 5)) %>% recode_member()
+mt <- co_todos %>% group_by(modelo, member) %>% summarise(c = mean(costo), k = mean(kcal1000), .groups = "drop")
+mm <- function(m, mi, col = "c") mt[[col]][mt$modelo == m & grepl(mi, mt$member)]
+dm <- function(m, a, b) pct(mm(m, a), mm(m, b))
+cona4 <- readRDS(file.path(interno_dir, "03_models/cona/cona_results_4m.rds"))
+sp_g_tab <- cona4$spe %>% filter(constraint == "Min", Age == "[31,51) gest") %>% group_by(Nutrients) %>% summarise(spe = mean(SPE), .groups = "drop")
+sp_g <- function(n) sp_g_tab$spe[sp_g_tab$Nutrients == n]
+```
+
+Como cada miembro se costea con su propio requerimiento, el costo de los hogares de cuatro y cinco personas es la suma de los costos de personas con necesidades distintas, y conviene empezar por ver cuánto cuesta cada una (Cuadro \ref{tab:tab-miembros}).
+
+```{r tabla-miembros}
+tmb <- mt %>% filter(modelo != "CoCA") %>%
+  mutate(v = cop0(c)) %>% select(Miembro = member, modelo, v) %>%
+  pivot_wider(names_from = modelo, values_from = v) %>% arrange(match(Miembro, MEMBER_ORDER))
+kable(tmb, booktabs = TRUE, align = "lrrrr", label = "tab-miembros", format.args = list(big.mark = ".", decimal.mark = ","),
+      caption = "Costo diario de cada tipo de miembro (COP), promedio de las 13 ciudades y del trimestre") %>%
+  kable_styling(latex_options = c("hold_position", "striped"), font_size = 9)
+```
+
+La mujer gestante cuesta `r dec(dm("CoNA", "gestante", "Mujer adulta"), 0)`% más que la mujer adulta no gestante en el CoNA (`r cop0(mm("CoNA", "gestante"))` frente a `r cop0(mm("CoNA", "Mujer adulta"))` COP al día), una diferencia que viene sobre todo de los mínimos de nutrientes: el hierro de la gestante es de 33 mg frente a 11,7 y su folato de 520 frente a 320 mcg. El hierro es la restricción que más pesa en su dieta: la elasticidad del precio sombra del hierro es de `r dec(sp_g("Iron"), 2)` para la gestante, más que la del calcio (`r dec(sp_g("Calcium"), 2)`), de modo que cada 1% que sube el mínimo de hierro sube su CoNA más de 1%. Las `r round(gest$incremento)` kcal de energía adicional explican una parte menor. En el CoRD y el CoAHD, donde solo la energía distingue a la gestante, la diferencia es de `r dec(dm("CoRD", "gestante", "Mujer adulta"), 0)`% y `r dec(dm("CoAHD", "gestante", "Mujer adulta"), 0)`%, es decir, el costo de `r round(gest$incremento)` kcal más en la proporción en que la guía las reparte. En el CoNA la gestante cuesta `r cop0(mm("CoNA", "gestante"))` COP al día frente a `r cop0(mm("CoNA", "Hombre"))` del hombre adulto, que requiere más energía, lo que muestra cuánto pesan los micronutrientes de la gestación frente a la energía.
+
+La adolescente de 14 a 18 años cuesta en el CoRD `r cop0(mm("CoRD", "Adolescente"))` COP al día, `r dec(abs(dm("CoRD", "Adolescente", "Mujer adulta")), 0)`% `r ifelse(dm("CoRD", "Adolescente", "Mujer adulta") < 0, "menos", "más")` que la mujer adulta (`r cop0(mm("CoRD", "Mujer adulta"))`), porque sus requerimientos de energía son parecidos; en el CoNA cuesta `r cop0(mm("CoNA", "Adolescente"))`, `r dec(dm("CoNA", "Adolescente", "Mujer adulta"), 0)`% más que la mujer adulta (`r cop0(mm("CoNA", "Mujer adulta"))`), porque su mínimo de calcio es de 1.100 mg frente a 800. La mujer mayor de 51 a 70 años cuesta menos que la mujer adulta en el CoRD (`r cop0(mm("CoRD", "Mujer mayor"))` frente a `r cop0(mm("CoRD", "Mujer adulta"))` COP), porque necesita menos energía, pero más en el CoNA (`r cop0(mm("CoNA", "Mujer mayor"))` frente a `r cop0(mm("CoNA", "Mujer adulta"))`), porque su mínimo de calcio es de 1.000 mg frente a 800: en el CoNA la edad pesa por la nutrición y en el CoRD pesa por la energía. Esta es la diferencia más clara entre las dos formas de medir una dieta. La Figura \ref{fig:fig-miembros-hogar} muestra cuánto pesa cada miembro en el costo del hogar de cada tamaño.
+
+```{r fig-miembros-hogar, fig.cap="Qué miembro pesa cuánto en el costo de la dieta del hogar"}
+knitr::include_graphics(fig("06_hogares/fig18_costo_por_miembro_hogar.png"))
+```
+
+### Cuánto cuesta un hogar más grande
+
+```{r hogares-tab}
+ETI <- c("3" = "3 personas: hombre, mujer y niña", "4" = "4 personas: hombre, gestante, adolescente y niña",
+         "5" = "5 personas: hombre, mujer, adolescente, niña y mujer mayor")
+ch <- co_todos %>% group_by(hogar, modelo, ciudad, fecha) %>% summarise(total = sum(costo), n = n(), .groups = "drop") %>%
+  group_by(hogar, modelo) %>% summarise(total = mean(total), n = mean(n), pc = mean(total / n), .groups = "drop")
+chp <- function(h, m, col = "pc") ch[[col]][ch$hogar == h & ch$modelo == m]
+```
+
+```{r tabla-hogares}
+th <- ch %>% mutate(Hogar = ETI[as.character(hogar)], v = paste0(cop0(total), " (", cop0(pc), ")")) %>%
+  select(Hogar, hogar, modelo, v) %>% pivot_wider(names_from = modelo, values_from = v) %>%
+  arrange(hogar) %>% select(Hogar, all_of(DIETAS))
+kable(th, booktabs = TRUE, align = "lrrrrr", label = "tab-hogares",
+      caption = "Costo del hogar al día y, entre paréntesis, por persona (COP), promedio de las 13 ciudades") %>%
+  kable_styling(latex_options = c("hold_position", "striped", "scale_down"), font_size = 8)
+```
+
+```{r hogares-texto}
+pcd <- function(h, m) 100 * (chp(h, m) / chp(3, m) - 1)
+```
+
+El Cuadro \ref{tab:tab-hogares} y la Figura \ref{fig:fig-hogares} comparan los tres hogares. El hogar de cuatro personas difiere del de tres en dos cosas: la mujer adulta es una gestante y se suma una adolescente. Eso sube el costo diario del hogar en el CoNA `r dec(pct(chp(4, "CoNA", "total"), chp(3, "CoNA", "total")), 0)`%, hasta `r cop0(chp(4, "CoNA", "total"))` COP, y el costo por persona `r dec(pcd(4, "CoNA"), 0)`%. El hogar de cinco personas cuesta `r dec(pct(chp(5, "CoNA", "total"), chp(3, "CoNA", "total")), 0)`% más que el de tres en el CoNA y `r dec(pct(chp(5, "CoRD", "total"), chp(3, "CoRD", "total")), 0)`% más en el CoRD. Por persona, el hogar de cuatro cuesta más que el de tres en las cinco dietas (`r paste0(DIETAS, " ", mas(sapply(DIETAS, function(m) pcd(4, m)), 1), collapse = ", ")`), mientras que el de cinco queda cerca del de tres (`r paste0(DIETAS, " ", mas(sapply(DIETAS, function(m) pcd(5, m)), 1), collapse = ", ")`). La diferencia entre los dos hogares grandes viene de quién se suma. En el de cuatro, la gestante, que en el CoNA y el CC-CoNA es la persona más cara del hogar, reemplaza a la mujer adulta y encarece el costo por persona. En el de cinco se suman una adolescente y una mujer mayor, que en el CoRD cuestan `r cop0(mm("CoRD", "Adolescente"))` y `r cop0(mm("CoRD", "Mujer mayor"))` COP al día, menos que el promedio por persona del hogar de tres (`r cop0(chp(3, "CoRD"))`), de modo que el costo por persona baja `r dec(abs(pcd(5, "CoRD")), 0)`% en esa dieta y casi no cambia en el CoNA, donde ellas cuestan `r cop0(mm("CoNA", "Adolescente"))` y `r cop0(mm("CoNA", "Mujer mayor"))` frente a `r cop0(chp(3, "CoNA"))`.
+
+```{r fig-hogares, fig.cap="El costo de la dieta según el tamaño y la composición del hogar"}
+knitr::include_graphics(fig("06_hogares/fig17_costo_composicion_hogar.png"))
+```
+
+### Qué significa para la seguridad alimentaria de los hogares
+
+```{r tabla-ingreso}
+ti <- ch %>% mutate(Hogar = paste0(hogar, " personas"), mes = 30 * total, v = paste0(cop0(mes), " (", dec(mes / SMMLV_2025, 2), ")")) %>%
+  select(Hogar, hogar, modelo, v) %>% pivot_wider(names_from = modelo, values_from = v) %>%
+  arrange(hogar) %>% select(Hogar, all_of(DIETAS))
+kable(ti, booktabs = TRUE, align = "lrrrrr", label = "tab-ingreso",
+      caption = "Costo mensual de la dieta del hogar (COP) y, entre paréntesis, en salarios mínimos de 2025") %>%
+  kable_styling(latex_options = c("hold_position", "striped", "scale_down"), font_size = 8)
+```
+
+El Cuadro \ref{tab:tab-ingreso} traduce los costos a salarios mínimos. Un hogar de cinco personas necesita `r dec(30 * chp(5, "CoNA", "total") / SMMLV_2025, 1)` salarios mínimos de ingreso mensual solo para pagar el CoNA y `r dec(30 * chp(5, "CoRD", "total") / SMMLV_2025, 1)` para pagar el CoRD, frente a `r dec(30 * chp(3, "CoNA", "total") / SMMLV_2025, 1)` y `r dec(30 * chp(3, "CoRD", "total") / SMMLV_2025, 1)` de uno de tres. Como el costo de la dieta del hogar es la suma de los costos de sus miembros, el ingreso que necesita crece con cada persona que se suma, y crece más cuando la persona que se suma es una adolescente, una gestante o una mujer mayor, que cuestan en el CoNA más que la mujer adulta. Si el ingreso del hogar no crece en la misma proporción que sus miembros, o si los miembros que se suman no generan ingreso, el hogar grande queda más lejos de la dieta que el pequeño. Por eso, la seguridad alimentaria de un hogar depende de su composición y no solo de su ingreso per cápita, y es lo que mide la sección siguiente al comparar el costo de la dieta del hogar con su gasto en alimentos.
+
+## Asequibilidad de las cinco dietas
+
+```{r afford-datos}
+ind <- afford$indicadores %>% mutate(model = factor(model, levels = DIETAS))
+pob <- afford$medias %>% mutate(personas = hogares * personas_hogar) %>% select(ciudad, fecha, grupo, personas)
+b <- ind %>% filter(caso == "base", agrupar == "deciles") %>% left_join(pob, by = c("ciudad", "fecha", "grupo")) %>%
+  mutate(decil = as.integer(sub("Decil ", "", grupo)))
+tot <- b %>% group_by(model) %>% summarise(rate = weighted.mean(rate, personas), gap = weighted.mean(gap, personas), .groups = "drop")
+tdec <- b %>% group_by(model, decil) %>% summarise(rate = weighted.mean(rate, personas), gap = weighted.mean(gap, personas), .groups = "drop")
+tciu <- b %>% group_by(model, ciudad) %>% summarise(rate = weighted.mean(rate, personas), .groups = "drop")
+rt <- function(m) tot$rate[tot$model == m]
+rdec <- function(m, d) tdec$rate[tdec$model == m & tdec$decil == d]
+rciu <- function(m, ci) tciu$rate[tciu$model == m & tciu$ciudad == ci]
+cf <- ind %>% filter(caso == "contrafactual", agrupar == "deciles") %>% left_join(pob, by = c("ciudad", "fecha", "grupo")) %>%
+  group_by(model) %>% summarise(rate = weighted.mean(rate, personas), .groups = "drop")
+rcf <- function(m) cf$rate[cf$model == m]
+tam <- ind %>% filter(agrupar == "tamano", caso %in% c("base_segun_hogar", "por_tamano_segun_hogar")) %>%
+  left_join(afford$tamanos %>% mutate(grupo = c(`3` = "3 o menos", `4` = "4", `5` = "5 o más")[as.character(tamano)]) %>% select(ciudad, fecha, grupo, personas),
+            by = c("ciudad", "fecha", "grupo")) %>%
+  group_by(caso, model, grupo) %>% summarise(rate = weighted.mean(rate, personas), .groups = "drop")
+rtam <- function(cs, m, g) tam$rate[tam$caso == cs & tam$model == m & tam$grupo == g]
+primer_decil_ok <- function(m) min(tdec$decil[tdec$model == m & tdec$rate < 5])
+```
+
+La asequibilidad se mide con la Gran Encuesta Integrada de Hogares (GEIH) de julio a septiembre de 2025, módulo de pobreza monetaria, para los hogares urbanos de las 13 ciudades: `r cop0(sum(afford$medias$hogares[afford$medias$fecha == min(afford$medias$fecha)]))` hogares expandidos en cada mes. Un hogar no puede pagar una dieta si su gasto mensual en alimentos por persona es menor que el costo mensual por persona de esa dieta, con el costo del hogar de tres personas como referencia. El gasto en alimentos es el ingreso del hogar multiplicado por la participación del gasto en alimentos de su decil de ingreso (39% en los deciles 1 y 2, 36% en el 3 y el 4, 35% en el 5 y el 6, 32% en el 7 y el 8 y 26% en el 9 y el 10). Esas participaciones son las de la estimación previa del proyecto y no se han actualizado con una fuente de 2025; son el supuesto que más mueve los resultados, y su fuente está pendiente de documentar.
+
+```{r tabla-afford-decil}
+tdd <- tdec %>% mutate(rate = dec(rate, 0)) %>% select(-gap) %>% pivot_wider(names_from = model, values_from = rate) %>%
+  mutate(Decil = as.character(decil)) %>% select(Decil, all_of(DIETAS))
+tdd <- bind_rows(tdd, tibble(Decil = "Total", !!!setNames(lapply(DIETAS, function(m) dec(rt(m), 0)), DIETAS)))
+kable(tdd, booktabs = TRUE, align = "lrrrrr", label = "tab-afford-decil",
+      caption = "Porcentaje de la población que no puede pagar cada dieta, por decil de ingreso per cápita (13 ciudades, jul-sep 2025)") %>%
+  kable_styling(latex_options = c("hold_position", "striped"), font_size = 9) %>%
+  row_spec(nrow(tdd), bold = TRUE)
+```
+
+El Cuadro \ref{tab:tab-afford-decil} y la Figura \ref{fig:fig-afford-deciles} muestran el resultado central. En el conjunto de las 13 ciudades, `r dec(rt("CoCA"), 0)`% de la población no puede pagar el CoCA, `r dec(rt("CoNA"), 0)`% no puede pagar el CoNA, `r dec(rt("CoAHD"), 0)`% el CoAHD, `r dec(rt("CoRD"), 0)`% el CoRD y `r dec(rt("CC-CoNA"), 0)`% el CC-CoNA. La distancia entre el CoCA y el CoNA es la más grande: el CoCA solo lo deja de pagar el primer decil (`r dec(rdec("CoCA", 1), 0)`%), mientras que el CoNA es inalcanzable para `r dec(rdec("CoNA", 1), 0)`% del primer decil, `r dec(rdec("CoNA", 2), 0)`% del segundo, `r dec(rdec("CoNA", 3), 0)`% del tercero y `r dec(rdec("CoNA", 4), 0)`% del cuarto. Seguir la guía (CoRD) llega más arriba en la distribución: la parte de la población que no puede pagarlo baja de 5% solo desde el decil `r primer_decil_ok("CoRD")`, frente al decil `r primer_decil_ok("CoNA")` en el CoNA, y `r dec(rdec("CoRD", 4), 0)`% del cuarto decil y `r dec(rdec("CoRD", 5), 0)`% del quinto no pueden pagarlo. El CC-CoNA, la más exigente, deja sin acceso a `r dec(rdec("CC-CoNA", 5), 0)`% del quinto decil y aún a `r dec(rdec("CC-CoNA", 7), 0)`% del séptimo. Estas cifras son más bajas que las de Yoshioka et al. (2026) para Cali en 2022, donde ningún hogar por debajo del percentil 20 podía pagar el CoNA y solo los de percentiles superiores al 40 podían pagar el CoRD, pero las dos estimaciones no son comparables de forma directa: cambian el año, la ciudad, los precios, el hogar y la fuente de las participaciones del gasto.
+
+```{r fig-afford-deciles, fig.cap="Porcentaje de la población que no puede pagar cada dieta, por decil y ciudad"}
+knitr::include_graphics(fig("05_asequibilidad/fig13_asequibilidad_deciles.png"))
+```
+
+```{r afford-ciudades}
+ord_c <- tciu %>% filter(model == "CoNA") %>% arrange(rate)
+mejores <- head(ord_c, 4); peores <- tail(ord_c, 3)[3:1, ]
+txt_c <- function(d) lista_es(paste0(CITY_LABS[d$ciudad], " (", dec(d$rate, 0), "%)"))
+caro3 <- peores$ciudad
+```
+
+La Figura \ref{fig:fig-afford-deciles} muestra que la geografía de la asequibilidad no es la de los costos. Las ciudades con menor parte de la población sin acceso al CoNA son `r txt_c(mejores)`, y las peores son `r txt_c(peores)`. En estas tres últimas el CoNA cuesta `r cop0(mean(pc3$pc[pc3$modelo == "CoNA" & pc3$ciudad %in% caro3]))` COP por persona y día, frente a `r cop0(mean(pc3$pc[pc3$modelo == "CoNA" & !pc3$ciudad %in% caro3]))` en las demás, de modo que la diferencia viene sobre todo de la distribución del ingreso y no del precio de la dieta. La asequibilidad mezcla, entonces, el costo de la dieta con el ingreso de cada ciudad, y los dos no se mueven en la misma dirección.
+
+```{r fig-afford-brecha, fig.cap="Brecha de asequibilidad de los tres primeros deciles"}
+knitr::include_graphics(fig("05_asequibilidad/fig14_brecha_asequibilidad.png"))
+```
+
+```{r brecha}
+gp <- function(m, d) 100 * tdec$gap[tdec$model == m & tdec$decil == d]
+```
+
+La Figura \ref{fig:fig-afford-brecha} agrega la profundidad de la falta de acceso. La brecha mide lo que le falta al gasto en alimentos para llegar al costo de la dieta, como porcentaje de ese costo y promediada sobre toda la población del decil. En el primer decil es de `r dec(gp("CoNA", 1), 0)`% del costo del CoNA, es decir, que en promedio al gasto en alimentos de ese decil le falta esa proporción para cubrir los nutrientes. En el CoRD la brecha del primer decil es de `r dec(gp("CoRD", 1), 0)`% y en el CoCA de `r dec(gp("CoCA", 1), 0)`%: aunque el CoCA es inalcanzable para una parte del primer decil, lo que le falta es poco, mientras que las dietas con nutrientes y con guía quedan lejos para toda la parte inferior de la distribución.
+
+```{r fig-afford-tamano, fig.cap="Porcentaje de la población que no puede pagar cada dieta según el tamaño del hogar"}
+knitr::include_graphics(fig("05_asequibilidad/fig15_asequibilidad_tamano_hogar.png"))
+```
+
+El tamaño del hogar cambia el resultado (Figura \ref{fig:fig-afford-tamano}). Con el costo del hogar de tres personas como umbral para todos, el porcentaje de la población que no puede pagar el CoNA es de `r dec(rtam("base_segun_hogar", "CoNA", "3 o menos"), 0)`% en los hogares de tres o menos personas, `r dec(rtam("base_segun_hogar", "CoNA", "4"), 0)`% en los de cuatro y `r dec(rtam("base_segun_hogar", "CoNA", "5 o más"), 0)`% en los de cinco o más. Cuando cada hogar se compara con el costo de su propia composición (el hogar de cuatro con una gestante, el de cinco con una adolescente y una mujer mayor), el hogar de cuatro pasa a `r dec(rtam("por_tamano_segun_hogar", "CoNA", "4"), 0)`%, porque la gestante encarece la dieta, y el de cinco queda en `r dec(rtam("por_tamano_segun_hogar", "CoNA", "5 o más"), 0)`%. En el CoRD la historia es la de cantidad de personas y no de quién las compone: `r dec(rtam("por_tamano_segun_hogar", "CoRD", "3 o menos"), 0)`%, `r dec(rtam("por_tamano_segun_hogar", "CoRD", "4"), 0)`% y `r dec(rtam("por_tamano_segun_hogar", "CoRD", "5 o más"), 0)`%, porque los hogares grandes tienen un gasto en alimentos por persona menor.
+
+```{r fig-afford-contra, fig.cap="Asequibilidad si el hogar dedicara todo su ingreso a alimentos"}
+knitr::include_graphics(fig("05_asequibilidad/fig16_contrafactual.png"))
+```
+
+Para separar cuánto de la falta de acceso viene del ingreso y cuánto de la participación del gasto en alimentos, la Figura \ref{fig:fig-afford-contra} repite el ejercicio suponiendo que el hogar dedica todo su ingreso a alimentos, y muestra los tres primeros deciles. Para el conjunto de la población, aun así, `r dec(rcf("CoNA"), 0)`% de la población no puede pagar el CoNA, `r dec(rcf("CoRD"), 0)`% el CoRD y `r dec(rcf("CC-CoNA"), 0)`% el CC-CoNA; el CoCA es asequible para casi todos (`r dec(rcf("CoCA"), 1)`%). Como el supuesto es extremo, esas cifras son la parte de la falta de acceso que ninguna redistribución del gasto en alimentos resolvería: es un límite del ingreso y no de las decisiones del hogar.
+
+# Pruebas de robustez
+
+## El tratamiento de los azúcares
+
+```{r robustez-azucar}
+rz <- az$razones_modelo %>% mutate(modelo = factor(modelo, levels = c("CoNA", "CC-CoNA", "CoRD", "CoAHD"))) %>% arrange(modelo)
+tz <- rz %>%
+  transmute(Dieta = modelo, `Con azúcares` = cop0(pc_con), `Sin azúcares` = cop0(pc_sin),
+            `Razón` = dec(razon_promedio, 3), `Rango entre ciudades` = paste0(dec(razon_min, 3), " a ", dec(razon_max, 3)),
+            `Razón por 1.000 kcal` = dec(razon_1000kcal, 3))
+rzv <- function(m, col) rz[[col]][rz$modelo == m]
+eer_ll3 <- readRDS(file.path(hh_dir, "household_eer_ll.rds")) %>% transmute(ciudad, Demo_Group = Age, Sex = as.character(Sex), req = Energy)
+p_azucar_cona <- az$uso_cona %>% group_by(ciudad, fecha, Demo_Group, Sex) %>% summarise(kcal = sum(kcal), .groups = "drop") %>%
+  left_join(eer_ll3, by = c("ciudad", "Demo_Group", "Sex")) %>% summarise(p = mean(100 * kcal / req)) %>% pull(p)
+p_az_max <- az$uso_cona %>% group_by(ciudad, fecha, Demo_Group, Sex) %>% summarise(kcal = sum(kcal), .groups = "drop") %>%
+  left_join(eer_ll3, by = c("ciudad", "Demo_Group", "Sex")) %>% summarise(p = max(100 * kcal / req)) %>% pull(p)
+kable(tz, booktabs = TRUE, align = "lrrrcr",
+      caption = "Costo per cápita (COP/día) con y sin azúcares: razón sin azúcares / con azúcares") %>%
+  kable_styling(latex_options = c("hold_position", "striped"), font_size = 9)
+```
+
+Se estimó cada dieta con los azúcares disponibles y sin ellos; en el CoRD y el CoAHD, quitar los azúcares quita también el grupo, de modo que la dieta tiene seis grupos y 11 alimentos, como la canasta de la FAO. El escenario con azúcares reproduce los resultados principales sin diferencia. Quitarlos encarece el CoNA `r dec(100 * (rzv("CoNA", "razon_promedio") - 1), 1)`% y el CC-CoNA `r dec(100 * (rzv("CC-CoNA", "razon_promedio") - 1), 1)`%, porque el azúcar es una fuente barata de energía y, en la tabla de composición, de algo de calcio y de hierro; y abarata el CoRD en `r dec(100 * (1 - rzv("CoRD", "razon_promedio")), 1)`% y el CoAHD en `r dec(100 * (1 - rzv("CoAHD", "razon_promedio")), 1)`%, pero porque la dieta sin el grupo aporta 11% menos energía. Por cada 1.000 kcal, el CoRD y el CoAHD sin azúcares cuestan `r dec(100 * (rzv("CoRD", "razon_1000kcal") - 1), 0)`% más. El tratamiento del azúcar no cambia el ordenamiento de las dietas ni el de las ciudades. Lo que sí cambia es la lectura de un CoNA con azúcar morena como fuente de energía, que está por encima de la recomendación de la OMS de menos de 10% de la energía en azúcares libres: cuando el CoNA compra azúcar, esta aporta en promedio `r dec(p_azucar_cona, 0)`% de la energía de un miembro, y el modelo no tiene un tope para eso. El documento de sensibilidad a los azúcares presenta el análisis completo.
+
+```{r fig-azucar, fig.cap="Costo con y sin azúcares"}
+knitr::include_graphics(fig("07_robustez/fig20_costo_con_sin_azucar.png"))
+```
+
+## El CC-CoNA según alpha
+
+```{r robustez-ccona}
+cc_pc <- cc$cost %>%
+  group_by(alpha_val, ciudad, fecha) %>% summarise(h = sum(cost_day), ok = all(!is.na(cost_day)), .groups = "drop") %>%
+  filter(ok) %>% group_by(alpha_val, ciudad) %>% summarise(pc = mean(h) / 3, meses = n(), .groups = "drop") %>%
+  filter(meses == 3) %>% group_by(ciudad) %>% mutate(prima = pc / pc[alpha_val == 0]) %>% ungroup()
+cc_res <- cc_pc %>% group_by(alpha_val) %>% summarise(ciudades = n(), pc = mean(pc), prima = mean(prima), .groups = "drop")
+cc_foods <- cc$comp %>% group_by(alpha_val) %>% summarise(alimentos = n_distinct(Food), .groups = "drop")
+cc_tab <- tibble(alpha_val = sort(unique(cc$cost$alpha_val))) %>%
+  left_join(cc_res, by = "alpha_val") %>% left_join(cc_foods, by = "alpha_val") %>%
+  mutate(ciudades = coalesce(ciudades, 0L)) %>%
+  transmute(alpha = dec(alpha_val, 2), `Ciudades con solución` = ciudades,
+            `Costo per cápita (COP/día)` = ifelse(ciudades == 0, "sin solución", cop0(pc)),
+            `Prima frente al CoNA` = ifelse(ciudades == 0, "-", paste0(dec(prima, 2), "×")),
+            `Alimentos distintos` = ifelse(is.na(alimentos), "-", as.character(alimentos)))
+prima_a <- function(a) cc_res$prima[cc_res$alpha_val == a]
+```
+
+```{r tabla-ccona}
+kable(cc_tab, booktabs = TRUE, align = "rrrrr",
+      caption = "CC-CoNA según alpha: prima frente al CoNA, en las ciudades con solución en los tres meses") %>%
+  kable_styling(latex_options = c("hold_position", "striped"), font_size = 9)
+```
+
+Exigir que la dieta se parezca a la composición del IPC encarece mucho la dieta de mínimo costo: con $\alpha = 0{,}25$ el costo es `r dec(prima_a(0.25), 2)` veces el del CoNA, con $\alpha = 0{,}5$ es `r dec(prima_a(0.5), 2)` veces y con $\alpha = 0{,}75$ es `r dec(prima_a(0.75), 2)` veces. La dieta también cambia de composición: el CoNA usa `r cc_foods$alimentos[cc_foods$alpha_val == 0]` alimentos distintos y el CC-CoNA con $\alpha = 0{,}75$ usa `r cc_foods$alimentos[cc_foods$alpha_val == 0.75]`, porque cada subclase exige al menos un alimento. El problema no tiene solución con $\alpha = 1$ en ninguna ciudad, ni con $\alpha = 0{,}9$ en `r 13 - cc_res$ciudades[cc_res$alpha_val == 0.9]` de las 13. En el ensayo hecho para Bogotá en julio, la causa es el máximo de lípidos: con la composición del IPC, que pesa mucho en carnes, huevos, quesos y aceites, la dieta supera el límite superior de lípidos del miembro, y sin ese límite sí hay solución.
+
+```{r fig-ccona, fig.cap="Prima del CC-CoNA frente al CoNA según alpha"}
+knitr::include_graphics(fig("07_robustez/fig22_prima_ccona.png"))
+```
+
+La prima del CC-CoNA debe leerse con cuidado, por tres razones. Primero, el IPC pondera el gasto, y aquí se usa como participación en las cantidades, que sobrerrepresenta los grupos caros; una versión que convierta la participación en gasto a cantidades con los precios daría otra restricción y probablemente una prima menor. Segundo, el mapeo de los alimentos a subclases del IPC se hizo por el nombre del alimento y no se ha comparado con el que usa el DANE. Tercero, la función del CC-CoNA que se usaba antes en el proyecto tiene las llaves mal cerradas: el ciclo por subclase abarca toda la función y la devuelve en la primera iteración, de modo que solo restringe a la primera subclase. Por eso se escribió una función nueva, y los resultados no son comparables con los de la estimación previa, en la que la prima del CC-CoNA con $\alpha = 1$ era de apenas 2%.
+
+## CoAHD frente a CoRD
+
+```{r robustez-ahd}
+rr <- pc3 %>% select(ciudad, modelo, pc) %>% filter(modelo %in% c("CoRD", "CoAHD")) %>%
+  pivot_wider(names_from = modelo, values_from = pc) %>% mutate(razon = CoAHD / CoRD)
+ahd_mayor <- CITY_LABS[rr$ciudad[rr$razon > 1]]
+kc_ahd <- az$razones_ciudad %>% filter(modelo %in% c("CoRD", "CoAHD")) %>% group_by(modelo) %>% summarise(k = mean(kcal_con), .groups = "drop")
+dif_g <- por_g %>% select(modelo, grupo, costo) %>% pivot_wider(names_from = modelo, values_from = costo) %>% mutate(d = CoRD - CoAHD) %>% slice_max(abs(d), n = 1)
+grupo_dif <- dif_g$grupo; dif_grupo <- dif_g$d
+```
+
+El CoAHD cuesta `r dec(100 * (1 - mean(rr$razon)))`% menos que el CoRD en promedio (la razón va de `r dec(min(rr$razon), 3)` a `r dec(max(rr$razon), 3)`), y es mayor en `r if (length(ahd_mayor) == 0) "ninguna ciudad" else lista_es(ahd_mayor)`. Los dos modelos eligen los mismos alimentos en `r dec(100 * mean(coinc$igual), 0)`% de las combinaciones, y la energía de la dieta es casi la misma (`r cop0(kc_ahd$k[kc_ahd$modelo == "CoRD"])` kcal por persona en el CoRD frente a `r cop0(kc_ahd$k[kc_ahd$modelo == "CoAHD"])` en el CoAHD), así que la diferencia de costo no viene de qué se compra ni de cuánta energía se compra, sino de cómo se reparte esa energía entre los alimentos de cada grupo. El CoRD compra un número de intercambios de cada alimento, y la energía de un intercambio depende del alimento; el CoAHD compra las kilocalorías que la guía asigna al grupo, repartidas en partes iguales entre sus alimentos, al precio por kilocaloría de cada uno. El grupo en que más se separan es `r tolower(grupo_dif)`, con `r cop0(abs(dif_grupo))` COP al día de diferencia por persona.
+
+```{r fig-ahd-cord, fig.cap="Razón CoAHD / CoRD por ciudad"}
+knitr::include_graphics(fig("07_robustez/fig23_razon_coahd_cord.png"))
+```
+
+## Los requerimientos: macronutrientes y gestante
+
+```{r robustez-req}
+rq <- req$costos %>% group_by(hogar, variante, modelo, ciudad, fecha) %>% summarise(h = sum(costo), n = n(), .groups = "drop") %>%
+  group_by(hogar, variante, modelo) %>% summarise(pc = mean(h / n), .groups = "drop") %>%
+  pivot_wider(names_from = variante, values_from = pc)
+rqv <- function(h, m, col) rq[[col]][rq$hogar == h & rq$modelo == m]
+spe_b <- req$spe_hogar3
+sp_act <- function(v, n, tipo) 100 * spe_b$activa[spe_b$variante == v & spe_b$Nutrients == n & spe_b$constraint == tipo]
+sp_val <- function(v, n, tipo) spe_b$spe[spe_b$variante == v & spe_b$Nutrients == n & spe_b$constraint == tipo]
+t_esc <- rq %>% filter(!is.na(esc)) %>%
+  transmute(Hogar = paste0(hogar, " personas"), Dieta = factor(modelo, levels = DIETAS), Base = cop0(base), `Macros escalados` = cop0(esc),
+            Cambio = mas(100 * (esc / base - 1))) %>% arrange(Hogar, Dieta)
+kable(t_esc, booktabs = TRUE, align = "llrrr", label = "tab-esc",
+      caption = "Costo per cápita (COP/día) con los límites de macronutrientes de FoodpriceR en gramos y escalados a la energía de cada miembro") %>%
+  kable_styling(latex_options = c("hold_position", "striped"), font_size = 9)
+```
+
+La primera prueba es la de los límites de macronutrientes. Como los gramos de proteína, lípidos y carbohidratos de FoodpriceR se calculan con la energía de referencia de cada grupo y no con el EER de cada ciudad, se repitieron el CoNA y el CC-CoNA con los límites escalados: cada gramo se multiplica por el EER del miembro dividido entre la energía de referencia, de modo que conserve el mismo porcentaje de la energía del miembro. El CoCA, el CoRD y el CoAHD no cambian porque no usan límites de nutrientes. El Cuadro \ref{tab:tab-esc} muestra que el costo baja `r dec(abs(100 * (rqv(3, "CoNA", "esc") / rqv(3, "CoNA", "base") - 1)), 1)`% en el CoNA y `r dec(abs(100 * (rqv(3, "CC-CoNA", "esc") / rqv(3, "CC-CoNA", "base") - 1)), 1)`% en el CC-CoNA del hogar de tres personas, y algo parecido en los de cuatro y cinco. El cambio es pequeño aunque la restricción que más pesaba desaparece: el máximo de carbohidratos pasa de estar activo en `r dec(sp_act("base", "Carbohydrates", "Max"), 0)`% de los casos a `r dec(sp_act("esc", "Carbohydrates", "Max"), 0)`%, y su elasticidad de `r dec(sp_val("base", "Carbohydrates", "Max"), 2)` a `r dec(sp_val("esc", "Carbohydrates", "Max"), 2)`. El modelo cumple entonces el rango de carbohidratos sin esfuerzo, pero ahora el mínimo de proteína (activo en `r dec(sp_act("esc", "Protein", "Min"), 0)`% de los casos) y el de lípidos (`r dec(sp_act("esc", "Lipids", "Min"), 0)`%) pasan a ligar, porque con los gramos más altos que corresponden a la energía de cada miembro el mínimo ya no se cumple solo. Es decir, el costo del CoNA no depende de qué macronutriente sea el que liga, sino del conjunto de límites, y la decisión de escalar o no los gramos cambia las restricciones activas más que el costo. El resultado base se mantiene porque es el mismo de la estimación previa del proyecto, y el escalado queda como prueba de robustez.
+
+```{r tabla-t3}
+t_t3 <- rq %>% filter(hogar == 4, !is.na(t3)) %>%
+  transmute(Dieta = factor(modelo, levels = DIETAS), `Promedio ponderado (311 kcal)` = cop0(base), `Tercer trimestre (452 kcal)` = cop0(t3),
+            Cambio = mas(100 * (t3 / base - 1))) %>% arrange(Dieta)
+kable(t_t3, booktabs = TRUE, align = "lrrr", label = "tab-t3",
+      caption = "Costo per cápita (COP/día) del hogar de cuatro personas según el incremento de energía de la gestante") %>%
+  kable_styling(latex_options = c("hold_position", "striped"), font_size = 9)
+```
+
+La segunda prueba es el incremento de energía de la gestante. El Cuadro \ref{tab:tab-t3} compara el hogar de cuatro personas con el incremento promedio ponderado por trimestre (311 kcal) y con el del tercer trimestre que usan Yoshioka et al. (2026) (452 kcal). La diferencia es de `r mas(100 * (rqv(4, "CoRD", "t3") / rqv(4, "CoRD", "base") - 1))` en el CoRD y de `r mas(100 * (rqv(4, "CoCA", "t3") / rqv(4, "CoCA", "base") - 1))` en el CoCA, que son las dietas donde la energía es lo que se compra, y de `r mas(100 * (rqv(4, "CoNA", "t3") / rqv(4, "CoNA", "base") - 1))` en el CoNA, donde el costo lo fijan los nutrientes. Los dos criterios llevan a las mismas conclusiones; el promedio ponderado representa a una gestante de la población y el del tercer trimestre es el más exigente, y se dejan las dos versiones para que la decisión sea explícita.
+
+## El método de precios
+
+Tres decisiones del método de precios se pusieron a prueba corriendo todo el proyecto, desde el panel de precios hasta los modelos: el umbral de tamaño del producto, la regla de fechas y el precio de los aceites. El documento de sensibilidad al umbral de tamaño presenta el detalle de la primera.
+
+```{r robustez-precios}
+pc_regla <- sens$costos %>% group_by(regla, modelo) %>% summarise(pc = mean(pc), n = n(), .groups = "drop") %>%
+  mutate(pc = ifelse(n < 13, NA_real_, pc))
+get_pc <- function(r, m) pc_regla$pc[pc_regla$regla == r & pc_regla$modelo == m]
+etq <- c(actual = "Dos fechas por mes (adoptada)", sin_umbral_tamano = "Sin umbral de tamaño", grupo85 = "85% de los días del grupo", base = "85% de los días de la ciudad")
+base_pc <- pc_regla %>% filter(regla == "actual") %>% select(modelo, base = pc)
+tp <- pc_regla %>% filter(regla %in% names(etq)) %>%
+  left_join(base_pc, by = "modelo") %>%
+  mutate(cambio = ifelse(regla == "actual", "", paste0(" (", mas(pct(pc, base)), ")")),
+         txt = ifelse(is.na(pc), "sin solución", paste0(cop0(pc), cambio))) %>%
+  select(regla, modelo, txt) %>%
+  pivot_wider(names_from = modelo, values_from = txt) %>%
+  mutate(Regla = etq[regla], `CC-CoNA` = coalesce(`CC-CoNA`, "no se estimó")) %>%
+  arrange(match(regla, names(etq))) %>% select(Regla, CoCA, CoNA, `CC-CoNA`, CoRD, CoAHD)
+kable(tp, booktabs = TRUE, align = "lrrrrr",
+      caption = "Costo per cápita promedio (COP/día) según la regla de fechas y el umbral de tamaño; entre paréntesis, el cambio frente a la regla adoptada") %>%
+  kable_styling(latex_options = c("hold_position", "striped", "scale_down"), font_size = 8)
+```
+
+Quitar la preferencia por productos de hasta 500 g (1.000 ml en los líquidos) cambia el CoNA `r dec(pct(get_pc("sin_umbral_tamano", "CoNA"), get_pc("actual", "CoNA")))`%, el CC-CoNA `r dec(pct(get_pc("sin_umbral_tamano", "CC-CoNA"), get_pc("actual", "CC-CoNA")))`% y los otros tres modelos menos de 0,5%, porque la regla solo cambia el producto elegido en `r dec(100 * sens$cambio_sku$cambian / sens$cambio_sku$pares, 0)`% de las combinaciones de alimento y ciudad (`r sens$cambio_sku$cambian` de `r cop0(sens$cambio_sku$pares)`) y el precio por 100 g de la mayoría de los alimentos no cambia. Las reglas de fechas que exigen el 85% de los días dejan fuera a la leche en polvo en varias ciudades, y el CoNA se dispara porque tiene que sacar el calcio de otros alimentos; en una ciudad el modelo no tiene solución. La regla de dos fechas por mes conserva más alimentos y no depende de cuántos días capturó el scraper. Sobre los aceites, con el umbral de tamaño la mediana de girasol y mezcla cae en marcas caras porque cada aceite tiene marcas económicas y caras en partes parecidas; usar los precios de aceite del escenario sin umbral cambia el CoNA en `r mas(pct(mean(ac_sens$pc_aceites[ac_sens$modelo == "CoNA"]), mean(ac_sens$pc_actual[ac_sens$modelo == "CoNA"])))`, el CoRD en `r mas(pct(mean(ac_sens$pc_aceites[ac_sens$modelo == "CoRD"]), mean(ac_sens$pc_actual[ac_sens$modelo == "CoRD"])))` y el CoAHD en `r mas(pct(mean(ac_sens$pc_aceites[ac_sens$modelo == "CoAHD"]), mean(ac_sens$pc_actual[ac_sens$modelo == "CoAHD"])))`.
+
+## El CoNA sin los alimentos con mapeo dudoso
+
+Cuatro alimentos del CoNA son subproductos o cortes de poco aprovechamiento (carne de res, cogote; menudencias de pollo; cabezas de pescado y rabadillas de pollo), y su revisión producto por producto está en la sección de resultados. Aquí se mide cuánto depende el CoNA de ellos: se corrió el modelo sacando cada alimento y sacando todos a la vez.
+
+```{r tabla-subproductos}
+sp_tab <- subp$resumen %>%
+  transmute(Escenario = recode(escenario, con_todo = "Panel completo (resultado principal)",
+                               sin_cogote = "Sin carne de res, cogote",
+                               sin_subproductos = "Sin cogote, menudencias, cabezas de pescado ni rabadillas"),
+            `CoNA per cápita (COP/día)` = cop0(pc),
+            `Frente al principal` = mas(100 * (razon_con_todo - 1)))
+kable(sp_tab, booktabs = TRUE, align = "lrr", label = "tab-subproductos",
+      caption = "CoNA sin los alimentos con mapeo dudoso") %>%
+  kable_styling(latex_options = c("hold_position", "striped"), font_size = 9)
+sc <- zoom$sin_ciudad %>% filter(escenario != "Panel completo") %>%
+  mutate(Alimento = sub("^Sin ", "", escenario), ciudad = CITY_LABS[ciudad]) %>%
+  select(Ciudad = ciudad, Alimento, cambio) %>%
+  mutate(Alimento = recode(Alimento, "Pescado cabezas" = "Cabezas de pescado"), cambio = mas(100 * cambio, 1)) %>%
+  pivot_wider(names_from = Alimento, values_from = cambio) %>%
+  arrange(factor(Ciudad, levels = CITY_LABS[CITY_ORDER]))
+kable(sc, booktabs = TRUE, align = "lrrrr", label = "tab-sub-ciudad",
+      caption = "Cambio del CoNA per cápita al sacar cada alimento, por ciudad") %>%
+  kable_styling(latex_options = c("hold_position", "striped"), font_size = 9)
+```
+
+Sin el cogote el CoNA promedio sube `r dec(100 * (subp$resumen$razon_con_todo[subp$resumen$escenario == "sin_cogote"] - 1))`% (Cuadro \ref{tab:tab-subproductos}), y sin los cuatro alimentos `r dec(100 * (subp$resumen$razon_con_todo[subp$resumen$escenario == "sin_subproductos"] - 1))`%. El Cuadro \ref{tab:tab-sub-ciudad} muestra que ese promedio esconde diferencias grandes entre ciudades: el cogote mueve el costo de las ciudades donde se compra, hasta `r dec(100 * max(zoom$sin_ciudad$cambio[zoom$sin_ciudad$escenario == "Sin Carne de res, cogote"]), 1)`% en `r CITY_LABS[zoom$sin_ciudad$ciudad[zoom$sin_ciudad$escenario == "Sin Carne de res, cogote"][which.max(zoom$sin_ciudad$cambio[zoom$sin_ciudad$escenario == "Sin Carne de res, cogote"])]]`, y no mueve el de las otras, mientras que las menudencias, las cabezas y las rabadillas casi no cambian el promedio, con la excepción de las rabadillas en Bogotá. El resultado del CoNA es robusto a estos alimentos en el promedio, pero no del todo en algunas ciudades; el efecto sobre el CC-CoNA y sobre el costo de los hogares de cuatro y cinco personas no se midió. Dejar el mapeo como está o corregirlo es una decisión pendiente, que depende de si el equipo de nutrición considera aceptable representar el hueso para sustancia con la composición de la carne de res; por eso este documento reporta los resultados con el cogote y, aquí, también sin él.
+
+## El maíz del CoCA
+
+```{r maiz-robustez}
+min_kcal_p <- function(excluir = character(), p_trillado = NULL, p_cascara = NULL) {
+  d <- panel %>% filter(grepl("CEREALES", grupos_gabas), articulo != "ARROZ PARA SOPA", !is.na(precio_100g), !articulo %in% excluir)
+  if (!is.null(p_trillado)) d$precio_100g[d$articulo == "Maíz blanco trillado"] <- p_trillado
+  if (!is.null(p_cascara)) d$precio_100g[d$articulo == "Maíz blanco cáscara"] <- p_cascara
+  d %>% mutate(ciudad_norm = toupper(iconv(ciudad, from = "", to = "ASCII//TRANSLIT")), p_kcal = precio_100g / energia_kcal) %>%
+    group_by(ciudad = ciudad_norm, fecha) %>% summarise(p = min(p_kcal), .groups = "drop") %>%
+    group_by(ciudad) %>% summarise(p = mean(p), .groups = "drop") %>%
+    left_join(eer_hogar3, by = "ciudad") %>% mutate(pc = p * E / 3)
+}
+esc_maiz <- list(
+  "Precios observados (resultado principal)" = min_kcal_p(),
+  "Precio de lista del maíz, sin descuento" = min_kcal_p(p_trillado = 315, p_cascara = 340),
+  "Sin los dos maíces blancos" = min_kcal_p(c("Maíz blanco trillado", "Maíz blanco cáscara")))
+tm_maiz <- bind_rows(lapply(names(esc_maiz), function(n) esc_maiz[[n]] %>% mutate(Escenario = n))) %>%
+  group_by(Escenario) %>% summarise(pc_m = mean(pc), mn = min(pc), mx = max(pc), .groups = "drop") %>%
+  mutate(Escenario = factor(Escenario, levels = names(esc_maiz))) %>% arrange(Escenario) %>%
+  mutate(cambio = pc_m / pc_m[1] - 1, prima = pcm("CoNA") / pc_m)
+kable(tm_maiz %>% transmute(Escenario, `CoCA per cápita (COP/día)` = cop0(pc_m), `Rango entre ciudades` = paste0(cop0(mn), " a ", cop0(mx)),
+                            `Frente al principal` = mas(100 * cambio), `CoNA / CoCA` = dec(prima, 2)),
+      booktabs = TRUE, align = "lrrrr", label = "tab-maiz",
+      caption = "CoCA con el precio observado del maíz, con su precio de lista y sin los dos maíces blancos") %>%
+  kable_styling(latex_options = c("hold_position", "striped"), font_size = 9)
+```
+
+Como el CoCA es el costo del alimento más barato por kilocaloría, depende por completo del precio de un producto. El maíz blanco trillado es un empaque de 1.000 g de una sola marca que el supermercado vende a 2.770 COP en la mayoría de las ciudades y a 3.150 en el Caribe, y en los datos originales el precio de 2.770 coincide con el de 3.150 menos un descuento de 380 pesos, de modo que el precio que mide el CoCA es en parte un precio promocional. El Cuadro \ref{tab:tab-maiz} pone a prueba esa dependencia con dos ejercicios. Si el maíz se valorara a su precio de lista, sin descuento, el CoCA sería de `r cop0(tm_maiz$pc_m[2])` COP por persona y día, `r dec(100 * tm_maiz$cambio[2], 1)`% más que el principal. Si se sacaran los dos maíces blancos, subiría `r dec(100 * tm_maiz$cambio[3], 0)`% y la razón del CoNA frente al CoCA pasaría de `r dec(tm_maiz$prima[1], 2)` a `r dec(tm_maiz$prima[3], 2)`. La conclusión sobre el orden de las dietas no cambia en ninguno de los dos casos, pero la prima entre calorías y nutrientes depende del precio de este alimento y debe presentarse junto con la sensibilidad que muestra el cuadro.
+
+# Decisiones de diseño y puntos por confirmar
+
+Varias decisiones de método pesan sobre los resultados y no tienen una respuesta única en la literatura. El Cuadro \ref{tab:tab-decisiones} las reúne con lo que se hizo, el efecto que tienen sobre el costo y lo que falta decidir, para que cada una quede documentada y se pueda defender con la evidencia que se presenta en este documento.
+
+```{r tabla-decisiones}
+ef_ac <- function(m) mas(pct(mean(ac_sens$pc_aceites[ac_sens$modelo == m]), mean(ac_sens$pc_actual[ac_sens$modelo == m])))
+dec_tab <- tribble(
+  ~Decisión, ~`Qué se hizo`, ~`Efecto sobre el costo`, ~`Por confirmar`,
+  "alpha del CC-CoNA",
+  paste0("alpha = ", dec(ALFA_REFERENCIA, 1), ": cada subclase del IPC con al menos la mitad de su peso. Con alpha = 1 no hay solución y con 0,9 solo en ", cc_res$ciudades[cc_res$alpha_val == 0.9], " ciudades."),
+  paste0("Frente al CoNA: ", dec(prima_a(0.25), 2), "× con 0,25; ", dec(prima_a(0.5), 2), "× con 0,5; ", dec(prima_a(0.75), 2), "× con 0,75."),
+  "Valor de referencia y conversión de la ponderación de gasto a cantidades (el café explica una parte del aumento). Se discute con el equipo que hizo el review.",
+  "Carne de res, cogote",
+  "El alimento se precia como hueso para sustancia y se compone como carne de res con grasa.",
+  paste0("Sin él, el CoNA sube ", dec(100 * (subp$resumen$razon_con_todo[subp$resumen$escenario == "sin_cogote"] - 1), 1), "% en promedio."),
+  "Qué composición corresponde al producto; consulta con el equipo de nutrición del proyecto.",
+  "Azúcares en el CoNA",
+  "Los cinco alimentos de azúcar compiten como cualquier otro, sin tope.",
+  paste0("Sin azúcares el CoNA sube ", dec(100 * (rzv("CoNA", "razon_promedio") - 1), 1), "%; la azúcar llega a aportar hasta ", dec(p_az_max, 0), "% de la energía de un miembro."),
+  "Tope de 10% de la energía, como recomienda la OMS, como extensión del modelo.",
+  "Maíz del CoCA",
+  "El maíz blanco trillado, de un solo producto de 1.000 g, y el maíz con cáscara fijan el CoCA.",
+  paste0("Al precio de lista, el CoCA sube ", dec(100 * tm_maiz$cambio[2], 1), "%; sin los dos maíces, ", dec(100 * tm_maiz$cambio[3], 0), "%."),
+  "Si el precio con descuento es el que se quiere medir; se deja la sensibilidad junto al CoCA.",
+  "Umbral de tamaño y aceites",
+  "Se prefiere el producto de hasta 500 g (1.000 ml en líquidos).",
+  paste0("Sin umbral, el CoNA baja ", dec(-pct(get_pc("sin_umbral_tamano", "CoNA"), get_pc("actual", "CoNA")), 1), "%. Con los precios de aceite sin umbral: CoNA ", ef_ac("CoNA"), ", CoRD ", ef_ac("CoRD"), "."),
+  "Si los aceites se miden con el umbral o sin él.",
+  "Límites de macronutrientes",
+  "Se usan los gramos de FoodpriceR, calculados con la energía de referencia, sin escalar al EER de cada ciudad.",
+  paste0("Escalados, el CoNA baja ", dec(abs(100 * (rqv(3, "CoNA", "esc") / rqv(3, "CoNA", "base") - 1)), 1), "% y el CC-CoNA ", dec(abs(100 * (rqv(3, "CC-CoNA", "esc") / rqv(3, "CC-CoNA", "base") - 1)), 1), "%."),
+  "Si el escalado debe ser el resultado principal; la estimación del review usa los gramos sin escalar.",
+  "Incremento de energía de la gestante",
+  "Promedio de 0, 340 y 452 kcal ponderado por el trimestre de las gestantes de la ENSIN (311 kcal).",
+  paste0("Con 452 kcal (tercer trimestre), el hogar de cuatro cuesta ", mas(100 * (rqv(4, "CoRD", "t3") / rqv(4, "CoRD", "base") - 1)), " en el CoRD y ", mas(100 * (rqv(4, "CoNA", "t3") / rqv(4, "CoNA", "base") - 1)), " en el CoNA."),
+  "Si se adopta el criterio de Yoshioka et al. (2026).",
+  "Hierro y zinc de FoodpriceR",
+  "Se usan los mínimos del paquete, que no coinciden con los EAR del IOM.",
+  "El hierro de la gestante (33 mg) es la restricción que más pesa en su dieta.",
+  "Origen exacto de esos dos mínimos; consulta con los autores del paquete.",
+  "Edad de la niña",
+  "El EER se promedia de 10 a 13 años; los nutrientes son los de 9 a 13.",
+  "Incluir los 9 años bajaría su EER cerca de 3%.",
+  "Si se unifica el grupo de edad, con el costo de rehacer los tres hogares.",
+  "Gasto en alimentos por decil",
+  "Participaciones de 39% a 26% del estudio previo del proyecto.",
+  "Es el supuesto que más mueve la asequibilidad.",
+  "Fuente y vigencia de las participaciones para 2025.",
+  "Heterogeneidad entre ciudades",
+  "Se describe con los datos del panel, sin revisión de literatura.",
+  "Los costos y la asequibilidad cambian de orden entre ciudades según la dieta.",
+  "Revisión de la literatura sobre heterogeneidad espacial de los costos de la dieta, por hacer."
+)
+kable(dec_tab, booktabs = TRUE, longtable = TRUE, label = "tab-decisiones",
+      caption = "Decisiones de diseño, efecto sobre los resultados y puntos por confirmar") %>%
+  kable_styling(latex_options = c("hold_position", "striped", "repeat_header"), font_size = 8) %>%
+  column_spec(1, width = "2.2cm") %>% column_spec(2, width = "5cm") %>% column_spec(3, width = "4.8cm") %>% column_spec(4, width = "4.6cm")
+```
+
+# Referencias
+
+- Bai, Y., Alemu, R., Block, S. A., Headey, D. y Masters, W. A. (2021). Cost and affordability of nutritious diets at retail prices: evidence from 177 countries. *Food Policy*, 99, 101983.
+- FAO. (2025, julio). *The cost and affordability of a healthy diet (CoAHD) indicators: methods and data sources*. Metadata for FAOSTAT.
+- Foster, J., Greer, J. y Thorbecke, E. (1984). A class of decomposable poverty measures. *Econometrica*, 52(3), 761-766.
+- Foster, J., Greer, J. y Thorbecke, E. (2010). The Foster-Greer-Thorbecke (FGT) poverty measures: 25 years later. *Journal of Economic Inequality*, 8, 491-524.
+- Frega, R., Lanfranco, J. G., De Greve, S., Bernardini, S., Geniez, P., Grede, N., Bloem, M. y de Pee, S. (2012). What linear programming contributes: World Food Programme experience with the "Cost of the Diet" tool. *Food and Nutrition Bulletin*, 33(3 supl.).
+- Gundersen, C. (2008). Measuring the extent, depth, and severity of food insecurity: an application to American Indians in the USA. *Journal of Population Economics*, 21, 191-215.
+- Herforth, A., Venkat, A., Bai, Y., Costlow, L., Holleman, C. y Masters, W. A. (2022). *Methods and options to monitor the cost and affordability of a healthy diet globally*. FAO Agricultural Development Economics Working Paper 22-03.
+- Herforth, A. W., Gilbert, R., Sokourenko, K. et al. (2024). Monitoring the cost and affordability of a healthy diet within countries: building systems in Ethiopia, Ghana, Malawi, Nigeria, Pakistan, Tanzania, and Viet Nam. *Current Developments in Nutrition*, 8, 104441.
+- Hirvonen, K., Bai, Y., Headey, D. y Masters, W. A. (2020). Affordability of the EAT-Lancet reference diet: a global analysis. *The Lancet Global Health*, 8, e59-e66.
+- Institute of Medicine. (2001). *Dietary Reference Intakes for Vitamin A, Vitamin K, Arsenic, Boron, Chromium, Copper, Iodine, Iron, Manganese, Molybdenum, Nickel, Silicon, Vanadium, and Zinc*. National Academies Press.
+- Institute of Medicine. (2006). *Dietary Reference Intakes: The Essential Guide to Nutrient Requirements*. National Academies Press.
+- Masters, W. A., Bai, Y., Herforth, A., Sarpong, D. B., Mishili, F., Kinabo, J. y Coates, J. C. (2018). Measuring the affordability of nutritious diets in Africa: price indexes for diet diversity and the cost of nutrient adequacy. *American Journal of Agricultural Economics*, 100(5), 1285-1301.
+- Ministerio de Salud y Protección Social. (2016). Resolución 3803 de 2016, por la cual se establecen las Recomendaciones de Ingesta de Energía y Nutrientes para la población colombiana.
+- National Academies of Sciences, Engineering, and Medicine. (2023). *Dietary Reference Intakes for Energy*. National Academies Press.
+- Parlesak, A., Tetens, I., Jensen, J. D., Smed, S., Blenkuš, M. G., Rayner, M., Darmon, N. y Robertson, A. (2016). Use of linear programming to develop cost-minimized nutritionally adequate health promoting food baskets. *PLOS ONE*.
+- Vandevijvere, S., Young, N., Mackay, S., Swinburn, B. y Gahegan, M. (2018). Modelling the cost differential between healthy and current diets: the New Zealand case study. *International Journal of Behavioral Nutrition and Physical Activity*.
+- Verly-Jr, E., Sichieri, R., Darmon, N., Maillot, M. y Sarti, F. M. (2019). Planning dietary improvements without additional costs for low-income individuals in Brazil: linear programming optimization as a tool for public policy in nutrition and health. *Nutrition Journal*, 18, 40.
+- Yoshioka Vargas, A. M., Zea León, M. del P., Girón Cruz, L. E., González Gómez, D. E., Barona Montoya, S. A., Rankin-Cortázar, S. y González Rodríguez, C. E. (2026). Cost and affordability of three levels of diet quality for urban households in Colombia. *Public Health Nutrition*, 29, e70.
+
+# Apéndice A. Ecuaciones del requerimiento de energía {-}
+
+```{r tabla-coef}
+pal_es <- c(Inactive = "Inactiva", `Low active` = "Poco activa", Active = "Activa", `Very active` = "Muy activa")
+tc <- EER_IOM_COEF %>%
+  transmute(`Edad (años)` = edad_grupo, Sexo = ifelse(sexo == "Masculino", "Hombre", "Mujer"), Actividad = pal_es[pal],
+            `$\\beta_0$` = dec(b0, 2), `$\\beta_1$ (edad)` = dec(b_edad, 2), `$\\beta_2$ (talla, cm)` = dec(b_talla, 2),
+            `$\\beta_3$ (peso, kg)` = dec(b_peso, 2), `$\\beta_4$` = dec(b_crec, 0))
+kable(tc, booktabs = TRUE, align = "lllrrrrr", escape = FALSE, label = "tab-coef",
+      caption = "Coeficientes de las ecuaciones de EER (kcal/día) de NASEM (2023) para mayores de 14 años") %>%
+  kable_styling(latex_options = c("HOLD_position", "striped"), font_size = 9)
+```
+
+El Cuadro \ref{tab:tab-coef} imprime el objeto con el que el código calcula el EER, de modo que lo que se muestra es lo que se usa. Los coeficientes de los 19 años o más son los de la tabla S-3 de NASEM (2023), y los de los 14 a 18,99 años los de la tabla correspondiente del mismo informe; la edad se mide en años, la talla en centímetros y el peso en kilogramos.
+
+# Apéndice B. Mínimos y máximos de nutrientes {-}
+
+```{r tabla-limites}
+nut_todos <- c(Protein = "Proteína (g)", Lipids = "Lípidos (g)", Carbohydrates = "Carbohidratos (g)", Calcium = "Calcio (mg)", Iron = "Hierro (mg)",
+               Sodium = "Sodio (mg)", Phosphorus = "Fósforo (mg)", Zinc = "Zinc (mg)", Magnesium = "Magnesio (mg)", Thiamine = "Tiamina (mg)",
+               Riboflavin = "Riboflavina (mg)", Niacin = "Niacina (mg)", Folate = "Folato (mcg)", VitaminB12 = "Vitamina B12 (mcg)",
+               VitaminC = "Vitamina C (mg)", VitaminA = "Vitamina A (mcg ER)")
+fmt_l <- function(v) ifelse(v < 10, dec(v, 1), cop0(v))
+mn <- ll_todos %>% mutate(clave = paste0(Sex, "_", Age), Miembro = sub(" \\(.*", "", MEMBER_LABS[clave])) %>%
+  select(Miembro, all_of(names(nut_todos))) %>% pivot_longer(-Miembro, names_to = "nutriente", values_to = "minimo")
+mx <- ul_todos %>% mutate(clave = paste0(Sex, "_", Age), Miembro = sub(" \\(.*", "", MEMBER_LABS[clave])) %>%
+  select(Miembro, all_of(names(nut_todos))) %>% pivot_longer(-Miembro, names_to = "nutriente", values_to = "maximo")
+tl_all <- mn %>% left_join(mx, by = c("Miembro", "nutriente")) %>%
+  mutate(txt = ifelse(maximo > 1e6, paste0(fmt_l(minimo), " a -"), paste0(fmt_l(minimo), " a ", fmt_l(maximo))),
+         Nutriente = nut_todos[nutriente]) %>%
+  select(Nutriente, Miembro, txt) %>%
+  mutate(Miembro = factor(Miembro, levels = c("Hombre adulto", "Mujer adulta", "Mujer gestante", "Adolescente mujer", "Niña", "Mujer mayor"))) %>%
+  arrange(Miembro) %>% pivot_wider(names_from = Miembro, values_from = txt) %>%
+  arrange(match(Nutriente, nut_todos))
+kable(tl_all, booktabs = TRUE, align = "lrrrrrr", label = "tab-limites",
+      caption = "Mínimo y máximo diario de nutrientes de cada miembro del hogar (un guion indica que no hay máximo)") %>%
+  kable_styling(latex_options = c("HOLD_position", "striped", "scale_down"), font_size = 8)
+```
+
+El Cuadro \ref{tab:tab-limites} reúne los mínimos y máximos de los 16 nutrientes de los modelos para los seis tipos de miembro, tal como entran a los modelos. Son los mismos en las 13 ciudades: los de proteína, lípidos y carbohidratos son gramos fijos de FoodpriceR que, como se explicó en la sección de datos, no se ajustan al EER de cada ciudad.

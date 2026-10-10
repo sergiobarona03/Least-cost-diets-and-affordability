@@ -1,14 +1,20 @@
 ########################################################
 ## SCRIPT 02_dataprep/02_eer_3members.R
 ## Prepara los inputs de EER para el hogar representativo de
-## 3 miembros (adulto hombre 31-51, adulta mujer 31-51, niña
-## 10-14). Toma como insumo el agregado de EER que
+## 3 miembros (adulto hombre 31-50, adulta mujer 31-50, niña
+## 9-13). Toma como insumo el agregado de EER que
 ## produce 03-EER-agregados.R.
 ##
 ## Representative household:
-##   Adult male   31-51
-##   Adult female 31-51
-##   Female child 10-14
+##   Adult male   31-50
+##   Adult female 31-50
+##   Female child 9-13 (el EER se promedia sobre las edades de 10 a 13 anos,
+##                      como en el review; los limites de nutrientes son los de 9 a 13)
+##
+## Variable de entorno VARIANTE_HOGAR:
+##   vacia: version base (minimos y maximos de macronutrientes de FoodpriceR en gramos)
+##   "esc": los gramos de proteina, lipidos y carbohidratos se escalan a la energia de
+##          cada miembro (prueba de sensibilidad); archivos con sufijo _esc
 ##
 ## Reads:  eer_output_dir/230726_agg_eer.xlsx
 ##         FoodpriceR::EER_LL
@@ -43,94 +49,47 @@ household_dir  <- file.path(base_dir, "interno/02_dataprep/household eer")
 
 dir.create(household_dir, recursive = TRUE, showWarnings = FALSE)
 
-in_eer <- file.path(eer_output_dir, "230726_agg_eer.xlsx")
+source(file.path(base_dir, "interno/02_dataprep/aux-functions/eer_hogar.R"), encoding = "UTF-8")
 
 # -----------------------------------------------------------------------
-# Load EER
+# Miembros del hogar
+# -----------------------------------------------------------------------
+
+miembros <- c(
+  "Hombre adulto (31-50)",
+  "Mujer adulta (31-50)",
+  "Niña (9-13)"
+)
+
+variante_hogar <- Sys.getenv("VARIANTE_HOGAR", unset = "")
+stopifnot(variante_hogar %in% c("", "esc"))
+sufijo <- if (nzchar(variante_hogar)) paste0("_", variante_hogar) else ""
+
+# -----------------------------------------------------------------------
+# Insumos
 # -----------------------------------------------------------------------
 
 message("Preparing EER inputs...")
 
-agg_eer <- read_excel(in_eer)
+agg_eer <- read_excel(file.path(eer_output_dir, "230726_agg_eer.xlsx")) %>%
+  mutate(cod_mun = as.character(cod_mun))
 
-# Representative household members
-# Keep original column names (rango, sex, eer) plus ciudad
-# Each model script handles the rename internally
-household_eer <- agg_eer %>%
-  filter(
-    (sex == "Masculino" & rango == "[31,51)") |
-      (sex == "Femenino"  & rango == "[31,51)") |
-      (sex == "Femenino"  & rango == "[10, 14)")
-  ) %>%
-  mutate(ciudad = case_when(
-    cod_mun == "08001" ~ "BARRANQUILLA",
-    cod_mun == "11001" ~ "BOGOTA",
-    cod_mun == "68001" ~ "BUCARAMANGA",
-    cod_mun == "76001" ~ "CALI",
-    cod_mun == "13001" ~ "CARTAGENA",
-    cod_mun == "54001" ~ "CUCUTA",
-    cod_mun == "73001" ~ "IBAGUE",
-    cod_mun == "17001" ~ "MANIZALES",
-    cod_mun == "05001" ~ "MEDELLIN",
-    cod_mun == "23001" ~ "MONTERIA",
-    cod_mun == "52001" ~ "PASTO",
-    cod_mun == "66001" ~ "PEREIRA",
-    cod_mun == "50001" ~ "VILLAVICENCIO",
-    TRUE               ~ cod_mun)) %>%
-  filter(ciudad %in% c(
-    "BARRANQUILLA", "BOGOTA", "BUCARAMANGA", "CALI", "CARTAGENA",
-    "CUCUTA", "IBAGUE", "MANIZALES", "MEDELLIN", "MONTERIA",
-    "PASTO", "PEREIRA", "VILLAVICENCIO"
-  )) %>%
-  as.data.frame()
+# El hogar de 3 no tiene gestante: el incremento de energia de la gestacion no se usa
+insumos <- insumos_eer_hogar(miembros, agg_eer, incremento_gestacion = 0,
+                             eer_ll_base = FoodpriceR::EER_LL,
+                             ul_base     = FoodpriceR::UL,
+                             escalar_macros = variante_hogar == "esc")
 
 message(sprintf("  %d household members x %d cities",
-                nrow(household_eer) / n_distinct(household_eer$ciudad),
-                n_distinct(household_eer$ciudad)))
-
-# -----------------------------------------------------------------------
-# EER lower limits and upper limits from FoodpriceR
-# -----------------------------------------------------------------------
-
-eer_ll_base <- FoodpriceR::EER_LL %>%
-  mutate(Age = recode(Age,
-                      "31 a 50 años" = "[31,51)",
-                      "9 a 13 años"  = "[10, 14)"))
-
-ul_base <- FoodpriceR::UL %>%
-  mutate(Age = recode(Age,
-                      "31 a 50 años" = "[31,51)",
-                      "9 a 13 años"  = "[10, 14)"))
-
-# Renamed version for merging with FoodpriceR (needs Age/Sex keys)
-household_eer_renamed <- household_eer %>%
-  rename(Age = rango, Sex = sex, Energy = eer) %>%
-  mutate(Sex = if_else(Sex == "Masculino", 0L, 1L))
-
-# Merge EER + lower limits
-household_eer_ll <- merge(
-  household_eer_renamed,
-  eer_ll_base %>% select(-Energy),
-  by = c("Sex", "Age"))
-
-# Merge EER + upper limits (replace NA con número grande)
-household_ul <- merge(
-  household_eer_renamed,
-  ul_base %>% select(-Energy),
-  by = c("Sex", "Age")) %>%
-  select(-Energy) %>%
-  mutate(across(where(is.numeric), ~ replace_na(.x, 9999999)))
-
-message(sprintf(
-  "  household_eer: %d rows | eer_ll: %d rows | ul: %d rows",
-  nrow(household_eer), nrow(household_eer_ll), nrow(household_ul)))
+                length(miembros), n_distinct(insumos$household_eer$ciudad)))
 
 # -----------------------------------------------------------------------
 # Save
 # -----------------------------------------------------------------------
 
-saveRDS(household_eer,    file.path(household_dir, "household_eer.rds"))
-saveRDS(household_eer_ll, file.path(household_dir, "household_eer_ll.rds"))
-saveRDS(household_ul,     file.path(household_dir, "household_ul.rds"))
+saveRDS(insumos$household_eer,    file.path(household_dir, paste0("household_eer", sufijo, ".rds")))
+saveRDS(insumos$household_eer_ll, file.path(household_dir, paste0("household_eer_ll", sufijo, ".rds")))
+saveRDS(insumos$household_ul,     file.path(household_dir, paste0("household_ul", sufijo, ".rds")))
 
-message("Done. household_eer, household_eer_ll y household_ul guardados en ", household_dir)
+message("Done. household_eer", sufijo, ", household_eer_ll", sufijo, " y household_ul", sufijo,
+        " guardados en ", household_dir)

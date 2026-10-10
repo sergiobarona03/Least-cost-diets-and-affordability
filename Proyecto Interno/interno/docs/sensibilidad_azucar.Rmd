@@ -1,0 +1,236 @@
+---
+title: "Análisis de sensibilidad: dietas de costo mínimo con o sin azúcares"
+date: "8 de octubre de 2026"
+lang: es
+geometry: margin=2cm
+output:
+  pdf_document:
+    toc: false
+    number_sections: true
+    fig_caption: true
+    latex_engine: pdflatex
+header-includes:
+  - \usepackage{booktabs}
+  - \usepackage{array}
+  - \usepackage[table]{xcolor}
+  - \usepackage{colortbl}
+  - \usepackage{float}
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, warning = FALSE, message = FALSE,
+                      fig.align = "center", out.width = "100%", fig.pos = "H")
+options(knitr.table.format = "latex")
+
+library(tidyverse)
+library(knitr)
+library(kableExtra)
+
+interno_dir <- "C:/Users/danie/OneDrive/Escritorio/Least-cost-diets-and-affordability/Proyecto Interno/interno/"
+source(file.path(interno_dir, "05_figures/00_fig_config.R"))
+
+cop0 <- function(x) format(round(x), big.mark = ".", decimal.mark = ",", trim = TRUE)
+dec  <- function(x, d = 1) format(round(x, d), nsmall = d, decimal.mark = ",", trim = TRUE)
+fig  <- function(ruta) file.path(interno_dir, "output/figuras", ruta)
+lista_es <- function(x) if (length(x) < 2) x else paste0(paste(head(x, -1), collapse = ", "), " y ", tail(x, 1))
+
+az <- readRDS(file.path(interno_dir, "03_models/azucar/azucar_results.rds"))
+panel <- readRDS(file.path(interno_dir, "output/paneles/panel_mensual_cities_tcac.rds"))
+ipc <- readRDS(file.path(interno_dir, "output/ipc/ipc_participaciones.rds"))
+eer_ll <- readRDS(file.path(interno_dir, "02_dataprep/household eer/household_eer_ll.rds")) %>%
+  transmute(ciudad, Demo_Group = Age, Sex = as.character(Sex), req = Energy)
+gaba_ex <- readRDS(file.path(interno_dir, "output/gabas/gaba_exchanges_base.rds"))
+gaba_en <- readRDS(file.path(interno_dir, "output/gabas/gaba_energy_base.rds")) %>% filter(tipo_fila == "recomendacion")
+
+MOD <- c("CoNA", "CC-CoNA", "CoRD", "CoAHD")
+rz <- az$razones_modelo %>% mutate(modelo = factor(modelo, levels = MOD)) %>% arrange(modelo)
+r <- function(m, col) rz[[col]][rz$modelo == m]
+rc <- az$razones_ciudad
+
+p_azucar_guia <- 100 * gaba_ex$e_kcal[gaba_ex$edad == "19 to 59" & gaba_ex$sexo == "female" & grepl("AZ", gaba_ex$grupo_principal)] /
+  gaba_en$energia_kcal[gaba_en$edad == "19 to 59" & gaba_en$sexo == "female"]
+```
+
+# Introducción
+
+Los estudios que estiman el costo de la dieta no tratan igual a los azúcares, y la diferencia responde a la pregunta que cada uno quiere contestar. La canasta de dieta saludable de la FAO y el Banco Mundial tiene seis grupos de alimentos y no incluye los azúcares: aportan energía y casi ningún micronutriente, las guías alimentarias recomiendan limitarlos y, al dejarlos fuera, el costo funciona como una cota inferior que se puede comparar entre países (Herforth et al., 2022; Herforth et al., 2024). La Organización Mundial de la Salud recomienda que los azúcares libres sean menos de 10% de la energía total y, si es posible, menos de 5% (WHO, 2015). Los estudios que modelan la dieta que los hogares consumen, o la distancia entre esa dieta y una saludable, sí los incluyen, porque son parte de lo que se compra (Vandevijvere et al., 2018). Hay además una razón de precios para mirarlos: entre los alimentos de menor costo por unidad de energía están los almidones básicos, los aceites vegetales y el azúcar (Masters et al., 2025), de modo que un modelo que minimiza el costo tiende a usarlos. Por eso la recomendación habitual es presentar las estimaciones con y sin azúcares.
+
+En Colombia la guía alimentaria (GABA) tiene un grupo de azúcares con 3 intercambios al día, que son cerca de `r dec(p_azucar_guia, 0)`% de la energía de una mujer adulta, y ese grupo hace parte de la canasta del CoRD y del CoAHD. El CoNA y el CC-CoNA, en cambio, no tienen grupos: eligen cualquier alimento del panel, y el panel tiene cinco alimentos de azúcar y panela (azúcar morena, refinada y sulfitada, y panela cuadrada y redonda). El CoCA solo usa cereales, raíces, tubérculos y plátanos, así que los azúcares no entran en su cálculo y no se repite.
+
+Este documento estima las dietas de costo mínimo con los azúcares disponibles y sin ellos, con las mismas ciudades, fechas, precios y requerimientos, y calcula la razón entre el costo sin azúcares y el costo con azúcares. Una razón mayor que 1 quiere decir que quitar los azúcares encarece la dieta. El escenario con azúcares reproduce los resultados principales sin ninguna diferencia (diferencia máxima de `r dec(max(az$validacion$dif_maxima), 0)` pesos).
+
+# Las dietas y el papel de los azúcares
+
+El Cuadro \ref{tab:tab-dietas-az} resume cómo entra el azúcar en cada dieta. En el CoNA y el CC-CoNA es un alimento más, y el modelo lo compra si le sirve para cubrir energía o nutrientes al menor costo; en el CoRD y el CoAHD es un grupo de la guía, con una cantidad fija de energía y un solo alimento.
+
+```{r tabla-dietas}
+dietas <- tribble(
+  ~Dieta, ~`Qué calcula`, ~`Cómo entra el azúcar y qué cambia al quitarla`,
+  "CoNA", "Costo mínimo de cubrir la energía y 16 nutrientes con cualquier alimento del panel.",
+  "Los cinco alimentos son candidatos como cualquiera, sin tope. Sin azúcares salen los cinco.",
+  "CC-CoNA", "El CoNA, con la exigencia de que las cantidades se repartan entre subclases del IPC como lo hace el IPC (alpha = 0,5).",
+  "Igual que el CoNA, y además el IPC tiene dos subclases de azúcar y panela que la dieta debe incluir. Sin azúcares salen también esas dos subclases y las demás se reescalan.",
+  "CoRD", "Costo de seguir la guía alimentaria colombiana, con los alimentos más baratos de cada uno de sus siete grupos.",
+  "Es un grupo de la guía con un alimento. Sin azúcares la dieta queda con seis grupos y 11 alimentos, y sin las kilocalorías del grupo.",
+  "CoAHD", "Como el CoRD, pero cada grupo se compra por sus kilocalorías y se elige por precio por kilocaloría.",
+  "Igual que el CoRD."
+)
+kable(dietas, booktabs = TRUE, label = "tab-dietas-az", caption = "Las dietas de costo mínimo y el papel de los azúcares") %>%
+  kable_styling(latex_options = c("hold_position", "striped"), font_size = 8.5) %>%
+  column_spec(1, width = "1.6cm") %>% column_spec(2, width = "5.8cm") %>% column_spec(3, width = "8.2cm")
+```
+
+```{r tabla-alimentos-azucar}
+pa <- az$precios_azucar %>% group_by(articulo) %>%
+  summarise(`Ciudades` = n_distinct(ciudad_norm), `COP por 100 kcal` = mean(cop_por_100kcal), kcal = mean(kcal_100g), .groups = "drop")
+mc <- panel %>% filter(articulo %in% az$alimentos_azucar) %>% group_by(articulo) %>%
+  summarise(Calcio = first(calcio_mg), Hierro = first(hierro_mg), .groups = "drop")
+cereal_barato <- panel %>% filter(grepl("CEREALES", grupos_gabas), articulo != "ARROZ PARA SOPA", !is.na(precio_100g)) %>%
+  group_by(articulo) %>% summarise(p = mean(precio_100g / energia_kcal * 100), .groups = "drop") %>% arrange(p)
+harina <- panel %>% filter(articulo == "Harina de trigo") %>% summarise(p = mean(precio_100g / energia_kcal * 100)) %>% pull(p)
+ta <- pa %>% left_join(mc, by = "articulo") %>%
+  transmute(Alimento = articulo, `Ciudades con precio` = Ciudades, `kcal por 100 g` = cop0(kcal), `COP por 100 kcal` = cop0(`COP por 100 kcal`),
+            `Calcio (mg)` = cop0(Calcio), `Hierro (mg)` = dec(Hierro, 1)) %>%
+  arrange(as.numeric(gsub("\\.", "", `COP por 100 kcal`)))
+kable(ta, booktabs = TRUE, align = "lrrrrr", label = "tab-alimentos-az",
+      caption = "Los cinco alimentos del grupo de azúcares: precio por energía y composición por 100 g") %>%
+  kable_styling(latex_options = c("hold_position", "striped"), font_size = 9)
+```
+
+El Cuadro \ref{tab:tab-alimentos-az} explica por qué un modelo que minimiza el costo se acerca al azúcar. La azúcar refinada cuesta `r cop0(pa[["COP por 100 kcal"]][pa$articulo == "Azúcar refinada"])` COP por 100 kcal, menos que la harina de trigo (`r cop0(harina)`), y solo tres maíces (blanco trillado, blanco con cáscara y amarillo con cáscara) cuestan menos por kilocaloría que ella: es el cuarto alimento más barato de todo el panel por energía. La azúcar morena cuesta algo más, pero la tabla de composición le asigna calcio y hierro (`r cop0(mc$Calcio[mc$articulo == "Azúcar morena"])` mg y `r dec(mc$Hierro[mc$articulo == "Azúcar morena"], 1)` mg por 100 g) que la refinada no tiene, y eso la hace útil para un modelo que busca nutrientes. La panela cuesta más del doble por kilocaloría que la refinada, y por eso solo aparece cuando el IPC obliga a comprarla.
+
+# Resultados
+
+```{r tabla-razones}
+tz <- rz %>%
+  transmute(Dieta = modelo,
+            `Con azúcares` = cop0(pc_con), `Sin azúcares` = cop0(pc_sin),
+            `Razón` = dec(razon_promedio, 3),
+            `Mínimo y máximo entre ciudades` = paste0(dec(razon_min, 3), " y ", dec(razon_max, 3)),
+            `Razón por 1.000 kcal` = dec(razon_1000kcal, 3))
+kable(tz, booktabs = TRUE, align = "lrrrcr", label = "tab-razones",
+      caption = "Costo per cápita (COP/día), promedio de las 13 ciudades y del trimestre jul-sep 2025") %>%
+  kable_styling(latex_options = c("hold_position", "striped"), font_size = 9)
+```
+
+El Cuadro \ref{tab:tab-razones} y la Figura \ref{fig:fig-costos} reúnen el resultado. Las dos dietas que eligen los alimentos (CoNA y CC-CoNA) cuestan más sin azúcares, entre `r dec(100 * (r("CoNA", "razon_promedio") - 1), 1)`% y `r dec(100 * (r("CC-CoNA", "razon_promedio") - 1), 1)`%; las dos dietas que siguen la guía (CoRD y CoAHD) cuestan `r dec(100 * (1 - r("CoRD", "razon_promedio")), 1)`% y `r dec(100 * (1 - r("CoAHD", "razon_promedio")), 1)`% menos. Los signos opuestos no son una contradicción: en las primeras quitar el azúcar le quita al modelo una opción barata, y en las segundas le quita a la dieta un grupo entero, con sus kilocalorías.
+
+```{r fig-costos, fig.cap="Costo per cápita de cada dieta con y sin azúcares"}
+knitr::include_graphics(fig("07_robustez/fig20_costo_con_sin_azucar.png"))
+```
+
+La Figura \ref{fig:fig-costos} muestra cada dieta en su panel, con el color de la dieta y la barra clara para el escenario sin azúcares. En ninguna de las cuatro el cambio altera el orden entre dietas: el CoNA sigue siendo la más barata de las cuatro, el CC-CoNA la más cara, y el CoRD queda por encima del CoAHD con y sin azúcares.
+
+## CoNA
+
+```{r cona-azucar}
+uso <- az$uso_cona %>%
+  left_join(eer_ll, by = c("ciudad", "Demo_Group", "Sex")) %>%
+  mutate(p = 100 * kcal / req)
+celdas_uso <- uso %>% filter(grepl("Az", Food)) %>% distinct(ciudad, fecha) %>% nrow()
+p_miembro <- uso %>% group_by(ciudad, fecha, Demo_Group, Sex) %>% summarise(p = sum(p), .groups = "drop")
+cc_cona <- az$cambio_cona
+cb <- function(f, col) cc_cona[[col]][cc_cona$Food == f]
+rc_cona <- rc %>% filter(modelo == "CoNA") %>% arrange(desc(razon))
+altas <- rc_cona %>% filter(razon > 1.01)
+altas_txt <- lista_es(paste0(CITY_LABS[altas$ciudad], ", con ", dec(100 * (altas$razon - 1), 1), "%"))
+sin_compra <- CITY_LABS[rc_cona$ciudad[abs(rc_cona$razon - 1) < 1e-6]]
+g_ciudad <- az$uso_cona %>% filter(escenario == "con_azucar") %>%
+  group_by(ciudad, fecha, Demo_Group, Sex) %>% summarise(g = sum(gramos), .groups = "drop") %>%
+  group_by(ciudad) %>% summarise(celdas = n(), g = mean(g), .groups = "drop") %>% arrange(desc(g))
+gc <- function(ci, col) g_ciudad[[col]][g_ciudad$ciudad == ci]
+```
+
+Quitar los azúcares encarece el CoNA en promedio `r dec(100 * (r("CoNA", "razon_promedio") - 1), 1)`%, una cifra pequeña que esconde diferencias entre ciudades. La razón va de `r dec(r("CoNA", "razon_min"), 3)` a `r dec(r("CoNA", "razon_max"), 3)`, y `r nrow(altas)` ciudades pasan de 1,01: `r altas_txt`. En las demás el cambio es de menos de 1%, y en `r lista_es(sin_compra)` la dieta con azúcares no compra azúcar, de modo que la razón es exactamente 1.
+
+La razón por la que el modelo compra azúcar en unas ciudades y no en otras no es energética sino nutricional. No necesita azúcar para cubrir calorías, porque la harina de trigo y el maíz las dan a menor costo en la mayoría de las ciudades; lo que busca es el calcio y el hierro que la tabla de composición le asigna a la azúcar morena. La azúcar morena aparece en `r celdas_uso` de las 39 combinaciones de ciudad y mes. Donde aparece, la cantidad es grande: en Pereira y Bogotá, las dos ciudades donde más encarece quitarla, la dieta compra en promedio `r cop0(gc("PEREIRA", "g"))` y `r cop0(gc("BOGOTA", "g"))` g de azúcar por persona y día cuando la compra, frente a `r cop0(gc("MONTERIA", "g"))` g en Montería o `r cop0(gc("CALI", "g"))` en Cali. Esa cantidad aporta en promedio `r dec(mean(p_miembro$p), 0)`% de la energía del miembro y hasta `r dec(max(p_miembro$p), 0)`%, muy por encima del 10% que recomienda la OMS, porque el CoNA no tiene un tope para los azúcares.
+
+```{r tabla-cambios}
+cambios <- az$comp %>%
+  filter(modelo %in% c("CoNA", "CC-CoNA")) %>%
+  group_by(modelo, escenario, ciudad, fecha, Food) %>% summarise(g = sum(quantity) / 3, .groups = "drop") %>%
+  group_by(modelo, escenario, Food) %>% summarise(g = sum(g) / 39, .groups = "drop") %>%
+  pivot_wider(names_from = escenario, values_from = g, values_fill = 0) %>%
+  mutate(cambio = sin_azucar - con_azucar)
+top_cambios <- cambios %>% group_by(modelo) %>%
+  arrange(desc(abs(cambio)), .by_group = TRUE) %>% slice_head(n = 7) %>% ungroup() %>%
+  mutate(modelo = factor(modelo, levels = c("CoNA", "CC-CoNA"))) %>% arrange(modelo, desc(cambio))
+tcamb <- top_cambios %>%
+  transmute(Dieta = as.character(modelo), Alimento = Food, `Con azúcares` = dec(con_azucar, 0), `Sin azúcares` = dec(sin_azucar, 0),
+            `Cambio` = paste0(ifelse(cambio >= 0, "+", "-"), dec(abs(cambio), 0)))
+kable(tcamb, booktabs = TRUE, align = "llrrr", label = "tab-cambios",
+      caption = "Los siete alimentos que más cambian al quitar los azúcares: gramos al día por persona, promedio de ciudades y meses") %>%
+  kable_styling(latex_options = c("hold_position", "striped"), font_size = 9)
+cb_cc <- function(f) cambios$cambio[cambios$modelo == "CC-CoNA" & cambios$Food == f]
+cb_cona <- function(f) cambios$cambio[cambios$modelo == "CoNA" & cambios$Food == f]
+cc_con <- function(f) cambios$con_azucar[cambios$modelo == "CC-CoNA" & cambios$Food == f]
+```
+
+El Cuadro \ref{tab:tab-cambios} muestra qué hace el modelo cuando el azúcar desaparece. En el CoNA reemplaza los `r dec(-cb_cona("Azúcar morena"), 0)` g diarios de azúcar morena por `r dec(cb_cona("Harina de trigo"), 0)` g más de harina de trigo y `r dec(cb_cona("Maíz blanco trillado"), 0)` g más de maíz blanco trillado, y compra `r dec(abs(cb_cona("Carne de res, cogote")), 0)` g menos de carne de res, cogote y menos leguminosas, porque el calcio y el hierro que le daba el azúcar los recupera de otros alimentos. El efecto sobre el costo es bajo porque el reemplazo de las calorías es barato y el de los micronutrientes es parcial.
+
+## CC-CoNA
+
+```{r ccona-azucar}
+comp_cc <- az$comp %>% filter(modelo == "CC-CoNA", escenario == "con_azucar", Food %in% az$alimentos_azucar, quantity > 0) %>%
+  distinct(ciudad, fecha, Demo_Group, Sex)
+tot_cc <- az$comp %>% filter(modelo == "CC-CoNA", escenario == "con_azucar") %>%
+  mutate(az = Food %in% az$alimentos_azucar) %>%
+  group_by(ciudad, fecha, Demo_Group, Sex) %>% summarise(tot = sum(quantity), azu = sum(quantity[az]), .groups = "drop") %>%
+  summarise(tot = mean(tot), azu = mean(azu))
+ip <- ipc %>% filter(grepl("zúcar|anela", subclase_nombre))
+min_ipc <- 0.5 * sum(ip$share) * tot_cc$tot
+```
+
+El CC-CoNA es más sensible. La razón es de `r dec(r("CC-CoNA", "razon_promedio"), 3)` en promedio (`r dec(100 * (r("CC-CoNA", "razon_promedio") - 1), 1)`%) y está entre `r dec(r("CC-CoNA", "razon_min"), 3)` y `r dec(r("CC-CoNA", "razon_max"), 3)` en las 13 ciudades, sin que ninguna quede cerca de 1. A diferencia del CoNA, esta dieta compra azúcar o panela en `r nrow(comp_cc)` de los 117 casos de miembro, ciudad y mes, porque el IPC tiene una subclase de azúcar y otros endulzantes (`r dec(100 * ip$share[grepl("zúcar", ip$subclase_nombre)], 1)`% de las cantidades, después de reescalar sobre las subclases del panel) y otra de panela (`r dec(100 * ip$share[grepl("anela", ip$subclase_nombre)], 1)`%), y con alpha = 0,5 la dieta tiene que cubrir la mitad de cada una.
+
+Ese mínimo es pequeño. La mitad de las dos participaciones suma `r dec(100 * 0.5 * sum(ip$share), 1)`% de las cantidades, o unos `r cop0(min_ipc)` g de los `r cop0(tot_cc$tot)` g que compra en promedio la dieta; la dieta con azúcares compra en cambio `r cop0(tot_cc$azu)` g de azúcar y panela por persona y día, `r dec(tot_cc$azu / min_ipc, 0)` veces el mínimo, por la misma razón que en el CoNA: el azúcar morena le da calcio y hierro baratos. Al sacar los azúcares desaparecen esas dos subclases del conjunto de restricciones y las participaciones de las demás se reescalan hacia arriba. La dieta sustituye la azúcar morena por cereales (`r dec(cb_cc("Harina de trigo"), 0)` g más de harina de trigo, `r dec(cb_cc("Maíz blanco trillado"), 0)` g más de maíz blanco trillado y `r dec(cb_cc("Arroz excelso") + cb_cc("Arroz de segunda"), 0)` g más de arroz) y `r dec(abs(cb_cc("Garbanzo importado") + cb_cc("Fríjol cabeza negra nacional")), 0)` g menos de garbanzo y fríjol. Esos reemplazos cubren las calorías, pero no el calcio y el hierro que le daba el azúcar morena, y por eso la dieta cuesta más. La razón es más estable entre ciudades que la del CoNA porque no depende de si el modelo quería azúcar, sino de una restricción que se cumple en todas.
+
+## CoRD
+
+```{r cord-azucar}
+kc <- rc %>% filter(modelo == "CoRD")
+dkc <- 100 * (1 - kc$kcal_sin / kc$kcal_con)
+ref <- az$precios_azucar %>% filter(articulo == "Azúcar refinada")
+cop_1000_azucar <- mean(ref$precio_100g) / 397 * 1000
+cop_1000_resto <- mean(kc$pc_sin) / mean(kc$kcal_sin) * 1000
+elegido <- az$uso_cord_ahd %>% filter(escenario == "con_azucar", modelo == "CoRD") %>% distinct(ciudad, fecha, Food) %>% count(Food)
+```
+
+Sin el grupo de azúcares, el CoRD baja `r dec(100 * (1 - r("CoRD", "razon_promedio")), 1)`% (razón de `r dec(r("CoRD", "razon_promedio"), 3)`, con un rango estrecho entre ciudades de `r dec(r("CoRD", "razon_min"), 3)` a `r dec(r("CoRD", "razon_max"), 3)`). La caída es casi la misma en todas las ciudades porque lo que se quita es una cantidad fija, tres intercambios de un alimento, y ese alimento es casi siempre el mismo: la azúcar refinada en `r elegido$n[elegido$Food == "Azúcar refinada"]` de las 39 combinaciones de ciudad y mes y la sulfitada en las `r elegido$n[elegido$Food == "Azúcar sulfitada"]` restantes, y su precio cambia poco entre ciudades (de `r cop0(min(ref$precio_100g))` a `r cop0(max(ref$precio_100g))` COP por 100 g).
+
+Esta cifra no es una comparación justa, porque la dieta sin azúcares también aporta menos energía: `r cop0(mean(kc$kcal_sin))` kcal por persona frente a `r cop0(mean(kc$kcal_con))`, es decir `r dec(mean(dkc), 1)`% menos. El azúcar es una fuente de energía mucho más barata que el resto de la dieta de la guía (alrededor de `r cop0(cop_1000_azucar)` COP por 1.000 kcal, frente a `r cop0(cop_1000_resto)` en el resto de la dieta), y por eso quitarla reduce la energía más de lo que reduce el costo. Medido por 1.000 kcal, el CoRD sin azúcares cuesta `r dec(100 * (r("CoRD", "razon_1000kcal") - 1), 1)`% más que con ellos. Esa es la razón que corresponde si la pregunta es cuánto cuesta cubrir la misma energía sin azúcares: reponer las kilocalorías perdidas llevaría el CoRD sin azúcares a `r cop0(mean(kc$pc_sin) * mean(kc$kcal_con) / mean(kc$kcal_sin))` COP por persona al día, frente a `r cop0(r("CoRD", "pc_con"))` con ellos.
+
+## CoAHD
+
+El CoAHD se comporta casi igual que el CoRD, porque los dos eligen el mismo alimento de azúcar en todas las ciudades: la razón es de `r dec(r("CoAHD", "razon_promedio"), 3)` (`r dec(100 * (1 - r("CoAHD", "razon_promedio")), 1)`% menos) y de `r dec(r("CoAHD", "razon_1000kcal"), 3)` por 1.000 kcal. La diferencia con el CoRD es de apenas `r dec(abs(r("CoRD", "razon_promedio") - r("CoAHD", "razon_promedio")), 3)` en la razón total. El tratamiento del azúcar no es, entonces, lo que separa a las dos dietas; sus diferencias vienen de otros grupos de alimentos, como se discute en el documento principal.
+
+## Por ciudad
+
+```{r fig-razon, fig.cap="Cambio en el costo al quitar los azúcares, por ciudad"}
+knitr::include_graphics(fig("07_robustez/fig21_razon_sin_azucar.png"))
+```
+
+```{r orden-ciudades}
+ordenes <- rc %>% select(modelo, ciudad, pc_con, pc_sin) %>%
+  group_by(modelo) %>% summarise(rho = cor(pc_con, pc_sin, method = "spearman"), .groups = "drop") %>%
+  mutate(modelo = factor(modelo, levels = MOD)) %>% arrange(modelo)
+amp <- function(m) 100 * (r(m, "razon_max") - r(m, "razon_min"))
+```
+
+La Figura \ref{fig:fig-razon} pone la razón de cada ciudad en la barra, con el cambio en porcentaje: la fila de arriba es el costo total y la de abajo el costo por 1.000 kcal. En el CoNA la mayoría de las barras casi no se ven, porque la razón es 1 en `r length(sin_compra)` ciudades y menor de 1,01 en `r sum(rc_cona$razon > 1 + 1e-6 & rc_cona$razon < 1.01)` más, y solo se separan `r lista_es(CITY_LABS[altas$ciudad])`. En el CC-CoNA todas las ciudades suben, entre `r dec(100 * (r("CC-CoNA", "razon_min") - 1), 1)`% y `r dec(100 * (r("CC-CoNA", "razon_max") - 1), 1)`%. En el CoRD y el CoAHD las barras del costo total quedan a la izquierda de cero y las del costo por 1.000 kcal a la derecha, y la diferencia entre las dos filas es la energía que pierden al quitar el grupo.
+
+El orden de las ciudades por costo casi no cambia con el tratamiento del azúcar: la correlación de rangos entre el costo con y sin azúcares es de `r paste0(ordenes$modelo, " ", dec(ordenes$rho, 2), collapse = ", ")`. La dispersión entre ciudades de la razón es pequeña en CoRD y CoAHD (la razón varía en menos de `r dec(max(amp("CoRD"), amp("CoAHD")), 1)` puntos porcentuales) y mayor en CoNA (`r dec(amp("CoNA"), 1)` puntos) y CC-CoNA (`r dec(amp("CC-CoNA"), 1)`).
+
+# Conclusiones
+
+Los azúcares son una parte pequeña del costo de las dietas de costo mínimo, pero su tratamiento cambia la lectura de dos maneras distintas según la dieta. En las dietas donde la energía es una restricción y el modelo decide qué comprar (CoNA y CC-CoNA), quitarlos encarece la dieta entre `r dec(100 * (r("CoNA", "razon_promedio") - 1), 1)`% y `r dec(100 * (r("CC-CoNA", "razon_promedio") - 1), 1)`%, porque el azúcar es una fuente barata de energía y, en la tabla de composición, de algo de calcio y hierro. En las dietas donde los azúcares son un grupo fijo de la guía (CoRD y CoAHD), quitarlos baja el costo cerca de `r dec(100 * (1 - mean(c(r("CoRD", "razon_promedio"), r("CoAHD", "razon_promedio")))), 0)`%, pero también baja la energía de la dieta en `r dec(mean(dkc), 0)`%, y por kilocaloría la dieta sin azúcares cuesta `r dec(100 * (mean(c(r("CoRD", "razon_1000kcal"), r("CoAHD", "razon_1000kcal"))) - 1), 0)`% más.
+
+Dos resultados para tener presentes al comparar con otras estimaciones. Primero, el CoAHD con los azúcares de la guía colombiana queda `r dec(100 * (r("CoAHD", "pc_con") / r("CoAHD", "pc_sin") - 1), 1)`% por encima del que se obtiene con una canasta de seis grupos como la de la FAO, y esa es la parte de la diferencia con las cifras internacionales que viene de este supuesto. Segundo, el CoNA no tiene un tope de azúcares, y cuando compra azúcar morena puede cubrir con ella hasta `r dec(max(p_miembro$p), 0)`% de la energía de un miembro del hogar; sus resultados con azúcares describen una dieta que ninguna guía recomendaría, y un tope de 10% de la energía es la extensión natural del modelo.
+
+# Referencias
+
+- Herforth, A., Venkat, A., Bai, Y., Costlow, L., Holleman, C. y Masters, W. A. (2022). *Methods and options to monitor the cost and affordability of a healthy diet globally*. FAO Agricultural Development Economics Working Paper 22-03.
+- Herforth, A. W., Gilbert, R., Sokourenko, K. et al. (2024). Monitoring the cost and affordability of a healthy diet within countries: building systems in Ethiopia, Ghana, Malawi, Nigeria, Pakistan, Tanzania, and Viet Nam. *Current Developments in Nutrition*, 8, 104441.
+- Masters, W. A., Wallingford, J. K., Gilbert, R. D., Martinez, E. M., Bai, Y., Sokourenko, K. y Herforth, A. W. (2025). Are healthy foods affordable? The past, present, and future of measuring food access using least-cost diets. *Annual Review of Resource Economics*.
+- Vandevijvere, S., Young, N., Mackay, S., Swinburn, B. y Gahegan, M. (2018). Modelling the cost differential between healthy and current diets: the New Zealand case study. *International Journal of Behavioral Nutrition and Physical Activity*.
+- World Health Organization. (2015). *Guideline: sugars intake for adults and children*. Ginebra: WHO.

@@ -1,6 +1,6 @@
 ---
 title: "Organización de carpetas del proyecto"
-date: "`r format(Sys.Date(), '%d de %B de %Y')`"
+date: "8 de octubre de 2026"
 lang: es
 geometry: margin=2.5cm
 output:
@@ -12,11 +12,15 @@ output:
 header-includes:
   - \usepackage{booktabs}
   - \usepackage{longtable}
+  - \usepackage{array}
+  - \usepackage[table]{xcolor}
+  - \usepackage{colortbl}
   - \usepackage{float}
 ---
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = FALSE, warning = FALSE, message = FALSE)
+options(knitr.table.format = "latex")
 library(tidyverse)
 library(knitr)
 library(kableExtra)
@@ -33,9 +37,9 @@ tabla <- function(df, anchos) {
 
 El proyecto tiene tres zonas dentro de `interno/`:
 
-- **Producción**: las carpetas numeradas (`01_webscrap_prep`, `02_dataprep`, `03_models`, `04_figures`, `05_sensibilidad_umbral`), `output/` y `shiny_boxplots/`, todas en la raíz de `interno/`. Es la versión que corre hoy, con el método del umbral (v2) para elegir el sku representativo de cada alimento.
-- **`v1/`**: una copia completa y aparte del pipeline, congelada en el método anterior (el sku más parecido a 500g/1000ml). Tiene su propia versión de cada carpeta numerada, su propio `output/` y su propio `shiny_boxplots/`.
-- **`docs/`**: los documentos del proyecto (`reporte_proyecto` y este). Se leen de los resultados pero ninguna carpeta los lee a ellos.
+- Producción: las carpetas numeradas (`01_webscrap_prep`, `02_dataprep`, `03_models`, `04_income`, `05_figures`, `06_sensibilidad_umbral`), `output/` y `shiny_boxplots/`, todas en la raíz de `interno/`, y el working paper (`workingpaper_041026.Rmd` y su PDF), que también vive en la raíz. Es la versión que corre hoy, con el método del umbral (v2) para elegir el sku representativo de cada alimento.
+- `v1/`: una copia completa y aparte del pipeline, congelada en el método anterior (el sku más parecido a 500 g o 1.000 ml). Tiene su propia versión de cada carpeta numerada, su propio `output/` y su propio `shiny_boxplots/`.
+- `docs/`: los documentos de apoyo: este, `sensibilidad_azucar`, `sensibilidad_umbral_tamano`, `prueba_aceites` y la revisión de literatura sobre azúcares que se usó como insumo (`revision-sobre-azucares.pdf`).
 
 `v1/` no se toca ni se actualiza. Se mantiene solo como referencia para comparar contra el método nuevo; cualquier cambio al pipeline se hace únicamente en las carpetas de producción.
 
@@ -50,10 +54,11 @@ Convierte los datos crudos del scraper en el panel de precios.
 ```{r tabla-01}
 tabla(tribble(
   ~Script, ~`Qué hace`,
-  "00_csv_a_rds.R", "Convierte los csv del scraper a .rds, uno por mes.",
-  "01_construccion_panel.R", "Limpia los datos, arma el panel alimento-ciudad-sku y elige el sku representativo de cada uno.",
-  "02a_lista_alimentos.R", "Decide qué alimentos quedan en cada ciudad según su cobertura de fechas.",
-  "02b_panel_balanceado.R", "Deja el panel con solo los alimentos que quedaron."
+  "00_csv_a_rds.R", "Convierte los csv del scraper a .rds, uno por mes (la carpeta de origen está al principio del script).",
+  "01_construccion_panel.R", "Limpia los datos, arma el panel alimento-ciudad-sku, elige el sku representativo de cada uno y lleva el precio a 500 g (sólidos) o a 1.000 ml (líquidos, con su densidad para pasarlos a gramos).",
+  "02a_lista_alimentos.R", "Decide qué alimentos quedan en cada ciudad: los que tienen al menos dos fechas con precio en cada mes.",
+  "02b_panel_balanceado.R", "Deja el panel con solo los alimentos que quedaron.",
+  "03_descriptivas_scraping.R", "Cifras del scraping (archivos, filas, productos, filas sin precio y cobertura por ciudad) que usa la sección de datos del working paper; guarda en `output/descriptivas/`."
 ), c("5cm", "9.5cm"))
 ```
 
@@ -62,33 +67,42 @@ La lógica que se repite o que es una regla de método vive aparte, en `aux-func
 ```{r tabla-01-aux}
 tabla(tribble(
   ~Archivo, ~`Qué hace`,
-  "seleccionar_sku_umbral.R", "Elige el sku representativo de cada alimento (menor precio por gramo bajo el umbral de tamaño, con cobertura de fechas).",
-  "umbral_fechas_grupo.R", "Decide qué alimentos pasan el umbral de fechas, medido contra los días de su grupo en cada ciudad.",
+  "seleccionar_sku_mediano.R", "Elige el sku representativo de cada alimento: entre los que tienen dos fechas por mes y pesan hasta 500 g (1.000 ml en los líquidos), sin los precios por gramo atípicos, el de precio por gramo mediano.",
+  "umbral_fechas_mes.R", "Decide qué alimentos pasan el umbral de fechas: al menos dos fechas con precio en cada mes con datos de la ciudad.",
   "mapeo_tcac.R", "Cruza los nombres de SIPSA con el mapeo a la TCAC. Lo usan 02a (grupo de cada alimento) y 02_dataprep (composición)."
 ), c("5cm", "9.5cm"))
 ```
 
-Es la única diferencia real entre v1 y producción en esta carpeta: cambian las reglas de elección del sku y de cobertura, no el resto del proceso.
+Es la única diferencia real entre v1 y producción en esta carpeta, junto con la conversión de los líquidos a gramos: cambian las reglas de elección del sku y de cobertura, no el resto del proceso.
 
 ## `02_dataprep`
 
-Le pega al panel de precios la composición nutricional de cada alimento y prepara los requerimientos del hogar representativo.
+Le pega al panel de precios la composición nutricional de cada alimento y prepara los requerimientos de los hogares.
 
 ```{r tabla-02}
 tabla(tribble(
   ~Script, ~`Qué hace`,
   "00_tcac_composicion.R", "Une la lista de alimentos con la composición nutricional de cada uno.",
   "01_panel_mensual_tcac.R", "Agrega el panel a nivel mensual, ya con la composición pegada.",
-  "02_eer_*members.R", "Calcula el requerimiento energético del hogar representativo, según su número de miembros.",
-  "03_gaba_ajustado.R", "Ajusta los intercambios de la guía alimentaria a la energía de cada ciudad."
+  "02_eer_3members.R", "Requerimientos del hogar de tres personas: hombre adulto 31-50, mujer adulta 31-50 y niña 9-13. Usa la misma función que los hogares de cuatro y cinco (`aux-functions/eer_hogar.R`).",
+  "02_eer_4members.R", "Requerimientos del hogar de cuatro personas: hombre adulto, mujer gestante 31-50, adolescente mujer 14-18 y niña 9-13. Con `VARIANTE_HOGAR=t3` usa el incremento de energía del tercer trimestre, y con `VARIANTE_HOGAR=esc` escala los límites de macronutrientes a la energía de cada miembro.",
+  "02_eer_5members.R", "Requerimientos del hogar de cinco personas: hombre adulto, mujer adulta, adolescente mujer 14-18, niña 9-13 y mujer mayor 51-70.",
+  "eer/06-auditoria-eer.R", "Auditoría de los requerimientos de energía de los seis tipos de miembro: antropometría, actividad, EER, recálculo con las ecuaciones y comparación con la energía de referencia de FoodpriceR y de la guía. Guarda `eer/output/081026_auditoria_eer.xlsx` y `.rds`, que lee el working paper.",
+  "03_gaba_ajustado.R", "Ajusta los intercambios de la guía alimentaria a la energía de cada ciudad, para el hogar que indique la variable `N_MIEMBROS`.",
+  "04_auditoria_productos.R", "Rehace el precio de cada producto elegido desde los datos originales y marca los casos que hay que revisar a mano.",
+  "05_mapeo_ipc.R", "Asigna cada alimento a una subclase del IPC y calcula las participaciones que usa el CC-CoNA (resultado en `output/ipc/`)."
 ), c("5cm", "9.5cm"))
 ```
 
-Las subcarpetas `eer/`, `household eer/` y `unidades/` guardan las tablas base y los resultados intermedios de esos scripts. v1 reutiliza el mismo cálculo de requerimiento que producción; solo corre la parte que sí depende del método de precio.
+Los tres scripts `02_eer_*members.R` leen la tabla de EER por ciudad (`eer/output/230726_agg_eer.xlsx`) y las tablas de mínimos y máximos de nutrientes del paquete FoodpriceR, y guardan en `household eer/` tres archivos por hogar: `household_eer`, `household_eer_ll` (EER con mínimos de nutrientes) y `household_ul` (máximos). Los del hogar de tres personas no llevan sufijo; los de cuatro y cinco terminan en `_4m` y `_5m`. `aux-functions/eer_hogar.R` tiene la lista de miembros posibles y arma los insumos de los hogares de cuatro y cinco; para cambiar la composición de uno de ellos basta cambiar la lista de miembros que está al principio de su script.
+
+Los miembros que no están en el hogar de tres salen así. La mujer gestante tiene el EER de la mujer de 31 a 50 años de su ciudad más el incremento de la gestación (311 kcal), que calcula `eer/05-EER-gestantes-mayores.R` con el trimestre de embarazo de la ENSIN, y los mínimos y máximos de nutrientes de "gestantes de 31 a 50 años". La adolescente y la mujer mayor toman el EER de la tabla de adultos y adolescentes (`eer/02-EER-adultos.R`, ecuaciones NASEM 2023 con la antropometría y la actividad física de ENSIN y SABE) para los grupos de 14 a 18 y de 51 a 70 años. Las ecuaciones viven en `aux-functions/eer_iom.R`, como un objeto con los coeficientes (`EER_IOM_COEF`) que el working paper imprime en el apéndice. `02-EER-adultos.R` descarta los pesos y tallas fuera de rango (la SABE codifica con 777 los datos no medidos). La tabla de niñas y niños (`eer/01-EER-ninos.R`) viene de la resolución de recomendaciones de energía y se promedia con la población del Censo; de ahí sale la niña de 9 a 13 años. `eer/03-EER-agregados.R` junta las dos tablas, y `ipc/` guarda las ponderaciones del IPC del DANE. v1 reutiliza el mismo cálculo de requerimiento que producción.
+
+La variable de entorno `VARIANTE_HOGAR` (vacía por defecto) la leen `02_eer_*members.R`, `03_gaba_ajustado.R` y los modelos, y agrega su valor al sufijo de los archivos: `t3` (solo con `N_MIEMBROS=4`) es el hogar de cuatro con el incremento de energía del tercer trimestre (452 kcal), y `esc` escala los gramos de proteína, lípidos y carbohidratos de FoodpriceR a la energía de cada miembro. Son pruebas de sensibilidad: `03_models/09_sensibilidad_requerimientos.R` junta sus resultados.
 
 ## `03_models`
 
-Aquí corren los modelos.
+Aquí corren los modelos. Los cuatro scripts de dietas y el CC-CoNA leen la variable de entorno `N_MIEMBROS` (3 por defecto) para correr el hogar de 3, 4 o 5 personas; los resultados de 4 y 5 llevan el sufijo `_4m` y `_5m` en la misma carpeta de cada modelo.
 
 ```{r tabla-03}
 tabla(tribble(
@@ -97,8 +111,12 @@ tabla(tribble(
   "02_cona.R", "Corre el modelo de cona por ciudad-mes.",
   "03_cord.R", "Corre el modelo de cord por ciudad-mes.",
   "031_coahd.R", "Corre el modelo de coahd por ciudad-mes.",
-  "04_cc_cona.R", "Variante adicional; no forma parte del flujo actual.",
-  "05_models_hcost.R", "Junta los costos de los cuatro modelos en el costo del hogar y el costo per cápita (día, mes y año)."
+  "04_cc_cona.R", "CoNA restringido a la composición del IPC (cona consistente con el consumo), para alpha de 0 a 1.",
+  "05_models_hcost.R", "Junta los costos de las cinco dietas en el costo del hogar y el costo per cápita (día, mes y año), para los hogares de 3, 4 y 5 personas. El CC-CoNA entra con el alpha de `aux-functions/alfa_referencia.R`.",
+  "06_sensibilidad_azucar.R", "CoNA, CC-CoNA, CoRD y CoAHD con y sin azúcares, y las razones entre los dos.",
+  "08_sensibilidad_subproductos.R", "CoNA sin los alimentos cuyo mapeo conviene revisar (cogote de res, menudencias, cabezas de pescado, rabadillas).",
+  "09_sensibilidad_requerimientos.R", "Junta los resultados de las dos pruebas de los requerimientos de los hogares: límites de macronutrientes escalados a la energía de cada miembro (`VARIANTE_HOGAR=esc`) e incremento de energía de la gestante del tercer trimestre (`VARIANTE_HOGAR=t3`). Guarda en `requerimientos/`.",
+  "10_zoom_alimentos.R", "Revisión alimento por alimento del maíz del CoCA y de los cuatro subproductos del CoNA: producto, precio original del scraper, precio por 100 g, composición, aporte a la dieta, precio frente a otras fuentes del mismo nutriente y costo del CoNA sin cada uno. Guarda en `zoom/`."
 ), c("5cm", "9.5cm"))
 ```
 
@@ -109,45 +127,88 @@ tabla(tribble(
   ~Archivo, ~`Qué hace`,
   "CoCA_paper.R, CoNA_paper.R", "Las funciones de coca y cona.",
   "CoRD_Herforth.R, CoAHD_Herforth.R", "Las funciones de cord y coahd.",
-  "gaba_insumos.R", "Grupos de la guía alimentaria, número de alimentos por grupo, lista de alimentos excluidos (ajo y ají) y armado de los insumos que comparten cord y coahd."
+  "gaba_insumos.R", "Grupos de la guía alimentaria, número de alimentos por grupo, lista de alimentos excluidos (ajo y ají) y armado de los insumos que comparten cord y coahd.",
+  "CoNA_IPC.R", "La función del CC-CoNA. Reproduce el CoNA con alpha igual a 0.",
+  "alfa_referencia.R", "El alpha del CC-CoNA que se usa para comparar con las otras dietas (0,5). Lo leen `05_models_hcost.R`, `06_sensibilidad_azucar.R` y las figuras."
 ), c("5cm", "9.5cm"))
 ```
 
-Cada modelo guarda su salida en su propia subcarpeta (`coca/`, `cona/`, `cord/`, `coahd/`), en `.rds` (para seguir trabajando en R) y `.xlsx` (para revisar a mano). v1 solo corre coca y cona: es lo mínimo necesario para comparar contra producción.
+Cada modelo guarda su salida en su propia subcarpeta (`coca/`, `cona/`, `cord/`, `coahd/`, `ccona/`, y `azucar/` y `subproductos/` para las pruebas), en `.rds` (para seguir trabajando en R) y `.xlsx` (para revisar a mano). v1 solo corre coca y cona: es lo mínimo necesario para comparar contra producción.
 
-## `04_figures`
+Las dos variantes de requerimientos (`VARIANTE_HOGAR=esc` para los macronutrientes escalados, con el CoNA y el CC-CoNA de los hogares de 3, 4 y 5; `VARIANTE_HOGAR=t3` con `N_MIEMBROS=4` para las cinco dietas) se corren igual, con la variable definida, y después `09_sensibilidad_requerimientos.R`.
+
+Para correr un hogar de cuatro o cinco personas, en la terminal y desde `03_models/`: primero `02_dataprep/02_eer_4members.R` y `N_MIEMBROS=4 Rscript 03_gaba_ajustado.R` (desde `02_dataprep/`), y después, con `N_MIEMBROS=4`, los scripts `01_coca.R`, `02_cona.R`, `03_cord.R`, `031_coahd.R` y `04_cc_cona.R`. Lo mismo con 5. En PowerShell se define la variable con `$env:N_MIEMBROS = 4` antes de llamar a `Rscript`.
+
+## `04_income`
+
+Asequibilidad de las cinco dietas con los microdatos de pobreza monetaria de la GEIH de 2025 (uno de hogares y uno de personas). Ya se corrió con los archivos de julio a septiembre.
+
+```{r tabla-income}
+tabla(tribble(
+  ~Archivo, ~`Qué hace`,
+  "00_pobreza_csv_a_rds.R", "Convierte los csv de pobreza monetaria del DANE (hogares y personas) de un año a .rds en `input/`. Es el mismo procedimiento con el que se prepararon los archivos de 2018 a 2024 del paper (`Pobreza/hogares/poverty_h.R` y `Pobreza/personas/poverty_p.R`).",
+  "01_geih_deciles.R", "Deciles de ingreso per cápita y gasto en alimentos de los hogares de las 13 ciudades, por mes, a partir de los dos archivos de `input/`.",
+  "02_asequibilidad.R", "Porcentaje de la población que no puede pagar cada una de las cinco dietas (y brecha y severidad), por decil, ciudad y mes: caso base, según el tamaño del hogar y contrafactual.",
+  "aux-functions/Afford_Exp.R", "Los indicadores FGT para cualquier número de dietas y umbrales que dependen del tamaño del hogar."
+), c("5cm", "9.5cm"))
+```
+
+### Qué hay que hacer para correr la asequibilidad
+
+Estos son los pasos, en orden, con los que se corrió la asequibilidad con las cinco dietas; sirven para repetirla o para actualizarla con otro año.
+
+1. Descargar del DANE los microdatos de pobreza monetaria de 2025 (la GEIH con el módulo de pobreza monetaria), uno de hogares y uno de personas, en csv. Si el DANE todavía no los ha publicado, la alternativa es construir el ingreso per cápita de la unidad de gasto desde los módulos de la GEIH mensual o usar la GEIH 2024 con los precios de 2025 deflactados; la segunda cambia la interpretación y hay que decirlo en el texto.
+2. Guardar el csv de hogares en `C:/Users/danie/OneDrive/Documentos/Pobreza/Hogares/` (`Hogares_2025.csv`) y el de personas en `C:/Users/danie/OneDrive/Documentos/Pobreza/Personas/` (`Personas_2025.csv`), con el año en el nombre de cada archivo. Son las mismas carpetas donde estaban los de 2018 a 2024.
+3. Correr `04_income/00_pobreza_csv_a_rds.R`. Deja `hogares_pobreza_2025.rds` y `personas_pobreza_2025.rds` en `04_income/input/`.
+4. Verificar que los archivos traen los 13 dominios (BARRANQUILLA, BOGOTA, BUCARAMANGA, CALI, CARTAGENA, CUCUTA, IBAGUE, MANIZALES, MEDELLIN, MONTERIA, PASTO, PEREIRA y VILLAVICENCIO) y los meses 7, 8 y 9 de 2025, con `clase = 1` (cabecera). Las variables que lee `01_geih_deciles.R` son `directorio`, `secuencia_p`, `orden`, `year`, `mes`, `dominio`, `clase`, `dpto`, `nper`, `npersug`, `ingtotug`, `ingtotugarr` (o `ingtotarr`), `ingpcug`, `lp`, `li`, `pobre`, `indigente`, `ingtot` y `fex_c`.
+5. Confirmar la participación del gasto en alimentos por decil que está al principio de `01_geih_deciles.R` (`SHARE_ALIMENTOS`: 39%, 36%, 35%, 32% y 26% por pares de deciles). Son los valores del paper, que están escritos en el script del paper sin indicar de qué encuesta salen; es el supuesto que más mueve la asequibilidad y está pendiente documentar su fuente (probablemente la ENPH) o reemplazarlo por el de la última encuesta. Se deja para consultar con el equipo.
+6. Correr, en este orden, `03_models/05_models_hcost.R` (si no se ha corrido después de los modelos de 3, 4 y 5 personas), `04_income/01_geih_deciles.R` y `04_income/02_asequibilidad.R`. Los resultados quedan en `04_income/asequibilidad/`.
+7. Correr `05_figures/08_fig_asequibilidad.R` y `05_figures/09_tab_asequibilidad.R` para las figuras 13 a 16 y la tabla resumen.
+
+## `05_figures`
 
 Arma las gráficas.
 
 ```{r tabla-04}
 tabla(tribble(
   ~Script, ~`Qué hace`,
-  "00_fig_config.R", "Estilo visual, colores de los modelos, rutas compartidas y la función que guarda cada figura en 4K (3840 px de ancho). Lo cargan todos los demás scripts.",
-  "02_fig_costos_modelos.R", "Barras de costo por ciudad para los cuatro modelos: por miembro, per cápita y por 1000 kcal.",
+  "00_fig_config.R", "Estilo visual, colores de las dietas (CoCA amarillo, CoNA naranja, CC-CoNA terracota, CoRD azul y CoAHD verde azulado), rutas compartidas y la función que guarda cada figura en 4K (3840 px de ancho) y el factor `FIG_ESCALA` que la dibuja en un lienzo más chico (con las mismas letras) para que se lea al entrar a un documento. Lo cargan todos los demás scripts.",
+  "02_fig_costos_modelos.R", "Barras de costo por ciudad para las cinco dietas: por miembro, per cápita y por 1000 kcal.",
   "03_fig_cona_composicion.R", "Composición de la dieta de cona.",
-  "04_fig_modelos_costos.R", "Costo per cápita de los cuatro modelos juntos y mapa de primas (cuántas veces cuesta cada dieta frente al CoCA y al CoNA).",
+  "04_fig_modelos_costos.R", "Costo per cápita de las cinco dietas juntas y mapa de primas (cuántas veces cuesta cada dieta frente al CoCA y al CoNA).",
   "05_fig_cord_coahd_composicion.R", "Composición de cord y coahd por grupo y por alimento elegido.",
   "06_fig_cona_restricciones.R", "Restricciones nutricionales activas y mapa de calor de los precios sombra de cona.",
-  "07_fig_adecuacion.R", "Adecuación nutricional de la dieta de cada modelo."
+  "07_fig_adecuacion.R", "Adecuación nutricional de las dietas saludables (cord y coahd).",
+  "08_fig_asequibilidad.R", "Figuras 13 a 16 de asequibilidad: por decil y ciudad, brecha de los tres primeros deciles, según el tamaño del hogar y contrafactual con todo el ingreso en alimentos.",
+  "09_tab_asequibilidad.R", "Tabla resumen de asequibilidad por ciudad y dieta.",
+  "10_fig_hogares.R", "Figuras 17 a 19: costo según el tamaño y la composición del hogar, por miembro y por 1000 kcal.",
+  "11_fig_robustez.R", "Figuras 20 a 23: costo con y sin azúcares, razón sin / con azúcares, prima del CC-CoNA según alpha y razón CoAHD / CoRD.",
+  "12_fig_ccona_composicion.R", "Figura 24: composición del CoNA y del CC-CoNA frente a la del IPC.",
+  "13_fig_umbral.R", "Figuras 25 a 27: costo con y sin umbral de tamaño del producto, cambio por ciudad y alimentos cuyo precio por 100 g más cambia."
 ), c("6cm", "8.5cm"))
 ```
 
 `01_series_alim.R` es un script antiguo que ya no corre con el panel actual, porque busca una columna (`sku_code`) que el panel diario ya no trae.
 
-En `aux-functions/`, `modelos_costos.R` lee los resultados de los cuatro modelos y calcula el costo per cápita, y `food_groups_gaba.R` tiene la clasificación de alimentos por grupo que usa el color de las figuras de cona. Esta última es compartida con v1: si cambia el conjunto de alimentos que selecciona el modelo, hay que revisarla para que ningún alimento quede sin asignar.
+Todas las figuras llevan como subtítulo qué es cada dieta; las definiciones están en `00_fig_config.R` (`DEFINICION_MODELO` y `subtitulo_modelos()`). En `aux-functions/`, `modelos_costos.R` lee los resultados de las cinco dietas (para el hogar de 3, 4 o 5 personas) y calcula el costo per cápita, y `food_groups_gaba.R` tiene la clasificación de alimentos por grupo que usa el color de las figuras de cona. Esta última es compartida con v1: si cambia el conjunto de alimentos que selecciona el modelo, hay que revisarla para que ningún alimento quede sin asignar (el script de composición se detiene si falta uno).
 
-## `05_sensibilidad_umbral`
+## `06_sensibilidad_umbral`
 
-Prueba qué pasa con los costos si cambia la regla de cobertura de fechas. No forma parte del flujo principal: usa los scripts de `02_dataprep` y `03_models` tal como están y guarda sus resultados aparte, en `output/sensibilidad_umbral/`.
+Prueba qué pasa con los costos si cambian los umbrales: la regla de cobertura de fechas y el umbral de tamaño de 500 g. No forma parte del flujo principal: usa los scripts de `01_webscrap_prep`, `02_dataprep` y `03_models` tal como están y guarda sus resultados aparte, en `output/sensibilidad_umbral/`.
 
 ```{r tabla-05}
 tabla(tribble(
   ~Script, ~`Qué hace`,
-  "01_cobertura_alimentos.R", "Calcula los días con dato de cada alimento en cada ciudad y qué alimentos pasarían con cada regla.",
-  "02_correr_regla.R", "Corre panel mensual y los cuatro modelos con los alimentos de una regla (se corre una vez por regla, desde la terminal).",
-  "03_tablas_sensibilidad.R", "Junta los resultados en las tablas que usa el reporte y valida que la regla actual reproduzca los modelos."
+  "01_cobertura_alimentos.R", "Calcula los días con dato de cada alimento en cada ciudad y qué alimentos pasarían con cada regla de fechas.",
+  "02_correr_regla.R", "Corre panel mensual y los cuatro modelos con los alimentos de una regla de fechas (se corre una vez por regla, desde la terminal).",
+  "03_tablas_sensibilidad.R", "Junta los resultados en las tablas que usan los documentos y valida que la regla actual reproduzca los modelos.",
+  "04_sin_umbral_tamano.R", "Corre el proyecto completo, desde el panel de precios hasta las cinco dietas, sin el umbral de 500 g en la elección del sku. Lo usa `sensibilidad_umbral_tamano`.",
+  "05_efecto_densidad.R", "Rehace a mano el precio por 100 g de los aceites y corre los cuatro modelos con el error de unidades de la v1, para medir cuánto pesaba.",
+  "06_aceites_sin_umbral.R", "Corre los cuatro modelos cambiando solo el precio de los aceites por el que sale sin el umbral de 500 g; lo usa `prueba_aceites`."
 ), c("5cm", "9.5cm"))
 ```
+
+`aux-functions/correr_con_cambios.R` corre un script del proyecto cambiando en memoria sus rutas o un parámetro, sin modificar el archivo. Lo usan `02_correr_regla.R` y `04_sin_umbral_tamano.R`.
 
 # `output/`
 
@@ -156,10 +217,13 @@ tabla(tribble(
   ~Carpeta, ~Contenido,
   "paneles/", "Panel de precios, crudo, filtrado, balanceado y mensual.",
   "lista_alimentos/", "Qué alimentos quedaron en cada ciudad y por qué.",
+  "descriptivas/", "Cifras descriptivas del scraping.",
+  "auditoria/", "Revisión producto por producto contra los datos originales.",
   "tcac/", "Composición nutricional de los alimentos.",
-  "gabas/", "Intercambios y energía de la guía alimentaria, base y ajustados por ciudad.",
-  "figuras/", "Las figuras finales, en .pdf y .png: costos, composición, restricciones y adecuación.",
-  "sensibilidad_umbral/", "Resultados de las pruebas de la regla de fechas, una carpeta por regla."
+  "gabas/", "Intercambios y energía de la guía alimentaria, base y ajustados por ciudad (los de 4 y 5 miembros terminan en `_4m` y `_5m`).",
+  "figuras/", "Las figuras finales, en .pdf y .png: costos, composición, restricciones, adecuación, asequibilidad, hogares y robustez.",
+  "ipc/", "Mapeo de los alimentos a subclases del IPC y sus participaciones.",
+  "sensibilidad_umbral/", "Resultados de las pruebas de la regla de fechas y del umbral de tamaño, una carpeta por regla."
 ), c("4cm", "10.5cm"))
 ```
 
@@ -176,15 +240,26 @@ Producción se corre en este orden. El orden importa en un punto: `00_tcac_compo
 ```{r tabla-orden}
 tabla(tribble(
   ~Paso, ~Scripts,
-  "1. Precios", "01_webscrap_prep: 00_csv_a_rds, 01_construccion_panel, 02a_lista_alimentos, 02b_panel_balanceado",
-  "2. Composición y hogar", "02_dataprep: 00_tcac_composicion, 01_panel_mensual_tcac, 02_eer_3members, 03_gaba_ajustado",
-  "3. Modelos", "03_models: 01_coca, 02_cona, 03_cord, 031_coahd, 05_models_hcost",
-  "4. Figuras", "04_figures: 02, 03, 04, 05, 06 y 07",
-  "5. Sensibilidad", "05_sensibilidad_umbral: 01_cobertura_alimentos, 02_correr_regla (una vez por regla) y 03_tablas_sensibilidad",
-  "6. App", "shiny_boxplots/data_prep.R, y publicar si se quiere refrescar la app"
+  "1. Precios", "01_webscrap_prep: 00_csv_a_rds, 01_construccion_panel, 02a_lista_alimentos, 02b_panel_balanceado, 03_descriptivas_scraping",
+  "2. Composición y hogares", "02_dataprep: 00_tcac_composicion, 01_panel_mensual_tcac, eer/05-EER-gestantes-mayores, 02_eer_3members, 02_eer_4members, 02_eer_5members, 03_gaba_ajustado (con N_MIEMBROS = 3, 4 y 5), 04_auditoria_productos, 05_mapeo_ipc",
+  "3. Modelos", "03_models: 01_coca, 02_cona, 03_cord, 031_coahd y 04_cc_cona, una vez con cada N_MIEMBROS (3, 4 y 5); después 05_models_hcost",
+  "3b. Pruebas de robustez", "03_models: 06_sensibilidad_azucar, 08_sensibilidad_subproductos, 10_zoom_alimentos; 02_cona y 04_cc_cona con VARIANTE_HOGAR=esc (hogares de 3, 4 y 5) y los cinco modelos con N_MIEMBROS=4 y VARIANTE_HOGAR=t3, y después 09_sensibilidad_requerimientos",
+  "3c. Asequibilidad", "04_income: 00_pobreza_csv_a_rds, 01_geih_deciles, 02_asequibilidad (después de 05_models_hcost)",
+  "4. Figuras", "05_figures: 02, 03, 04, 05, 06, 07, 10, 11, 12 y 13 (08 y 09 después de 04_income)",
+  "5. Sensibilidad", "06_sensibilidad_umbral: 01_cobertura_alimentos, 02_correr_regla (una vez por regla), 04_sin_umbral_tamano, 05_efecto_densidad, 06_aceites_sin_umbral y 03_tablas_sensibilidad",
+  "6. Documentos", "workingpaper_041026.Rmd, y en docs/: sensibilidad_azucar.Rmd, sensibilidad_umbral_tamano.Rmd, prueba_aceites.Rmd y este",
+  "7. App", "shiny_boxplots/data_prep.R, y publicar si se quiere refrescar la app"
 ), c("4cm", "10.5cm"))
 ```
 
 Los scripts de `eer/` (requerimientos de energía por ciudad) solo hay que correrlos cuando cambian los datos de población o antropometría.
 
 `v1/` se corre igual, pero con los scripts que están dentro de `v1/`. No hay que mezclar rutas entre las dos versiones: un script de producción siempre lee y escribe dentro de `interno/`, y uno de v1 siempre dentro de `interno/v1/`.
+
+# Puntos por consultar
+
+Decisiones de método que quedaron registradas en el working paper (sección 6) y que hay que hablar con el equipo antes de dar los resultados por cerrados. Para el correo a Sergio: el valor de alpha del CC-CoNA y la conversión de la ponderación de gasto a cantidades; la fuente de las participaciones del gasto en alimentos por decil (39% a 26%); si los límites de macronutrientes de FoodpriceR deben escalarse a la energía de cada miembro; el criterio del incremento de energía de la gestante. Para el equipo de nutrición: la composición del cogote (hueso para sustancia) y de las menudencias, y el origen de los mínimos de hierro y zinc de FoodpriceR. Pendiente de hacer: una revisión de literatura sobre la heterogeneidad del costo y la asequibilidad entre ciudades.
+
+# Para generar los PDF
+
+Los documentos se generan con `rmarkdown::render()` sobre el `.Rmd`. Hace falta LaTeX (por ejemplo, `tinytex`) y, si se corre fuera de RStudio, la variable de entorno `RSTUDIO_PANDOC` apuntando a la carpeta de pandoc. Los paquetes que usan los scripts son tidyverse, readxl, writexl, janitor, stringi, lubridate, scales, patchwork, Hmisc, FoodpriceR, knitr y kableExtra. Las rutas son absolutas y están al principio de cada script.

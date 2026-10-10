@@ -48,6 +48,13 @@ cap4   <- readRDS(file.path(requirements_dir, "Cap4.rds"))
 cap7   <- readRDS(file.path(requirements_dir, "Cap7.rds"))
 cap10  <- readRDS(file.path(requirements_dir, "Cap10.rds"))
 
+# Rango plausible de peso (kg) y talla (cm). La encuesta SABE codifica "no sabe /
+# no responde" como 777 en peso y talla, y la ENSIN trae algunos valores fuera de
+# rango; sin este filtro entran al promedio como si fueran mediciones.
+PESO_MAX  <- 250
+TALLA_MIN <- 100
+TALLA_MAX <- 250
+
 # Función numérica
 to_num <- function(x) {
   suppressWarnings(as.numeric(haven::zap_labels(x)))
@@ -71,48 +78,8 @@ grupo_edad <- function(edad) {
   )
 }
 
-map_pal_iom <- function(AF_predominante) {
-  case_when(
-    AF_predominante == "Ligera"   ~ "Low active",
-    AF_predominante == "Moderada" ~ "Active",
-    AF_predominante == "Inactiva" ~ "Inactive",
-    AF_predominante == "Alta"     ~ "Very active",
-    TRUE ~ NA_character_
-  )
-}
-
-eer_iom_2023 <- function(age, height, weight, sexo, pal_cat) {
-  
-  if (any(is.na(c(age, height, weight))) || is.na(sexo) || is.na(pal_cat)) {
-    return(NA_real_)
-  }
-  
-  if (age >= 14 && age < 19) {
-    if (sexo == "Masculino" && pal_cat == "Inactive")    return(-447.51 + 3.68 * age + 13.01 * height + 13.15 * weight + 20)
-    if (sexo == "Masculino" && pal_cat == "Low active")  return(19.12 + 3.68 * age + 8.62 * height + 20.28 * weight + 20)
-    if (sexo == "Masculino" && pal_cat == "Active")      return(-388.19 + 3.68 * age + 12.66 * height + 20.46 * weight + 20)
-    if (sexo == "Masculino" && pal_cat == "Very active") return(-671.75 + 3.68 * age + 15.38 * height + 23.25 * weight + 20)
-    
-    if (sexo == "Femenino" && pal_cat == "Inactive")     return(55.59 - 22.25 * age + 8.43 * height + 17.07 * weight + 20)
-    if (sexo == "Femenino" && pal_cat == "Low active")   return(-297.54 - 22.25 * age + 12.77 * height + 14.73 * weight + 20)
-    if (sexo == "Femenino" && pal_cat == "Active")       return(-189.55 - 22.25 * age + 11.74 * height + 18.34 * weight + 20)
-    if (sexo == "Femenino" && pal_cat == "Very active")  return(-709.59 - 22.25 * age + 18.22 * height + 14.25 * weight + 20)
-  }
-  
-  if (age >= 19) {
-    if (sexo == "Masculino" && pal_cat == "Inactive")    return(753.07 - 10.83 * age + 6.50 * height + 14.10 * weight)
-    if (sexo == "Masculino" && pal_cat == "Low active")  return(581.47 - 10.83 * age + 8.30 * height + 14.94 * weight)
-    if (sexo == "Masculino" && pal_cat == "Active")      return(1004.82 - 10.83 * age + 6.52 * height + 15.91 * weight)
-    if (sexo == "Masculino" && pal_cat == "Very active") return(-517.88 - 10.83 * age + 15.61 * height + 19.11 * weight)
-    
-    if (sexo == "Femenino" && pal_cat == "Inactive")     return(584.90 - 7.01 * age + 5.72 * height + 11.71 * weight)
-    if (sexo == "Femenino" && pal_cat == "Low active")   return(575.77 - 7.01 * age + 6.60 * height + 12.14 * weight)
-    if (sexo == "Femenino" && pal_cat == "Active")       return(710.25 - 7.01 * age + 6.54 * height + 12.34 * weight)
-    if (sexo == "Femenino" && pal_cat == "Very active")  return(511.83 - 7.01 * age + 9.07 * height + 12.56 * weight)
-  }
-  
-  NA_real_
-}
+# Ecuaciones IOM/NASEM 2023 y mapeo de actividad fisica (ENSIN a PAL)
+source(file.path(base_dir, "interno/02_dataprep/aux-functions/eer_iom.R"), encoding = "UTF-8")
 
 dominios_geo <- c(
   "Barranquilla", "Bogotá", "Bucaramanga", "Cali", "Cartagena",
@@ -196,7 +163,8 @@ antropo_ensin <- agregar_dominios_antropo(antro) %>%
   filter(
     dominio_geo %in% dominios_geo,
     !is.na(sexo), !is.na(edad), !is.na(peso), !is.na(talla), !is.na(factor_exp),
-    edad >= 14, peso > 0, talla > 0, factor_exp > 0
+    edad >= 14, factor_exp > 0,
+    peso > 0, peso < PESO_MAX, talla > TALLA_MIN, talla < TALLA_MAX
   )
 
 # Antropometría SABE
@@ -237,7 +205,8 @@ antropo_sabe <- cap1 %>%
   ) %>%
   filter(
     !is.na(sexo), !is.na(edad), !is.na(peso), !is.na(talla),
-    edad >= 60, peso > 0, talla > 0
+    edad >= 60,
+    peso > 0, peso < PESO_MAX, talla > TALLA_MIN, talla < TALLA_MAX
   )
 
 # Base antropométrica final

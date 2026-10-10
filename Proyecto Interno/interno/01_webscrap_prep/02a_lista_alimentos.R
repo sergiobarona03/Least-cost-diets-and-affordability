@@ -1,13 +1,11 @@
 ########################################################
 ## SCRIPT 01_webscrap_prep/02a_lista_alimentos.R
 ## Excluye alimentos no deseados del panel_v1 y calcula, por
-## ciudad, qué alimentos cumplen el umbral relativo de fechas
-## (85% de los días en que su grupo GABA tiene datos en esa
-## ciudad, ver aux-functions/umbral_fechas_grupo.R). Deja todo
-## listo para que 02b arme el panel balanceado.
+## ciudad, qué alimentos cumplen el umbral de fechas (al menos dos
+## fechas con precio en cada mes, ver aux-functions/umbral_fechas_mes.R).
+## Deja todo listo para que 02b arme el panel balanceado.
 ##
 ## Reads:  output_panel_dir/panel_v1.rds
-##         proyecto_dir/composicion-nut/Mapeo Sipsa TCAC _28.07.26.xlsx
 ## Writes: output_panel_dir/panel_v2.rds
 ##         output_panel_dir/lista_por_ciudad.rds
 ##         output_lista_dir/conteo_alimentos.xlsx
@@ -19,28 +17,27 @@ library(tidyverse)
 library(dplyr)
 library(openxlsx)
 library(stringi)
-library(janitor)
 
 # ============================================================
 # Rutas
 # ============================================================
 
-proyecto_dir <- "C:/Users/danie/OneDrive/Escritorio/Least-cost-diets-and-affordability/Proyecto Interno/"
-base_dir     <- file.path(proyecto_dir, "interno/")
+base_dir <- "C:/Users/danie/OneDrive/Escritorio/Least-cost-diets-and-affordability/Proyecto Interno/interno/"
 
 output_dir       <- file.path(base_dir, "output")
 output_panel_dir <- file.path(output_dir, "paneles/raw_mensual")
 output_lista_dir <- file.path(output_dir, "lista_alimentos")
-ruta_tcac        <- file.path(proyecto_dir, "composicion-nut/Mapeo Sipsa TCAC _28.07.26.xlsx")
 
-source(file.path(base_dir, "01_webscrap_prep/aux-functions/mapeo_tcac.R"),          encoding = "UTF-8")
-source(file.path(base_dir, "01_webscrap_prep/aux-functions/umbral_fechas_grupo.R"), encoding = "UTF-8")
+source(file.path(base_dir, "01_webscrap_prep/aux-functions/umbral_fechas_mes.R"), encoding = "UTF-8")
+
+min_fechas_mes <- 2
 
 # ============================================================
 # Cargar panel final (output de 01_construccion_panel.R)
 # ============================================================
 
 panel_final <- readRDS(file.path(output_panel_dir, "panel_v1.rds")) %>%
+  filter(is.finite(precio_base)) %>%
   mutate(
     city       = str_squish(as.character(city)),
     city       = case_when(
@@ -89,42 +86,10 @@ panel_filtrado <- panel_final %>%
   select(-sipsa_name_norm)
 
 # ============================================================
-# Grupo GABA de cada alimento (frutas y verduras por separado);
-# sin grupo: SIN CATEGORIA o sin mapeo
+# Lista de alimentos que cumplen el umbral de fechas en cada ciudad
 # ============================================================
 
-grupos_alimentos <- unir_mapeo_tcac(
-  panel_filtrado %>% distinct(sipsa_name),
-  leer_mapeo_tcac(ruta_tcac)
-) %>%
-  clean_names() %>%
-  transmute(
-    sipsa_name,
-    grupo = case_when(
-      subgrupos_gabas %in% c("FRUTAS", "VERDURAS") ~ subgrupos_gabas,
-      grupos_gabas == "SIN CATEGORIA"              ~ NA_character_,
-      TRUE                                         ~ grupos_gabas
-    )
-  )
-
-# ============================================================
-# Lista de alimentos que cumplen el umbral relativo de fechas
-# (85% de los días del grupo en cada ciudad)
-# ============================================================
-
-lista_por_ciudad <- lista_por_umbral_grupo(panel_filtrado, grupos_alimentos)
-
-cat("\n====== Grupos con umbral distinto al de su ciudad ======\n")
-lista_por_ciudad %>%
-  filter(!is.na(grupo)) %>%
-  distinct(city, grupo, fechas_disponibles, dias_grupo, umbral) %>%
-  filter(umbral != floor(0.85 * fechas_disponibles)) %>%
-  arrange(city, grupo) %>%
-  print(n = Inf)
-
-# ============================================================
-# Total de ciudades y lista de ciudades
-# ============================================================
+lista_por_ciudad <- lista_por_umbral_mensual(panel_filtrado, min_fechas_mes)
 
 todas_las_ciudades <- panel_filtrado %>%
   semi_join(lista_por_ciudad, by = c("city", "sipsa_name")) %>%
@@ -132,26 +97,13 @@ todas_las_ciudades <- panel_filtrado %>%
   pull(city) %>%
   sort()
 
-total_ciudades <- length(todas_las_ciudades)
-
-# ============================================================
-# Lista total: unión de todas las ciudades sin duplicados
-# ============================================================
-
 lista_total <- lista_por_ciudad %>%
   distinct(sipsa_name) %>%
   arrange(sipsa_name)
 
-# ============================================================
-# Chequeos finales
-# ============================================================
-
 alimentos_por_ciudad <- lista_por_ciudad %>%
   count(city, name = "n_alimentos") %>%
   arrange(desc(n_alimentos))
-
-cat("\nTotal ciudades:          ", total_ciudades, "\n")
-cat("Alimentos únicos totales:", nrow(lista_total), "\n\n")
 
 print(alimentos_por_ciudad)
 
@@ -172,7 +124,7 @@ wb <- createWorkbook()
 for (cd in todas_las_ciudades) {
   df_ciudad <- lista_por_ciudad %>%
     filter(city == cd) %>%
-    select(sipsa_name, grupo, n_fechas, umbral) %>%
+    select(sipsa_name, n_fechas, fechas_mes_min) %>%
     arrange(sipsa_name)
   addWorksheet(wb, sheetName = cd)
   writeData(wb, sheet = cd, df_ciudad)
@@ -185,5 +137,3 @@ saveWorkbook(wb,
 # Insumos para 02b_panel_balanceado.R
 saveRDS(panel_filtrado, file.path(output_panel_dir, "panel_v2.rds"))
 saveRDS(lista_por_ciudad, file.path(output_panel_dir, "lista_por_ciudad.rds"))
-
-cat("\nListo. panel_filtrado.rds y lista_por_ciudad.rds guardados para 02b.\n")

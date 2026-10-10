@@ -55,5 +55,3 @@ write.xlsx(lista_con_nut_clean,
 
 saveRDS(lista_con_nut_clean,
         file.path(ruta_output, "composicion_270726.rds"))
-
-cat("\nListo. composicion_270726.rds guardado en", ruta_output, "\n")

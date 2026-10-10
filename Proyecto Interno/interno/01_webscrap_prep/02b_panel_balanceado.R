@@ -34,14 +34,8 @@ lista_por_ciudad <- readRDS(file.path(output_panel_dir, "raw_mensual/lista_por_c
 panel_balanceado <- panel_filtrado %>%
   semi_join(lista_por_ciudad, by = c("city", "sipsa_name"))
 
-cat("\nFilas panel balanceado:", nrow(panel_balanceado), "\n")
-cat("Ciudades:", n_distinct(panel_balanceado$city), "\n")
-cat("Alimentos:", n_distinct(panel_balanceado$sipsa_name), "\n")
-
 # ============================================================
 # Guardar
 # ============================================================
 
 saveRDS(panel_balanceado, file.path(output_panel_dir, "panel_balanceado.rds"))
-
-cat("\nListo. panel_balanceado_final.rds guardado en", output_panel_dir, "\n")

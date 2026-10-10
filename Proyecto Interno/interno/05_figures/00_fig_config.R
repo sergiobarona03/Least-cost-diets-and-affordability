@@ -1,0 +1,234 @@
+########################################################
+## 05_figures/00_fig_config.R
+## Configuracion compartida para las graficas del proyecto
+## de 13 ciudades (CoCA / CoNA / CC-CoNA / CoRD / CoAHD, trimestre 3 2025).
+########################################################
+
+# -----------------------------------------------------------------------
+# 0. Rutas base (mismo patron que 03_models/01_coca.R y 02_cona.R)
+# -----------------------------------------------------------------------
+dirs <- c(
+  "C:/Users/Portatil/Desktop/Least-cost-diets-and-affordability/Proyecto Interno",
+  "C:/Users/danie/OneDrive/Escritorio/Least-cost-diets-and-affordability/Proyecto Interno"
+)
+
+base_dir <- dirs[dir.exists(dirs)][1]
+if (is.na(base_dir)) stop("Ninguno de los directorios base existe")
+
+output_dir <- file.path(base_dir, "interno/output")
+coca_dir   <- file.path(base_dir, "interno/03_models/coca")
+cona_dir   <- file.path(base_dir, "interno/03_models/cona")
+cord_dir   <- file.path(base_dir, "interno/03_models/cord")
+coahd_dir  <- file.path(base_dir, "interno/03_models/coahd")
+ccona_dir  <- file.path(base_dir, "interno/03_models/ccona")
+hcost_dir  <- file.path(base_dir, "interno/03_models/hcost")
+afford_dir <- file.path(base_dir, "interno/04_income/asequibilidad")
+fig_dir    <- file.path(output_dir, "figuras")
+
+dir.create(file.path(fig_dir, "01_costos"),     recursive = TRUE, showWarnings = FALSE)
+dir.create(file.path(fig_dir, "02_composicion"), recursive = TRUE, showWarnings = FALSE)
+dir.create(file.path(fig_dir, "03_restricciones"), recursive = TRUE, showWarnings = FALSE)
+dir.create(file.path(fig_dir, "04_adecuacion"),    recursive = TRUE, showWarnings = FALSE)
+dir.create(file.path(fig_dir, "05_asequibilidad"), recursive = TRUE, showWarnings = FALSE)
+dir.create(file.path(fig_dir, "06_hogares"),       recursive = TRUE, showWarnings = FALSE)
+dir.create(file.path(fig_dir, "07_robustez"),      recursive = TRUE, showWarnings = FALSE)
+
+# -----------------------------------------------------------------------
+# 1. Ciudades: colores y etiquetas
+##   Orden aproximado por tamano de poblacion (area metropolitana)
+# -----------------------------------------------------------------------
+CITY_ORDER <- c("BOGOTA", "MEDELLIN", "CALI", "BARRANQUILLA", "CARTAGENA",
+                "CUCUTA", "BUCARAMANGA", "IBAGUE", "PEREIRA",
+                "VILLAVICENCIO", "MONTERIA", "MANIZALES", "PASTO")
+
+CITY_LABS <- c(
+  "BOGOTA"        = "Bogot\u00e1",
+  "MEDELLIN"      = "Medell\u00edn",
+  "CALI"          = "Cali",
+  "BARRANQUILLA"  = "Barranquilla",
+  "CARTAGENA"     = "Cartagena",
+  "CUCUTA"        = "C\u00facuta",
+  "BUCARAMANGA"   = "Bucaramanga",
+  "IBAGUE"        = "Ibagu\u00e9",
+  "PEREIRA"       = "Pereira",
+  "VILLAVICENCIO" = "Villavicencio",
+  "MONTERIA"      = "Monter\u00eda",
+  "MANIZALES"     = "Manizales",
+  "PASTO"         = "Pasto"
+)
+
+CITY_COLS <- c(
+  "BOGOTA"        = "#1B4F72",
+  "MEDELLIN"      = "#C0392B",
+  "CALI"          = "#1A7A4A",
+  "BARRANQUILLA"  = "#D68910",
+  "CARTAGENA"     = "#7D3C98",
+  "CUCUTA"        = "#148F77",
+  "BUCARAMANGA"   = "#B9770E",
+  "IBAGUE"        = "#2E86C1",
+  "PEREIRA"       = "#CB4335",
+  "VILLAVICENCIO" = "#229954",
+  "MONTERIA"      = "#A569BD",
+  "MANIZALES"     = "#839192",
+  "PASTO"         = "#D4AC0D"
+)
+
+city_scale_fill <- function(...) {
+  scale_fill_manual(values = setNames(unname(CITY_COLS[CITY_ORDER]),
+                                      CITY_LABS[CITY_ORDER]), ...)
+}
+
+city_scale_color <- function(...) {
+  scale_color_manual(values = setNames(unname(CITY_COLS[CITY_ORDER]),
+                                       CITY_LABS[CITY_ORDER]), ...)
+}
+
+# -----------------------------------------------------------------------
+# 2. Metricas: colores y etiquetas
+# -----------------------------------------------------------------------
+MODEL_COLS <- c(
+  "CoCA"    = "#F2B922",
+  "CoNA"    = "#F08A24",
+  "CC-CoNA" = "#B84A22",
+  "CoRD"    = "#2F6FB6",
+  "CoAHD"   = "#1C9C9A"
+)
+
+# alpha del CC-CoNA que entra a las comparaciones entre dietas (ver
+# 03_models/aux-functions/alfa_referencia.R)
+source(file.path(base_dir, "interno/03_models/aux-functions/alfa_referencia.R"))
+ALFA_TXT <- format(ALFA_REFERENCIA, decimal.mark = ",")
+
+# -----------------------------------------------------------------------
+# 3. Miembros del hogar representativo
+##   Hombre adulto 31-50, mujer adulta 31-50, nina 9-13
+##   OJO: la clave "[10, 14)" (con espacio) viene tal cual del output
+##   del paquete Foodprice; se conserva sin modificar para el cruce.
+# -----------------------------------------------------------------------
+MEMBER_LABS <- c(
+  "0_[31,51)"      = "Hombre adulto (31\u201350 a\u00f1os)",
+  "1_[31,51)"      = "Mujer adulta (31\u201350 a\u00f1os)",
+  "1_[31,51) gest" = "Mujer gestante (31\u201350 a\u00f1os)",
+  "1_[10, 14)"     = "Ni\u00f1a (9\u201313 a\u00f1os)",
+  "1_[14,19)"      = "Adolescente mujer (14–18 años)",
+  "1_[51,70)"      = "Mujer mayor (51\u201370 a\u00f1os)"
+)
+
+MEMBER_ORDER <- unname(MEMBER_LABS)
+
+MEMBER_COLS <- c(
+  "Hombre adulto (31\u201350 a\u00f1os)"      = "#2C3E6B",
+  "Mujer adulta (31\u201350 a\u00f1os)"       = "#C0392B",
+  "Mujer gestante (31\u201350 a\u00f1os)"     = "#E08E9B",
+  "Ni\u00f1a (9\u201313 a\u00f1os)"           = "#1A7A4A",
+  "Adolescente mujer (14–18 años)"  = "#6C8EBF",
+  "Mujer mayor (51\u201370 a\u00f1os)"        = "#7D5BA6"
+)
+
+recode_member <- function(df, sex_col = "Sex", age_col = "Demo_Group",
+                          out_col = "member") {
+  df %>%
+    dplyr::mutate(
+      !!out_col := dplyr::recode(paste0(.data[[sex_col]], "_", .data[[age_col]]),
+                                 !!!MEMBER_LABS),
+      !!out_col := factor(.data[[out_col]], levels = MEMBER_ORDER))
+}
+
+recode_city <- function(df, col = "ciudad", out_col = "ciudad_lbl") {
+  df %>%
+    dplyr::mutate(
+      !!out_col := factor(CITY_LABS[.data[[col]]],
+                          levels = CITY_LABS[CITY_ORDER]))
+}
+
+# -----------------------------------------------------------------------
+# 4. Meses del trimestre (jul-ago-sep 2025)
+# -----------------------------------------------------------------------
+MES_LABS <- c("7" = "Julio 2025", "8" = "Agosto 2025", "9" = "Septiembre 2025")
+
+recode_mes <- function(df, col = "mes", out_col = "mes_lbl") {
+  df %>%
+    dplyr::mutate(
+      !!out_col := factor(MES_LABS[as.character(.data[[col]])],
+                          levels = MES_LABS))
+}
+
+# -----------------------------------------------------------------------
+# 5. Tema grafico compartido
+# -----------------------------------------------------------------------
+paper_theme <- function(base_size = 11) {
+  theme_bw(base_size = base_size) +
+    theme(
+      text             = element_text(family = "serif"),
+      plot.title       = element_text(face = "bold", size = base_size + 1,
+                                      margin = margin(b = 4)),
+      plot.subtitle    = element_text(size = base_size - 1,
+                                      color = "grey40",
+                                      margin = margin(b = 6)),
+      plot.caption     = element_text(size = base_size - 3,
+                                      color = "grey50", hjust = 0,
+                                      margin = margin(t = 6)),
+      axis.title       = element_text(size = base_size - 1),
+      axis.text        = element_text(size = base_size - 2),
+      axis.text.x      = element_text(angle = 45, hjust = 1),
+      legend.position  = "bottom",
+      legend.title     = element_blank(),
+      legend.text      = element_text(size = base_size - 2),
+      legend.key.width = unit(1.2, "cm"),
+      panel.grid.major = element_line(color = "grey92", linewidth = 0.3),
+      panel.grid.minor = element_blank(),
+      strip.background = element_rect(fill = "grey96", color = "grey70"),
+      strip.text       = element_text(face = "bold", size = base_size - 1),
+      plot.margin      = margin(6, 8, 6, 6)
+    )
+}
+
+# -----------------------------------------------------------------------
+# 6. Guardado en 4K: el png sale de 3840 px de ancho (dpi = 3840 / ancho)
+#    y el pdf con las mismas medidas en pulgadas
+# -----------------------------------------------------------------------
+# Las figuras se dibujan en un lienzo FIG_ESCALA veces mas chico que el tamano que se
+# pide, con los mismos puntos de letra: al entrar a un documento de ancho de pagina
+# (16 cm) la letra se ve mas grande y se lee sin acercarse.
+FIG_ESCALA <- 0.7
+FIG_ESCALA_ALTO <- 0.95  # el alto se reduce menos que el ancho para que los paneles no queden aplastados
+
+guardar_fig <- function(fig, nombre, carpeta, ancho = 12.8, alto = 7.2) {
+  ancho <- ancho * FIG_ESCALA
+  alto  <- alto * FIG_ESCALA_ALTO
+  # La nota de la figura se parte en lineas del ancho del lienzo para que no se corte
+  cap <- ggplot2::get_labs(fig)$caption
+  if (!is.null(cap) && !is.na(cap)) {
+    cap <- paste(vapply(strsplit(cap, "\n", fixed = TRUE)[[1]],
+                        function(l) paste(strwrap(l, width = floor(ancho * 13)), collapse = "\n"), ""),
+                 collapse = "\n")
+    fig <- fig + ggplot2::labs(caption = cap)
+  }
+  ruta <- file.path(fig_dir, carpeta, nombre)
+  ggplot2::ggsave(paste0(ruta, ".png"), fig, width = ancho, height = alto,
+                  dpi = 3840 / ancho, bg = "white")
+  ggplot2::ggsave(paste0(ruta, ".pdf"), fig, width = ancho, height = alto)
+}
+
+cop_format <- function(prefix = "$", suffix = "") {
+  scales::comma_format(prefix = prefix, suffix = suffix, big.mark = ".",
+                       decimal.mark = ",")
+}
+
+message("05_figures/00_fig_config.R cargado. fig_dir: ", fig_dir)
+
+# -----------------------------------------------------------------------
+# 7. Que es cada dieta, para el subtitulo de las figuras
+# -----------------------------------------------------------------------
+DEFINICION_MODELO <- c(
+  CoCA  = "CoCA (costo de adecuaci\u00f3n cal\u00f3rica): costo m\u00ednimo de cubrir las calor\u00edas que necesita el hogar.",
+  CoNA  = "CoNA (costo de adecuaci\u00f3n nutricional): costo m\u00ednimo de cubrir las calor\u00edas y los nutrientes, dentro de sus l\u00edmites.",
+  CoRD  = "CoRD (costo de la dieta recomendada): costo de seguir la gu\u00eda alimentaria, con los alimentos m\u00e1s baratos de cada grupo.",
+  CoAHD = "CoAHD (costo de una dieta saludable, FAO): como el CoRD, pero eligiendo por precio por kilocaloría.",
+  "CC-CoNA" = "CC-CoNA (CoNA consistente con el consumo): como el CoNA, pero la dieta debe repartir sus cantidades entre los alimentos como lo hace el IPC; alpha es la fracción de esa composición que se exige."
+)
+
+subtitulo_modelos <- function(modelos, base = NULL, ancho = round(150 * FIG_ESCALA)) {
+  defs <- stringr::str_wrap(paste(DEFINICION_MODELO[modelos], collapse = " "), width = ancho)
+  if (is.null(base)) defs else paste(base, defs, sep = "\n")
+}

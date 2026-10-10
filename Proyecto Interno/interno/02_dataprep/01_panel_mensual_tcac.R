@@ -1,7 +1,7 @@
 ########################################################
 ## SCRIPT 02_dataprep/01_panel_mensual_tcac.R
 ## Toma el panel balanceado (panel_balanceado, diario, ya
-## filtrado por cobertura de dias en 02a/02b, con precio_500g
+## filtrado por cobertura de dias en 02a/02b, con precio_base
 ## calculado desde 01_construccion_panel.R), lo agrega a nivel
 ## MENSUAL (mediana entre las fechas de scraping del mes) y lo
 ## cruza con la composicion nutricional TCAC (output de
@@ -35,7 +35,7 @@ panel_v2 <- readRDS(ruta_panel_v2)
 tcac_raw <- readRDS(ruta_tcac)
 
 # ============================================================
-# Agregar a nivel mensual: mediana de precio_500g entre todas
+# Agregar a nivel mensual: mediana de precio_base entre todas
 # las fechas de scraping del mes, por alimento-ciudad. El
 # filtro de cobertura de 02a ya se aplicó a nivel diario, así
 # que esto solo agrega -- no vuelve a filtrar nada.
@@ -45,8 +45,10 @@ panel_mensual <- panel_v2 %>%
   mutate(mes_ym = format(fecha, "%Y-%m")) %>%
   group_by(sipsa_name, city, mes_ym) %>%
   summarise(
-    precio_500g  = round(median(precio_500g, na.rm = TRUE), 0),
-    n_fechas_mes = n_distinct(fecha),
+    precio_base   = round(median(precio_base, na.rm = TRUE), 0),
+    objetivo_base = first(objetivo_base),
+    densidad      = first(densidad),
+    n_fechas_mes  = n_distinct(fecha),
     .groups = "drop"
   ) %>%
   mutate(fecha = as.Date(paste0(mes_ym, "-01"))) %>%
@@ -81,13 +83,14 @@ tcac <- tcac_raw %>%
 
 # =======================================================================
 # Join con TCAC (por sipsa_name) y calcular precio por 100g porcion
-# comestible. Formula: P_500g / (5 * pc)
+# comestible. Formula: P_base / (objetivo_base * densidad / 100 * pc),
+# que para los solidos es P_500g / (5 * pc)
 # =======================================================================
 
 panel_con_tcac <- panel_mensual %>%
   left_join(tcac, by = "sipsa_name") %>%
   mutate(
-    precio_100g = round(precio_500g / (5 * parte_comestible), 0)
+    precio_100g = round(precio_base / (objetivo_base * densidad / 100 * parte_comestible), 0)
   )
 
 # ==========================
@@ -101,7 +104,7 @@ panel_mensual_cities_tcac <- panel_con_tcac %>%
   ) %>%
   select(
     articulo, ciudad, fecha,
-    precio_500g, precio_100g,
+    precio_base, objetivo_base, densidad, precio_100g,
     codigo_tcac, humedad_g, energia_kcal, proteina_g, lipidos_g,
     carbohidratos_totales_g, fibra_dietaria_g, cenizas_g,
     calcio_mg, hierro_mg, sodio_mg, fosforo_mg, zinc_mg,
@@ -120,5 +123,3 @@ saveRDS(
   panel_mensual_cities_tcac,
   file.path(output_dir, "paneles/panel_mensual_cities_tcac.rds")
 )
-
-cat("\nListo. panel_mensual_cities_tcac.rds guardado en", output_dir, "\n")

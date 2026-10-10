@@ -34,9 +34,6 @@ if (length(carpetas) == 0) {
   stop("No se encontraron subcarpetas dentro de raw_input_dir: ", raw_input_dir)
 }
 
-cat("Carpetas detectadas:\n")
-print(basename(carpetas))
-
 # ============================================================
 # Función: consolidar todos los csv de una carpeta en un solo df
 # ============================================================
@@ -73,8 +70,6 @@ consolidar_csv <- function(ruta_carpeta) {
 for (ruta_carpeta in carpetas) {
   
   nombre <- basename(ruta_carpeta)
-  cat("\nProcesando:", nombre, "...\n")
-  
   datos <- consolidar_csv(ruta_carpeta)
   
   if (!is.null(datos)) {
@@ -83,8 +78,5 @@ for (ruta_carpeta in carpetas) {
       file = file.path(raw_dir, paste0(nombre, ".rds")),
       compress = "xz"
     )
-    cat("  ->", nrow(datos), "filas guardadas en", paste0(nombre, ".rds"), "\n")
   }
 }
-
-cat("\nListo. RDS guardados en:", raw_dir, "\n")

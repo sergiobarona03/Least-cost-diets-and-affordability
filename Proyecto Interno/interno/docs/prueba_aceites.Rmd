@@ -1,0 +1,309 @@
+---
+title: "Prueba del precio de los aceites"
+subtitle: "¿Se infla el precio de los líquidos en el panel?"
+date: "8 de octubre de 2026"
+lang: es
+geometry: margin=2.5cm
+output:
+  pdf_document:
+    toc: true
+    toc_depth: 2
+    number_sections: true
+    fig_caption: true
+    latex_engine: pdflatex
+header-includes:
+  - \usepackage{booktabs}
+  - \usepackage{longtable}
+  - \usepackage{array}
+  - \usepackage[table]{xcolor}
+  - \usepackage{colortbl}
+  - \usepackage{float}
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, warning = FALSE, message = FALSE,
+                      fig.align = "center", out.width = "100%", fig.pos = "H")
+
+library(tidyverse)
+library(knitr)
+library(kableExtra)
+library(openxlsx)
+
+interno_dir <- "C:/Users/danie/OneDrive/Escritorio/Least-cost-diets-and-affordability/Proyecto Interno/interno/"
+sens_dir    <- file.path(interno_dir, "output/sensibilidad_umbral")
+fig         <- function(ruta) file.path(interno_dir, "output/figuras", ruta)
+
+source(file.path(interno_dir, "01_webscrap_prep/aux-functions/seleccionar_sku_mediano.R"))
+
+cop0 <- function(x) format(round(x), big.mark = ".", decimal.mark = ",", trim = TRUE)
+dec  <- function(x) sub(".", ",", x, fixed = TRUE)
+pct  <- function(nuevo, base) 100 * (nuevo / base - 1)
+lista_es <- function(x) if (length(x) < 2) x else paste0(paste(head(x, -1), collapse = ", "), " y ", tail(x, 1))
+
+aceites <- c("Aceite girasol", "Aceite soya", "Aceite vegetal mezcla")
+densidad_aceite <- 0.92
+
+skus     <- readRDS(file.path(interno_dir, "output/lista_alimentos/skus_todos.rds"))
+actual   <- read.xlsx(file.path(interno_dir, "output/lista_alimentos/lista_alimentos.xlsx")) %>%
+  mutate(sku_code = as.character(sku_code))
+sin_umb  <- read.xlsx(file.path(sens_dir, "sin_umbral_tamano/insumos/lista_alimentos/lista_alimentos.xlsx")) %>%
+  mutate(sku_code = as.character(sku_code))
+dens     <- readRDS(file.path(sens_dir, "densidad.rds"))
+prueba   <- readRDS(file.path(sens_dir, "aceites.rds"))
+
+# Regla inicial: 500 g también para los líquidos (unos 543 ml de aceite)
+sel_500 <- seleccionar_sku_mediano(skus %>% filter(sipsa_name %in% aceites),
+                                   umbral_gramos = 500, umbral_ml = 500 / densidad_aceite) %>%
+  mutate(sku_code = as.character(sku_code))
+
+litro_de <- function(lista, ciudad = "Bogotá") {
+  lista %>% filter(sipsa_name %in% aceites, city == ciudad) %>%
+    transmute(sipsa_name, producto = str_squish(exito_name),
+              litro = precio_gramo_sku * densidad_aceite * 1000)
+}
+
+bog_500 <- litro_de(sel_500)
+bog_act <- litro_de(actual)
+bog_sin <- litro_de(sin_umb)
+lit <- function(tab, aceite, col = "litro") tab[[col]][tab$sipsa_name == aceite]
+```
+
+# Qué se quiere comprobar
+
+El precio de los aceites en el panel parece alto. Con la primera versión de la regla de selección, que aplicaba el umbral de 500 g también a los líquidos, el aceite vegetal mezcla de Bogotá salía a `r cop0(lit(bog_500, "Aceite vegetal mezcla"))` COP por litro (un Gourmet de 420 ml) y el de girasol a `r cop0(lit(bog_500, "Aceite girasol"))` (un Premier de 500 ml), contra `r cop0(lit(bog_500, "Aceite soya"))` del de soya. Para los líquidos el umbral corresponde a 1.000 ml, como base de precio, y con él los precios son `r cop0(lit(bog_act, "Aceite vegetal mezcla"))`, `r cop0(lit(bog_act, "Aceite girasol"))` y `r cop0(lit(bog_act, "Aceite soya"))`. Este documento revisa si el precio sigue inflado, de dónde viene y cuánto pesa en las dietas. Tiene cinco pasos:
+
+1. Ver todos los productos de aceite que hay en el panel y su precio por litro.
+2. Ver qué producto elige cada regla de selección.
+3. Comprobar que la conversión de unidades es correcta.
+4. Correr los cuatro modelos con el precio de los aceites que sale sin el umbral de tamaño.
+5. Ver si lo mismo pasa con otros alimentos.
+
+Los aceites se estandarizan a 1.000 ml y se pasan a gramos con una densidad de 0,92 g/ml (la misma que usa todo el panel). Todo el documento usa el precio por litro, que es el `precio_base` de los aceites en el panel. La regla de selección es la del proyecto (ver `docs/organizacion_proyecto.pdf`): entre los productos con dos fechas por mes, se quitan los atípicos de la regla de Tukey, se prefieren los de hasta 1.000 ml y se elige el de precio por gramo más cercano a la mediana.
+
+# Los productos de aceite en el panel
+
+```{r aceites-bogota}
+aceites_bog <- skus %>%
+  filter(sipsa_name %in% aceites, city == "Bogotá") %>%
+  mutate(
+    ml    = gramos_sku / densidad,
+    litro = precio_mediano / ml * 1000,
+    marca = str_to_title(str_extract(exito_name, "[A-ZÁÉÍÓÚÑ]{4,}")),
+    caro  = litro > 14000
+  ) %>%
+  filter(fechas_mes_min >= 2)
+
+n_prod <- nrow(distinct(aceites_bog, sipsa_name, marca, ml))
+```
+
+En Bogotá hay `r n_prod` presentaciones de aceite (marca y tamaño) con al menos dos fechas de precio por mes. El Cuadro \ref{tab:tabla-productos} las muestra ordenadas por tamaño; el precio por litro es la mediana de los productos con esa marca y tamaño.
+
+```{r tabla-productos}
+tab_prod <- aceites_bog %>%
+  group_by(Aceite = sipsa_name, Marca = marca, ml = round(ml)) %>%
+  summarise(`COP por litro` = median(litro), .groups = "drop") %>%
+  arrange(Aceite, ml, Marca) %>%
+  mutate(Aceite = str_remove(Aceite, "Aceite "), `COP por litro` = cop0(`COP por litro`))
+
+kable(tab_prod, booktabs = TRUE, longtable = TRUE, align = "llrr", label = "tabla-productos",
+      caption = "Presentaciones de aceite en Bogotá y su precio por litro") %>%
+  kable_styling(latex_options = c("hold_position", "striped", "repeat_header"), font_size = 8)
+```
+
+```{r cuentas-marcas}
+cand <- aceites_bog %>% filter(ml <= 1000) %>%
+  group_by(sipsa_name) %>%
+  summarise(candidatos = n(), caros = sum(caro), .groups = "drop")
+todos <- aceites_bog %>% group_by(sipsa_name) %>% summarise(total = n(), caros_total = sum(caro), .groups = "drop")
+cuentas <- left_join(cand, todos, by = "sipsa_name")
+cu <- function(aceite, col) cuentas[[col]][cuentas$sipsa_name == aceite]
+
+rango_marca <- aceites_bog %>%
+  mutate(marca = recode(marca, Exito = "Éxito")) %>%
+  group_by(marca) %>%
+  summarise(minimo = min(litro), maximo = max(litro), .groups = "drop")
+marcas_baratas <- rango_marca %>% filter(maximo <= 14000)
+marcas_caras   <- rango_marca %>% filter(minimo > 14000)
+sin_clasificar <- setdiff(rango_marca$marca, c(marcas_baratas$marca, marcas_caras$marca))
+stopifnot(length(sin_clasificar) == 0)
+
+compiten_500 <- aceites_bog %>% filter(ml <= 500 / densidad_aceite) %>%
+  distinct(sipsa_name, marca, ml) %>%
+  mutate(txt = paste0(recode(marca, Exito = "Éxito"), " de ", round(ml), " ml"))
+c500 <- function(aceite) lista_es(compiten_500$txt[compiten_500$sipsa_name == aceite])
+tukey <- skus %>%
+  filter(sipsa_name %in% aceites, fechas_mes_min >= 2, !is.na(precio_gramo_sku)) %>%
+  mutate(litro = precio_gramo_sku * densidad_aceite * 1000) %>%
+  group_by(sipsa_name) %>%
+  summarise(q1 = quantile(litro, 0.25), q3 = quantile(litro, 0.75),
+            inf = q1 - 1.5 * (q3 - q1), sup = q3 + 1.5 * (q3 - q1), .groups = "drop")
+tk <- function(aceite, col) cop0(tukey[[col]][tukey$sipsa_name == aceite])
+```
+
+```{r figura-tamano, fig.cap="Precio por litro de los aceites según la marca y el tamaño de la presentación, Bogotá"}
+knitr::include_graphics(fig("07_robustez/fig28_aceites_precio_tamano.png"))
+```
+
+La Figura \ref{fig:figura-tamano} muestra cada presentación de aceite de Bogotá (un punto por marca y tamaño) y marca con una figura negra el producto que elige cada regla. La línea punteada vertical es el umbral de 1.000 ml y la horizontal, 14.000 COP por litro. El precio por litro depende sobre todo de la marca y no del tamaño: las marcas `r lista_es(marcas_baratas$marca)` cuestan como máximo `r cop0(max(marcas_baratas$maximo))` COP el litro, y las marcas `r lista_es(marcas_caras$marca)` cuestan como mínimo `r cop0(min(marcas_caras$minimo))`, en todos los tamaños en que se venden. La soya solo tiene una marca (Frescampo), por eso sus tres reglas eligen precios parecidos. Con el umbral de 500 g solo competían productos caros: en el girasol solo había `r c500("Aceite girasol")` y en el mezcla, `r c500("Aceite vegetal mezcla")`. Con el de 1.000 ml compiten productos de los dos grupos, pero los caros siguen siendo muchos: en el girasol, `r cu("Aceite girasol", "caros")` de los `r cu("Aceite girasol", "candidatos")` productos que compiten cuestan más de 14.000 el litro, y en el mezcla, `r cu("Aceite vegetal mezcla", "caros")` de `r cu("Aceite vegetal mezcla", "candidatos")`.
+
+\newpage
+
+# Qué producto elige cada regla
+
+```{r tabla-reglas}
+ref_litro <- aceites_bog %>%
+  group_by(sipsa_name) %>%
+  summarise(`Mínimo` = min(litro), `Mediana de todos` = median(litro), .groups = "drop")
+
+tab_reglas <- ref_litro %>%
+  left_join(bog_sin %>% rename(prod_sin = producto, `Sin umbral` = litro), by = "sipsa_name") %>%
+  left_join(bog_act %>% rename(prod_act = producto, `Umbral 1.000 ml` = litro), by = "sipsa_name") %>%
+  left_join(bog_500 %>% rename(prod_500 = producto, `Umbral 500 g` = litro), by = "sipsa_name") %>%
+  mutate(Inflacion = `Umbral 1.000 ml` / `Mediana de todos` - 1)
+
+kable(tab_reglas %>% transmute(Aceite = str_remove(sipsa_name, "Aceite "), `Mínimo` = cop0(`Mínimo`),
+                                `Mediana de todos` = cop0(`Mediana de todos`), `Sin umbral` = cop0(`Sin umbral`),
+                                `Umbral 1.000 ml` = cop0(`Umbral 1.000 ml`), `Umbral 500 g` = cop0(`Umbral 500 g`),
+                                `Frente a la mediana` = dec(sprintf("%+.0f%%", 100 * Inflacion))),
+      booktabs = TRUE, longtable = FALSE, align = "lrrrrrr", label = "tabla-reglas",
+      caption = "Precio por litro (COP) del producto que elige cada regla, Bogotá") %>%
+  kable_styling(latex_options = c("HOLD_position", "striped"), font_size = 8)
+```
+
+El Cuadro \ref{tab:tabla-reglas} compara el precio del producto que elige cada regla con la referencia de todos los productos. "Mediana de todos" es la mediana del precio por litro de todos los productos con dos fechas por mes, sin importar el tamaño, y "Mínimo" el más barato. "Umbral 500 g" es la regla inicial, con 500 g también para los líquidos. La última columna dice cuánto se aparta de la mediana de todos el producto elegido con el umbral de 1.000 ml. El Cuadro \ref{tab:productos-elegidos} nombra los productos que se eligen.
+
+```{r productos-elegidos}
+kable(tab_reglas %>% transmute(Aceite = str_remove(sipsa_name, "Aceite "), `Sin umbral` = prod_sin,
+                                `Umbral 1.000 ml` = prod_act, `Umbral 500 g` = prod_500),
+      booktabs = TRUE, align = "llll", label = "productos-elegidos", caption = "Producto elegido con cada regla, Bogotá") %>%
+  kable_styling(latex_options = c("hold_position", "striped"), font_size = 7) %>%
+  column_spec(2:4, width = "4.3cm")
+```
+
+La regla de la mediana funciona como está definida, pero un conjunto con dos grupos de marcas tiene la mediana en el grupo más numeroso. En el aceite de soya no hay problema, porque sus productos son de una sola clase de marca. En el de girasol y en el mezcla, la mediana de los productos que compiten cae en una marca cara, `r lit(bog_act, "Aceite girasol", "producto")` en el girasol y `r lit(bog_act, "Aceite vegetal mezcla", "producto")` en el mezcla. Los atípicos de Tukey no cambian esto: con los productos de todas las ciudades, los límites del girasol y del mezcla son tan amplios (de `r tk("Aceite girasol", "inf")` a `r tk("Aceite girasol", "sup")` y de `r tk("Aceite vegetal mezcla", "inf")` a `r tk("Aceite vegetal mezcla", "sup")` COP por litro) que ningún precio queda fuera, porque los productos caros no son valores extremos sino casi la mitad de los datos. Sin el umbral, el aceite mezcla baja a `r cop0(lit(bog_sin, "Aceite vegetal mezcla"))` porque los productos económicos son más y de más tamaños; el de girasol queda en `r cop0(lit(bog_sin, "Aceite girasol"))`, otra marca cara.
+
+# La conversión de unidades
+
+```{r conversion}
+val <- dens$validacion %>%
+  transmute(Aceite = str_remove(sipsa_name, "Aceite "), ml = round(ml), Scraper = precio_scraper,
+            `COP por litro` = precio_base, `100 g` = precio_100g, `100 g a mano` = precio_100g_mano)
+kable(val, booktabs = TRUE, align = "lrrrrr", digits = 0, label = "conversion", format.args = list(big.mark = ".", decimal.mark = ","),
+      caption = "Precio de los aceites elegidos en Bogotá, julio de 2025 (COP)") %>%
+  kable_styling(latex_options = c("hold_position", "striped"), font_size = 9)
+```
+
+El Cuadro \ref{tab:conversion} sigue el precio de cada aceite elegido desde el scraper hasta el panel. El precio por litro es el del scraper llevado a 1.000 ml, y el precio por 100 g coincide con el que sale a mano dividiendo entre los gramos del producto. Es decir, la conversión no infla el precio: lo que se ve arriba es el precio real de cada producto. Lo que lo eleva es la marca que queda elegida. La diferencia entre 500 ml y 1.000 ml es solo de escala: un precio de `r cop0(lit(bog_500, "Aceite vegetal mezcla"))` COP en el aceite mezcla es lo que cuesta un litro, no medio litro.
+
+# Efecto en las dietas
+
+Se corrieron los cuatro modelos con el panel del proyecto, cambiando solo el precio de los tres aceites por el que sale sin el umbral de tamaño. Todo lo demás queda igual.
+
+```{r tabla-modelos}
+res_mod <- prueba$costos %>%
+  group_by(modelo) %>%
+  summarise(actual = mean(pc_actual), aceites = mean(pc_aceites), .groups = "drop") %>%
+  arrange(factor(modelo, levels = c("CoCA", "CoNA", "CoRD", "CoAHD")))
+
+err <- dens$costos %>% group_by(modelo) %>% summarise(pc = mean(pc_error), .groups = "drop")
+
+kable(res_mod %>% left_join(err, by = "modelo") %>%
+        transmute(Modelo = modelo, `Panel actual` = cop0(actual),
+                  `Aceites sin umbral` = cop0(aceites),
+                  Diferencia = dec(sprintf("%+.1f%%", pct(aceites, actual))),
+                  `Con el error de la v1` = cop0(pc)),
+      booktabs = TRUE, align = "lrrrr", label = "tabla-modelos",
+      caption = "Costo per cápita promedio (COP/día) con distintos precios de los aceites") %>%
+  kable_styling(latex_options = c("hold_position", "striped"), font_size = 9)
+```
+
+```{r cona-ciudades}
+cona_c <- prueba$costos %>% filter(modelo == "CoNA") %>%
+  mutate(d = pct(pc_aceites, pc_actual)) %>% arrange(d)
+en_cona <- function(d) paste0(str_to_lower(str_remove(d$Food, "Aceite ")), " en ", d$ciudades, " ciudades", collapse = " y ")
+```
+
+El Cuadro \ref{tab:tabla-modelos} muestra que el efecto es muy pequeño: el CoNA cambia `r dec(sprintf("%+.1f", pct(mean(cona_c$pc_aceites), mean(cona_c$pc_actual))))`% en promedio (va de `r dec(sprintf("%+.1f", min(cona_c$d)))`% a `r dec(sprintf("%+.1f", max(cona_c$d)))`% según la ciudad) y el CoRD y el CoAHD `r dec(sprintf("%+.1f", pct(res_mod$aceites[res_mod$modelo == "CoRD"], res_mod$actual[res_mod$modelo == "CoRD"])))`% y `r dec(sprintf("%+.1f", pct(res_mod$aceites[res_mod$modelo == "CoAHD"], res_mod$actual[res_mod$modelo == "CoAHD"])))`%. El CoCA no cambia. Con el precio actual el CoNA compra aceite de `r en_cona(dens$aceites_correcto)`; con el precio sin umbral, de `r en_cona(prueba$aceites_en_cona)`. Para comparar, el error de unidades de la v1 sí pesaba más (columna "Con el error de la v1"), porque inflaba el precio de los tres aceites, incluido el de soya.
+
+# ¿Pasa lo mismo con otros alimentos?
+
+El aceite es un caso extremo porque su precio por litro depende mucho de la marca. Para ver si el umbral de tamaño infla el precio en general, se compara, en cada alimento y ciudad, el precio por gramo del producto elegido con la mediana de todos los productos con dos fechas por mes. Un cociente de 1 quiere decir que el elegido cuesta lo mismo que la mediana; mayor que 1, que cuesta más. El Cuadro \ref{tab:todos-alimentos} resume los cocientes de todas las combinaciones y el Cuadro \ref{tab:alimentos-altos} muestra los alimentos con el cociente más alto.
+
+```{r todos-alimentos}
+ref <- skus %>%
+  filter(!is.na(precio_gramo_sku), fechas_mes_min >= 2) %>%
+  group_by(sipsa_name, city) %>%
+  summarise(mediana_ref = median(precio_gramo_sku), n_elegibles = n(), .groups = "drop") %>%
+  filter(n_elegibles >= 2)
+
+pg <- function(lista, nombre) {
+  lista %>% filter(!is.na(gramos_sku)) %>% select(sipsa_name, city, precio_gramo_sku) %>%
+    rename(!!nombre := precio_gramo_sku)
+}
+
+cocientes <- ref %>%
+  inner_join(pg(actual, "pg_actual"), by = c("sipsa_name", "city")) %>%
+  inner_join(pg(sin_umb, "pg_sin"), by = c("sipsa_name", "city")) %>%
+  mutate(`Con umbral` = pg_actual / mediana_ref, `Sin umbral` = pg_sin / mediana_ref)
+
+resumen_coc <- cocientes %>%
+  pivot_longer(c(`Con umbral`, `Sin umbral`), names_to = "Regla", values_to = "r") %>%
+  group_by(Regla) %>%
+  summarise(Combinaciones = n(), Mediana = median(r), Media = mean(r),
+            `Más de 1,25` = mean(r > 1.25), `Más de 1,5` = mean(r > 1.5), .groups = "drop")
+
+kable(resumen_coc %>% transmute(Regla, Combinaciones = cop0(Combinaciones), Mediana = dec(sprintf("%.2f", Mediana)),
+                                Media = dec(sprintf("%.2f", Media)),
+                                `Más de 1,25` = dec(sprintf("%.1f%%", 100 * `Más de 1,25`)),
+                                `Más de 1,5` = dec(sprintf("%.1f%%", 100 * `Más de 1,5`))),
+      booktabs = TRUE, align = "lrrrrr", label = "todos-alimentos",
+      caption = "Precio por gramo del producto elegido frente a la mediana de los productos del alimento") %>%
+  kable_styling(latex_options = c("hold_position", "striped"), font_size = 9)
+```
+
+```{r alimentos-altos}
+top_alim <- cocientes %>%
+  group_by(Alimento = sipsa_name) %>%
+  summarise(`Con umbral` = mean(`Con umbral`), `Sin umbral` = mean(`Sin umbral`), Ciudades = n(), .groups = "drop") %>%
+  arrange(desc(`Con umbral`)) %>% head(8)
+
+kable(top_alim %>% mutate(across(c(`Con umbral`, `Sin umbral`), ~ dec(sprintf("%.2f", .)))),
+      booktabs = TRUE, align = "lrrr", label = "alimentos-altos",
+      caption = "Alimentos con el elegido más alto frente a la mediana (promedio de las ciudades)") %>%
+  kable_styling(latex_options = c("hold_position", "striped"), font_size = 9)
+
+p_act <- resumen_coc$`Más de 1,25`[resumen_coc$Regla == "Con umbral"]
+p_sin <- resumen_coc$`Más de 1,25`[resumen_coc$Regla == "Sin umbral"]
+```
+
+En la mayoría de las combinaciones el precio elegido es igual a la mediana, así que no hay una inflación general. Pero con el umbral de tamaño el `r dec(sprintf("%.0f", 100 * p_act))`% de las combinaciones queda más de 25% por encima de la mediana, contra `r dec(sprintf("%.0f", 100 * p_sin))`% sin umbral. Los alimentos más afectados son `r lista_es(str_to_lower(head(top_alim$Alimento, 4)))`.
+
+# Conclusiones
+
+```{r cifras-conclusion}
+mezcla_umb <- lit(bog_act, "Aceite vegetal mezcla"); girasol_umb <- lit(bog_act, "Aceite girasol")
+```
+
+- No hay un error de unidades: la conversión de ml a gramos está bien y el precio por litro es el real de cada producto.
+- Con el umbral de 500 g aplicado a los líquidos, el aceite mezcla salía a `r cop0(lit(bog_500, "Aceite vegetal mezcla"))` COP el litro y el de girasol a `r cop0(lit(bog_500, "Aceite girasol"))`, porque solo competían un Gourmet de 420 ml y un Premier de 500 ml. Con el umbral de 1.000 ml, que es el que corresponde, salen a `r cop0(mezcla_umb)` y `r cop0(girasol_umb)`.
+- Siguen por encima del aceite de soya (`r cop0(lit(bog_act, "Aceite soya"))`) porque cada uno tiene dos clases de marcas y la mediana cae en las caras. Sin umbral, el mezcla baja a `r cop0(lit(bog_sin, "Aceite vegetal mezcla"))`, y el de girasol queda en `r cop0(lit(bog_sin, "Aceite girasol"))`.
+- El efecto en las dietas es menor a 0,5%: el CoNA cambia `r dec(sprintf("%+.1f", pct(mean(cona_c$pc_aceites), mean(cona_c$pc_actual))))`% si el precio de los aceites es el de la versión sin umbral.
+- La sobrestimación por el umbral de tamaño no es exclusiva del aceite: con el umbral, el `r dec(sprintf("%.0f", 100 * p_act))`% de las combinaciones de alimento y ciudad queda más de 25% por encima de la mediana, contra `r dec(sprintf("%.0f", 100 * p_sin))`% sin umbral.
+
+# Cómo replicar
+
+Los scripts, en el orden de la tabla, guardan sus resultados en `output/sensibilidad_umbral/`. El primero es del flujo principal del proyecto (ver `docs/organizacion_proyecto.pdf`, sección de replicación). La figura 1 sale de `05_figures/14_fig_aceites.R`.
+
+```{r tabla-replicar}
+pasos <- tribble(
+  ~Paso, ~Script, ~Resultado,
+  "1", "01_webscrap_prep/01_construccion_panel.R", "Lista de productos (skus_todos.rds) y panel de precios",
+  "2", "06_sensibilidad_umbral/04_sin_umbral_tamano.R", "Proyecto completo sin el umbral de tamaño",
+  "3", "06_sensibilidad_umbral/05_efecto_densidad.R", "Verificación de la conversión y modelos con el error de la v1 (densidad.rds)",
+  "4", "06_sensibilidad_umbral/06_aceites_sin_umbral.R", "Modelos con el precio de los aceites sin umbral (aceites.rds)",
+  "5", "docs/prueba_aceites.Rmd", "Este documento"
+)
+kable(pasos, booktabs = TRUE, longtable = TRUE) %>%
+  kable_styling(latex_options = c("hold_position", "striped", "repeat_header"), font_size = 8) %>%
+  column_spec(1, width = "0.8cm") %>% column_spec(2, width = "7cm") %>% column_spec(3, width = "6.5cm")
+```

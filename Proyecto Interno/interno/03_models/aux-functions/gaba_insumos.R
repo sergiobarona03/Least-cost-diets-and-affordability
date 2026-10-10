@@ -56,14 +56,10 @@ alimentos_gaba <- function(panel, tcac) {
     dplyr::left_join(gramos, by = "articulo")
 }
 
-# Requerimientos GABA del hogar representativo: hombre y mujer de
-# 31-50 y niña de 10-13 (los mismos miembros de CoCA y CoNA).
+# Requerimientos GABA del hogar representativo: los miembros que trae
+# gaba_exchanges_adj (los mismos de CoCA y CoNA).
 requerimientos_gaba <- function(gaba_exchanges_adj) {
   gaba_exchanges_adj %>%
-    dplyr::filter(
-      (sex == "Masculino" & rango == "[31,51)") |
-        (sex == "Femenino" & rango %in% c("[31,51)", "[10, 14)"))
-    ) %>%
     dplyr::transmute(
       ciudad,
       Age     = rango,

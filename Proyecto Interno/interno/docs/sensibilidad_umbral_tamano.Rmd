@@ -1,0 +1,162 @@
+---
+title: "Análisis de sensibilidad: dietas de costo mínimo con umbral de tamaño del producto y sin él"
+date: "8 de octubre de 2026"
+lang: es
+geometry: margin=2cm
+output:
+  pdf_document:
+    toc: false
+    number_sections: true
+    fig_caption: true
+    latex_engine: pdflatex
+header-includes:
+  - \usepackage{booktabs}
+  - \usepackage{array}
+  - \usepackage[table]{xcolor}
+  - \usepackage{colortbl}
+  - \usepackage{float}
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, warning = FALSE, message = FALSE,
+                      fig.align = "center", out.width = "100%", fig.pos = "H")
+options(knitr.table.format = "latex")
+
+library(tidyverse)
+library(knitr)
+library(kableExtra)
+library(readxl)
+
+interno_dir <- "C:/Users/danie/OneDrive/Escritorio/Least-cost-diets-and-affordability/Proyecto Interno/interno/"
+source(file.path(interno_dir, "05_figures/00_fig_config.R"))
+
+cop0 <- function(x) format(round(x), big.mark = ".", decimal.mark = ",", trim = TRUE)
+dec  <- function(x, d = 1) format(round(x, d), nsmall = d, decimal.mark = ",", trim = TRUE)
+mas  <- function(x, d = 1) paste0(ifelse(x >= 0, "+", "-"), dec(abs(x), d), "%")
+fig  <- function(ruta) file.path(interno_dir, "output/figuras", ruta)
+lista_es <- function(x) if (length(x) < 2) x else paste0(paste(head(x, -1), collapse = ", "), " y ", tail(x, 1))
+
+sens <- readRDS(file.path(interno_dir, "output/sensibilidad_umbral/tablas.rds"))
+cost <- sens$costos %>% filter(regla %in% c("actual", "sin_umbral_tamano")) %>%
+  pivot_wider(names_from = regla, values_from = pc) %>%
+  mutate(razon = sin_umbral_tamano / actual)
+resumen <- cost %>% group_by(modelo) %>%
+  summarise(con = mean(actual), sin = mean(sin_umbral_tamano), rmin = min(razon), rmax = max(razon), .groups = "drop") %>%
+  mutate(razon = sin / con) %>%
+  mutate(modelo = factor(modelo, levels = names(MODEL_COLS))) %>% arrange(modelo)
+rv <- function(m, col) resumen[[col]][resumen$modelo == m]
+
+skus_todos <- readRDS(file.path(interno_dir, "output/lista_alimentos/skus_todos.rds")) %>%
+  transmute(sipsa_name, city, sku_code = as.character(sku_code), gramos_sku) %>% distinct()
+lista_a <- read_excel(file.path(interno_dir, "output/lista_alimentos/lista_alimentos.xlsx")) %>%
+  transmute(sipsa_name, city, sku_code = as.character(sku_code)) %>% distinct(sipsa_name, city, .keep_all = TRUE)
+lista_b <- read_excel(file.path(interno_dir, "output/sensibilidad_umbral/sin_umbral_tamano/insumos/lista_alimentos/lista_alimentos.xlsx")) %>%
+  transmute(sipsa_name, city, sku_code = as.character(sku_code)) %>% distinct(sipsa_name, city, .keep_all = TRUE)
+cambios <- inner_join(lista_a, lista_b, by = c("sipsa_name", "city"), suffix = c("_con", "_sin")) %>%
+  filter(sku_code_con != sku_code_sin) %>%
+  left_join(skus_todos, by = c("sipsa_name", "city", "sku_code_con" = "sku_code")) %>% rename(gramos_sku_con = gramos_sku) %>%
+  left_join(skus_todos, by = c("sipsa_name", "city", "sku_code_sin" = "sku_code")) %>% rename(gramos_sku_sin = gramos_sku) %>%
+  filter(!is.na(gramos_sku_con), !is.na(gramos_sku_sin))
+```
+
+# Introducción
+
+Un mismo alimento se vende en presentaciones de tamaños muy distintos, y los empaques grandes suelen tener un precio por gramo menor que los pequeños. Si el precio de un alimento en un mes fuera el de un empaque de un kilo con descuento por volumen, el costo de la dieta sería el de una compra que muchos hogares no hacen. Para evitarlo, la regla con la que se elige el producto representativo de cada alimento y ciudad prefiere los productos de hasta 500 g, o de hasta 1.000 ml en los líquidos, y solo si ninguno cumple compara todos los tamaños. Entre los que compiten gana el de precio por gramo más cercano a la mediana, una vez descartados los valores atípicos.
+
+El umbral es una decisión de método, y la pregunta de este documento es cuánto pesa en los resultados. Para responderla se corrió el proyecto completo, desde el panel de precios hasta las dietas, dos veces: con el umbral de 500 g y 1.000 ml, que es el que usan los resultados principales, y sin umbral, con el producto elegido entre todos los tamaños. Las dietas son el costo de adecuación calórica (CoCA), el de adecuación nutricional (CoNA), el de adecuación nutricional consistente con el consumo (CC-CoNA, con alpha = 0,5), el de la dieta recomendada (CoRD) y el de una dieta saludable (CoAHD). La comparación es la razón entre el costo sin umbral y el costo con umbral: una razón menor que 1 quiere decir que quitar el umbral abarata la dieta.
+
+Este análisis responde a una pregunta que surgió al revisar los precios: si el costo de las dietas depende de que el supermercado venda los alimentos en empaques pequeños o grandes, el resultado podría estar determinado por una regla de limpieza y no por los precios del mercado. La revisión del maíz blanco trillado, cuyo único producto es un empaque de 1.000 g, y de los aceites, cuyo precio por 100 g depende de qué marcas caben en el umbral, mostró que los alimentos con pocos productos son justamente donde la regla pesa más. Por eso se mide el efecto de la regla en todo el panel y en las cinco dietas, y no solo en los alimentos que levantaron la duda.
+
+# Resultados
+
+## Qué cambia en los precios
+
+```{r cambios-precios}
+pr <- sens$resumen_precio_tamano
+cp <- sens$cambio_precio_alimento
+n_baja <- sum(cp$razon < 0.99); n_sube <- sum(cp$razon > 1.01)
+cc_cona0 <- readRDS(file.path(interno_dir, "output/figuras/02_composicion/composicion_cona.rds"))$contrib
+top20 <- readRDS(file.path(interno_dir, "output/figuras/07_robustez/fig27_datos.rds")) %>%
+  mutate(articulo = as.character(articulo), compra = articulo %in% cc_cona0$Food)
+```
+
+La regla cambia el producto elegido en `r nrow(cambios)` de las `r cop0(sens$cambio_sku$pares)` combinaciones de alimento y ciudad con tamaño conocido (`r dec(100 * nrow(cambios) / sens$cambio_sku$pares, 0)`%). Cuando el producto cambia, el empaque pasa en promedio de `r cop0(median(cambios$gramos_sku_con))` g a `r cop0(median(cambios$gramos_sku_sin))` g (mediana), y en `r dec(100 * mean(cambios$gramos_sku_sin > cambios$gramos_sku_con), 0)`% de los casos el nuevo empaque es más grande. Sin embargo, el precio por 100 g de la mayoría de las observaciones no se mueve: de `r cop0(pr$observaciones)` observaciones de alimento, ciudad y mes, `r cop0(pr$sin_cambio)` (`r dec(100 * pr$sin_cambio / pr$observaciones, 0)`%) tienen el mismo precio con y sin umbral, porque el producto elegido es el mismo o tiene el mismo precio por gramo. Por alimento, el precio promedio baja más de 1% en `r n_baja` de los `r nrow(cp)` alimentos y sube más de 1% en `r n_sube`. La Figura \ref{fig:fig-alimentos} muestra los que más cambian en cada dirección y el Cuadro \ref{tab:tab-alimentos-cambio} agrega cuánto pesan en el CoNA.
+
+```{r fig-alimentos, fig.cap="Los alimentos cuyo precio por 100 g cambia al quitar el umbral de tamaño"}
+knitr::include_graphics(fig("07_robustez/fig27_alimentos_cambian_umbral.png"))
+```
+
+La figura se lee de arriba hacia abajo: los alimentos de barras rojas son los que se encarecen cuando se deja de preferir el empaque pequeño, es decir, aquellos cuyo empaque pequeño era más barato por gramo que la mediana de todos los tamaños; las barras azules son los alimentos que se abaratan, que son los que se venden en empaques grandes con precio por gramo bajo. De los `r nrow(top20)` alimentos de la figura, el CoNA compra `r sum(top20$compra)` en al menos una ciudad; entre ellos `r lista_es(tolower(top20$articulo[top20$compra]))`; los demás no entran a su dieta, y por eso el costo de las dietas se mueve mucho menos que el precio de cada alimento.
+
+```{r tabla-alimentos-cambio}
+cc_cona <- readRDS(file.path(interno_dir, "output/figuras/02_composicion/composicion_cona.rds"))$contrib
+compra <- cc_cona %>% group_by(Food) %>% summarise(ciudades = n_distinct(ciudad), pct = 100 * sum(contrib) / sum(cc_cona$contrib), .groups = "drop")
+tcp <- bind_rows(cp %>% arrange(razon) %>% head(8), cp %>% arrange(desc(razon)) %>% head(4)) %>%
+  left_join(compra, by = c("articulo" = "Food")) %>%
+  transmute(Alimento = articulo, `Cambio del precio` = mas(100 * (razon - 1), 0),
+            `Ciudades donde el CoNA lo compra` = ifelse(is.na(ciudades), 0L, ciudades),
+            `% del costo del CoNA` = ifelse(is.na(pct), "-", dec(pct, 1)))
+kable(tcp, booktabs = TRUE, align = "lrrr", label = "tab-alimentos-cambio",
+      caption = "Alimentos con mayores cambios de precio al quitar el umbral (promedio de ciudades y meses)") %>%
+  kable_styling(latex_options = c("hold_position", "striped"), font_size = 9)
+```
+
+Los alimentos cuyo precio más cae al quitar el umbral son los que se venden en presentaciones muy grandes con un precio por gramo bajo, como la harina precocida de maíz, los huevos y los aceites. Los que suben son pocos y de poco peso en las dietas, salvo la harina de trigo (`r mas(100 * (cp$razon[cp$articulo == "Harina de trigo"] - 1), 0)`) y la leche en polvo (`r mas(100 * (cp$razon[cp$articulo == "Leche en polvo"] - 1), 0)`), que son los dos alimentos que más pesan en el costo del CoNA. El umbral, entonces, no sesga todos los precios en una dirección: abarata o encarece según cómo se distribuyan las marcas y los tamaños de cada alimento.
+
+## Qué cambia en el costo de las dietas
+
+```{r tabla-costos}
+tc <- resumen %>%
+  transmute(Dieta = modelo, `Con umbral` = cop0(con), `Sin umbral` = cop0(sin),
+            `Razón` = dec(razon, 3), `Mínimo y máximo entre ciudades` = paste0(dec(rmin, 3), " y ", dec(rmax, 3)))
+kable(tc, booktabs = TRUE, align = "lrrrc", label = "tab-costos-umbral",
+      caption = "Costo per cápita (COP/día), promedio de las 13 ciudades y del trimestre jul-sep 2025") %>%
+  kable_styling(latex_options = c("hold_position", "striped"), font_size = 9)
+```
+
+```{r fig-costos, fig.cap="Costo per cápita de cada dieta con y sin umbral de tamaño"}
+knitr::include_graphics(fig("07_robustez/fig25_costo_con_sin_umbral.png"))
+```
+
+El Cuadro \ref{tab:tab-costos-umbral} y la Figura \ref{fig:fig-costos} comparan el costo de las cinco dietas con y sin umbral. El umbral casi no importa para tres de las cinco dietas. Quitarlo cambia el CoCA en `r mas(100 * (rv("CoCA", "razon") - 1))`, el CoRD en `r mas(100 * (rv("CoRD", "razon") - 1))` y el CoAHD en `r mas(100 * (rv("CoAHD", "razon") - 1))`: el CoCA depende de un alimento con un solo producto (el maíz blanco trillado, de 1.000 g, que ningún umbral puede cambiar), y en el CoRD y el CoAHD los aumentos y las reducciones de precio se compensan: el promedio casi no cambia, aunque por ciudad la razón del CoRD va de `r dec(rv("CoRD", "rmin"), 3)` a `r dec(rv("CoRD", "rmax"), 3)` y la del CoAHD de `r dec(rv("CoAHD", "rmin"), 3)` a `r dec(rv("CoAHD", "rmax"), 3)`. En las dietas que usan el panel completo la historia es otra. El CoNA baja `r dec(100 * (1 - rv("CoNA", "razon")), 1)`% y el CC-CoNA `r dec(100 * (1 - rv("CC-CoNA", "razon")), 1)`%, porque pueden comprar más de los alimentos cuyo precio cae (huevos, aceites, harina precocida de maíz). El CoNA, además, es el que más varía entre ciudades: la razón va de `r dec(rv("CoNA", "rmin"), 3)` a `r dec(rv("CoNA", "rmax"), 3)`.
+
+```{r canasta}
+# Cambio del precio de la canasta del CoNA: el precio de cada alimento sin umbral entre el precio con umbral,
+# ponderado por el costo que el alimento tiene en la dieta con umbral de cada ciudad
+norm_ciudad <- function(x) toupper(iconv(x, from = "", to = "ASCII//TRANSLIT"))
+p_con <- readRDS(file.path(interno_dir, "output/paneles/panel_mensual_cities_tcac.rds")) %>% transmute(articulo, ciudad = norm_ciudad(ciudad), fecha, p_con = precio_100g)
+p_sin <- readRDS(file.path(interno_dir, "output/sensibilidad_umbral/sin_umbral_tamano/insumos/paneles/panel_mensual_cities_tcac.rds")) %>% transmute(articulo, ciudad = norm_ciudad(ciudad), fecha, p_sin = precio_100g)
+pesos <- cc_cona %>% group_by(ciudad, Food) %>% summarise(w = sum(contrib), .groups = "drop")
+canasta <- inner_join(p_con, p_sin, by = c("articulo", "ciudad", "fecha")) %>%
+  group_by(ciudad, articulo) %>% summarise(r = mean(p_sin / p_con), .groups = "drop") %>%
+  inner_join(pesos, by = c("ciudad", "articulo" = "Food")) %>%
+  group_by(ciudad) %>% summarise(canasta = weighted.mean(r, w) - 1, .groups = "drop") %>%
+  left_join(cost %>% filter(modelo == "CoNA") %>% transmute(ciudad, cona = razon - 1), by = "ciudad") %>%
+  arrange(cona)
+rho_c <- cor(canasta$canasta, canasta$cona, method = "spearman")
+```
+
+Para entender por qué el CoNA cambia de signo entre ciudades, se calculó cuánto cambia el precio de la canasta que el CoNA compra con umbral en cada ciudad, es decir, el cambio de precio de cada alimento ponderado por el costo que tiene en la dieta. Esa medida va de `r mas(100 * min(canasta$canasta))` en `r CITY_LABS[canasta$ciudad[which.min(canasta$canasta)]]` a `r mas(100 * max(canasta$canasta))` en `r CITY_LABS[canasta$ciudad[which.max(canasta$canasta)]]`, y su correlación de rangos con el cambio del CoNA es de `r dec(rho_c, 2)`. El cambio de precio de la canasta explica el signo del cambio del CoNA en `r sum(sign(canasta$canasta) == sign(canasta$cona))` de las 13 ciudades; en las demás, el CoNA reoptimiza hacia alimentos distintos de los que compraba, y el cambio de su costo no coincide con el de los precios de su canasta anterior.
+
+```{r fig-ciudad, fig.cap="Cambio en el costo al quitar el umbral, por ciudad"}
+knitr::include_graphics(fig("07_robustez/fig26_cambio_sin_umbral.png"))
+```
+
+La Figura \ref{fig:fig-ciudad} pone el cambio de cada ciudad en el extremo de su barra. Las barras del CoCA, el CoRD y el CoAHD son tan cortas que casi no se distinguen de cero, lo que confirma que el promedio no esconde ciudades en las que la regla importe. En el CoNA y el CC-CoNA las barras van en las dos direcciones: en `r sum(canasta$cona < 0)` ciudades el CoNA baja al quitar el umbral y en `r sum(canasta$cona > 0)` sube, de modo que el efecto promedio es la suma de efectos de signo contrario y no un desplazamiento general de los precios.
+
+# Conclusiones
+
+```{r concl}
+cambio_alim <- 100 * (1 - pr$sin_cambio / pr$observaciones)
+max3 <- 100 * max(abs(1 - c(rv("CoCA", "razon"), rv("CoRD", "razon"), rv("CoAHD", "razon"))))
+orden_con <- resumen %>% arrange(con) %>% pull(modelo) %>% as.character()
+orden_sin <- resumen %>% arrange(sin) %>% pull(modelo) %>% as.character()
+```
+
+El umbral de 500 g y 1.000 ml cambia el producto representativo en `r dec(100 * nrow(cambios) / sens$cambio_sku$pares, 0)`% de las combinaciones de alimento y ciudad, pero cambia el precio por 100 g en `r dec(cambio_alim, 0)`% de las observaciones, y su efecto sobre el costo de las dietas es pequeño o moderado: menos de `r dec(max3, 1)`% en el promedio para el CoCA, el CoRD y el CoAHD, y de `r dec(100 * (1 - rv("CoNA", "razon")), 1)`% y `r dec(100 * (1 - rv("CC-CoNA", "razon")), 1)`% para el CoNA y el CC-CoNA en el promedio de las ciudades. El orden entre dietas `r if (identical(orden_con, orden_sin)) "no cambia" else "cambia"`: `r lista_es(orden_con)`, de menor a mayor costo, con y sin umbral.
+
+La razón por la que el efecto es pequeño en el promedio, pero no despreciable en el CoNA, está en cómo se construye cada dieta. El CoCA y las dietas de la guía (CoRD y CoAHD) eligen pocos alimentos por ciudad, y esos alimentos casi siempre tienen un solo producto o productos de precio parecido por gramo, de modo que el umbral no tiene qué cambiar. El CoNA, en cambio, escoge entre todo el panel y reacciona a cualquier precio que baje: cuando sin umbral la harina precocida de maíz, los huevos o los aceites cuestan menos, el modelo los compra en lugar de otros alimentos. Esa reacción explica que el CoNA caiga `r dec(100 * (1 - rv("CoNA", "razon")), 1)`% en promedio y que en `r sum(canasta$cona < 0)` de las 13 ciudades sea más barato sin umbral, mientras que en `r sum(canasta$cona > 0)` ciudades se encarece porque los alimentos que compraba suben de precio.
+
+Lo que hace el umbral es una elección entre dos sesgos. Sin él, los precios de los alimentos que se venden en empaques grandes reflejan descuentos por volumen que un hogar de tres personas puede no aprovechar. Con él, se descartan los empaques grandes cuando hay uno pequeño, aunque el precio por gramo del grande sea el que enfrentaría un hogar que compra al por mayor. Mantener el umbral en los resultados principales es la decisión más conservadora: el CoNA con umbral es `r dec(100 * (1 / rv("CoNA", "razon") - 1), 1)`% más caro que sin él, de modo que el umbral no subestima el costo de cubrir los nutrientes. Como el efecto promedio sobre tres de las cinco dietas es de menos de 0,5% y el orden entre dietas no cambia, las conclusiones principales no dependen de esta decisión; solo el CoNA, y en menor medida el CC-CoNA, son sensibles a ella.
+
+Quedan dos puntos abiertos que este ejercicio no resuelve. El primero es el de los alimentos con un solo producto, como el maíz blanco trillado, donde la regla no tiene nada que elegir y el precio puede incluir un descuento que ningún umbral corrige; el CoCA depende de él y se discute en el documento principal. El segundo es la variación entre ciudades del efecto del umbral, que va de `r mas(100 * (rv("CoNA", "rmin") - 1))` a `r mas(100 * (rv("CoNA", "rmax") - 1))` en el CoNA: explicarla pide mirar qué marcas y tamaños vende el supermercado en cada ciudad, y una revisión de la literatura sobre heterogeneidad espacial de los precios al detal ayudaría a interpretarla.
