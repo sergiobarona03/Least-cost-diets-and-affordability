@@ -24,7 +24,7 @@ library(tidyverse)
 # Rutas
 # ============================================================
 
-base_dir <- "C:/Users/danie/OneDrive/Escritorio/Least-cost-diets-and-affordability/Proyecto Interno/interno/"
+#base_dir <- "C:/Users/danie/OneDrive/Escritorio/Least-cost-diets-and-affordability/Proyecto Interno/interno/"
 
 output_dir <- file.path(base_dir, "output")
 cona_dir   <- file.path(base_dir, "03_models/cona")

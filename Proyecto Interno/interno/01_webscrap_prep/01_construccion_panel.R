@@ -35,7 +35,7 @@ library(openxlsx)
 # Rutas
 # ============================================================
 
-base_dir  <- "C:/Users/danie/OneDrive/Escritorio/Least-cost-diets-and-affordability/Proyecto Interno/interno/"
+base_dir  <- "C:/Users/Portatil/Desktop/Least-cost-diets-and-affordability/Proyecto Interno/interno/"
 panel_dir <- file.path(base_dir, "01_webscrap_prep")
 aux_dir   <- file.path(panel_dir, "aux-functions")
 
@@ -105,10 +105,10 @@ extraer_fecha_archivo <- function(archivo) {
 # ============================================================
 
 construir_panel <- function(ruta_rds, orden) {
-
+  
+  # Leer ruta
   readRDS(ruta_rds) %>%
     select(any_of(variables_panel), archivo_origen) %>%
-
     mutate(
       sipsa_name = as.character(sipsa_name),
 
@@ -188,18 +188,22 @@ fechas_mes_sku <- panel_final_temp %>%
 
 lista_representativa <- panel_final_temp %>%
   mutate(
+    # Pasar el text
     texto_exito = str_to_lower(exito_name),
-
+    
+    # Variable de medida
     medida = str_extract(
       texto_exito,
       "\\d+(?:[\\.,]\\d+)?\\s*(g|gr|gramo|gramos|ml|mililitro|mililitros|litro|litros)"
     ),
-
+    
+    # Cantidad extraida
     cantidad_extraida = medida %>%
       str_extract("\\d+(?:[\\.,]\\d+)?") %>%
       str_replace(",", ".") %>%
       as.numeric(),
-
+    
+    
     unidad_extraida = medida %>%
       str_extract("g|gr|gramo|gramos|ml|mililitro|mililitros|litro|litros"),
 
@@ -240,11 +244,18 @@ lista_representativa <- lista_representativa %>%
 # Elegir el sku representativo por alimento-ciudad
 # ============================================================
 
+<<<<<<< HEAD
 lista_final <- seleccionar_sku_mediano(lista_representativa,
                                        umbral_gramos = umbral_gramos,
                                        umbral_ml = umbral_ml,
                                        min_fechas_mes = min_fechas_mes) %>%
   select(-precio_mediano)
+=======
+lista_final <- seleccionar_sku_umbral(lista_representativa,
+                                      umbral_gramos = umbral_gramos,
+                                      umbral_fechas_ciudad = umbral_fechas_ciudad) %>%
+  select(-precio_mediano, -precio_gramo_sku, -gramos_sku)
+>>>>>>> 59f19853186f3b785efb75b1da6347671014c2db
 
 # ============================================================
 # Gramos, base y densidad del sku elegido por alimento-ciudad, y

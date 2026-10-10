@@ -16,7 +16,7 @@ library(janitor)
 # Rutas
 # ============================================================
 
-base_dir  <- "C:/Users/danie/OneDrive/Escritorio/Least-cost-diets-and-affordability/Proyecto Interno/interno/"
+base_dir  <- "C:/Users/Portatil/Desktop/Least-cost-diets-and-affordability/Proyecto Interno/interno/"
 panel_dir <- file.path(base_dir, "01_webscrap_prep")
 
 raw_input_dir   <- file.path("C:/Users/danie/OneDrive/Documentos/input panel")

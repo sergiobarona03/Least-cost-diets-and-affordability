@@ -23,7 +23,7 @@ library(scales)
 ruta_datos <- "data_boxplots.rds"
 if (!file.exists(ruta_datos)) {
   ruta_datos <- file.path(
-    "C:/Users/danie/OneDrive/Escritorio/Least-cost-diets-and-affordability/Proyecto Interno/interno",
+    "C:/Users/Portatil/Desktop/Least-cost-diets-and-affordability/Proyecto Interno/interno/",
     "shiny_boxplots/data_boxplots.rds"
   )
 }
