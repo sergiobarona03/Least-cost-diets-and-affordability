@@ -66,7 +66,7 @@ prices <- data_paper %>%
   dplyr::summarise(
     mean_price = round(mean(precio_real, na.rm=TRUE), 0),
     .groups    = "drop") %>%
-  rename(Food = articulo)
+  dplyr::rename(Food = articulo)
 
 # -----------------------------------------------------------------------
 # 4. Combined cell: qty (pct%) [price]
@@ -226,12 +226,12 @@ prices_dec <- data_paper_dec %>%
   group_by(ciudad, articulo, year) %>%
   dplyr::summarise(mean_precio_real = mean(precio_real, na.rm=TRUE),
                    .groups = "drop") %>%
-  rename(Food = articulo)
+  dplyr::rename(Food = articulo)
 
 base_qty_dec   <- qty_dec    %>% filter(year==2019) %>%
-  rename(qty_base=mean_qty)       %>% select(-year)
+  dplyr::rename(qty_base=mean_qty)       %>% select(-year)
 base_price_dec <- prices_dec %>% filter(year==2019) %>%
-  rename(price_base=mean_precio_real) %>% select(-year)
+  dplyr::rename(price_base=mean_precio_real) %>% select(-year)
 
 decomp_annual <- qty_dec %>%
   left_join(prices_dec,      by=c("ciudad","Food","year")) %>%

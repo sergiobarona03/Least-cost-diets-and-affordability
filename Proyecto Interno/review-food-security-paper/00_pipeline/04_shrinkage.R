@@ -1,10 +1,35 @@
 ########################################################
-## SCRIPT 04 — JS shrinkage + optimal threshold bounds
+## SCRIPT 04 — Shrinkage + optimal threshold bounds
 ## Reads:  FORECAST_DIR/lambda_raw.csv
 ##         FORECAST_DIR/params_optimal.csv
 ## Writes: FORECAST_DIR/lambda_final.csv
 ##         ROBUST_DIR/fig_lambda_distribution.png
 ##         ROBUST_DIR/fig_shrinkage_effect.png
+##
+## CHANGE 1 (2026-10-20): the shrinkage branch is selected with k_city
+## (items in the sub-class × city with a successful estimate) instead of
+## k (items assigned to the sub-class). The James-Stein factor already
+## used k_city, so condition and formula now count the same thing. The
+## dead `k == 1` branch was removed: apply_D == FALSE already captures
+## single-item sub-classes in the first condition.
+##
+## CHANGE 2 (2026-10-20): a series that is the ONLY successful estimate
+## in its sub-class and city (k_city == 1) now receives INDIVIDUAL
+## shrinkage instead of reverting to lambda = 1. The two-item formula,
+## delta = dev / (dev + sigma2), uses only the item's own deviation and
+## residual variance, so it needs no group; the earlier reversion was
+## over-conservative. Tested in 06d_reversion_rules.R: for the three
+## affected series the validation MAPE falls from 8.34% to 4.75% in the
+## evaluation window and from 2.54% to 1.59% in the selection window,
+## and two of the four series that determine CoCA are among them
+## (HARINA DE TRIGO in Cali, 10.97% -> 3.60%; HARINA PRECOCIDA in
+## Bogota, 11.59% -> 8.20%). The BASE_nogroup label therefore no longer
+## exists.
+##
+## The R2 reversion criterion was also tested in 06d and is KEPT: the
+## alternatives improve the evaluation window but worsen the selection
+## window, and they gain in low-lambda series while losing in mid-lambda
+## ones, so the evidence does not support changing it.
 ########################################################
 
 source("00_config.R")
@@ -29,9 +54,11 @@ message(sprintf("  Thresholds: R²≥%.2f | λ∈[%.2f, %.2f]",
                 R2_MIN, LAM_MIN, LAM_MAX))
 
 # -----------------------------------------------------------------------
-# JS shrinkage
+# Shrinkage
+#   k_city >= 3 : James-Stein, pooled across the sub-class
+#   k_city <= 2 : individual, from the item's own deviation and sigma2
 # -----------------------------------------------------------------------
-message("Applying JS shrinkage...")
+message("Applying shrinkage...")
 
 subclass_js <- lambda_raw %>%
   filter(apply_D, est_ok, !is.na(lambda)) %>%
@@ -47,12 +74,17 @@ lambda_final <- lambda_raw %>%
   mutate(
     delta = case_when(
       !apply_D | !est_ok  ~ NA_real_,
-      k == 1              ~ 1.0,
-      k >= 3 ~ pmax(0, 1 - (k_city - 2) * sigma2_sc / Q_sc),
-      k == 2 ~ {
+      k_city >= 3 ~ pmax(0, 1 - (k_city - 2) * sigma2_sc / Q_sc),
+      k_city <= 2 ~ {
         dev <- (lambda - 1)^2
         if_else((dev + sigma2) > 0, dev / (dev + sigma2), 0)},
       TRUE ~ NA_real_),
+    shrinkage_type = case_when(
+      !apply_D | !est_ok ~ NA_character_,
+      k_city >= 3        ~ "james_stein",
+      k_city == 2        ~ "individual",
+      k_city == 1        ~ "individual_no_group",
+      TRUE               ~ NA_character_),
     lambda_shrunk = case_when(
       !apply_D                 ~ 1.0,
       !est_ok | is.na(lambda)  ~ 1.0,
@@ -97,6 +129,16 @@ message(sprintf(
   sum(lambda_final$reversion_reason == "low_lambda",  na.rm=TRUE),
   sum(lambda_final$reversion_reason == "high_lambda", na.rm=TRUE)))
 
+# delta by shrinkage type and sub-class size — for the Appendix A text
+delta_by_k <- lambda_final %>%
+  filter(apply_D, est_ok, !is.na(delta)) %>%
+  group_by(shrinkage_type, k_city) %>%
+  summarise(n = n(),
+            delta_mean   = mean(delta, na.rm = TRUE),
+            delta_median = median(delta, na.rm = TRUE),
+            .groups = "drop")
+print(delta_by_k)
+
 # -----------------------------------------------------------------------
 # Figures
 # -----------------------------------------------------------------------
@@ -114,14 +156,14 @@ p_dist <- ggplot(lambda_dcity,
              linetype = "dotted", color = "grey40", linewidth = 0.6) +
   scale_fill_manual(values = CITY_COLORS) +
   labs(
-    title    = "JS-shrunk lambda — D_city items (after bounds)",
+    title    = "Shrunk lambda — D_city items (after bounds)",
     subtitle = sprintf(
       "Mean=%.3f | SD=%.3f | |λ-1| reduced %.1f%%\nR²≥%.2f | λ∈[%.2f, %.2f]",
       mean(lambda_dcity$lambda_final, na.rm=TRUE),
       sd(lambda_dcity$lambda_final,   na.rm=TRUE),
       shrink_diag$pct_shrinkage,
       R2_MIN, LAM_MIN, LAM_MAX),
-    x = "Lambda (JS-shrunk)", y = "Count", fill = "City") +
+    x = "Lambda (shrunk)", y = "Count", fill = "City") +
   theme_bw(base_size = 11) +
   theme(legend.position = "bottom")
 
@@ -141,10 +183,10 @@ p_shrink <- lambda_final %>%
              color = "#C0392B", linewidth = 0.5) +
   scale_color_manual(values = CITY_COLORS) +
   labs(
-    title    = "Shrinkage effect: OLS vs JS-shrunk lambda",
+    title    = "Shrinkage effect: OLS vs shrunk lambda",
     subtitle = sprintf("|λ-1| reduced %.1f%%",
                        shrink_diag$pct_shrinkage),
-    x = "OLS lambda (raw)", y = "JS-shrunk lambda (final)",
+    x = "OLS lambda (raw)", y = "Shrunk lambda (final)",
     color = "City") +
   theme_bw(base_size = 11) +
   theme(legend.position = "bottom")
@@ -156,7 +198,8 @@ ggsave(file.path(ROBUST_DIR, "fig_shrinkage_effect.png"),
 # Save
 # -----------------------------------------------------------------------
 write_csv(lambda_final, file.path(FORECAST_DIR, "lambda_final.csv"))
-write_xlsx(list(lambda_final = lambda_final),
+write_xlsx(list(lambda_final = lambda_final,
+                delta_by_k   = delta_by_k),
            file.path(ROBUST_DIR, "lambda_estimates.xlsx"))
 
 message("Done. Run 05_build_prices.R next.")

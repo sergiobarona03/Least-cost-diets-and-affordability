@@ -1,5 +1,5 @@
 ########################################################
-## 05_figures/bloque3_ccona/fig07_ccona_premium.R
+## 06_figures/bloque3_ccona/fig07_ccona_premium.R
 ##
 ## Figure 7: CC-CoNA premium over CoNA by alpha × city
 ##   Premium = (CC-CoNA_alpha - CoNA) / CoNA × 100
@@ -8,6 +8,12 @@
 ## Two panels:
 ##   Top    : monthly premium levels by city
 ##   Bottom : annual mean premium by alpha
+##
+## Reported alpha grid: 0.1, 0.25, 0.4, 0.5 (alpha = 0 is the baseline).
+## Values above 0.5 force virtually the whole observed expenditure
+## structure, at which point the result is closer to the cost of the
+## observed basket than to a least-cost diet, so they are estimated but
+## not reported.
 ##
 ## Reads:  CCONA_DIR/ccona_results.rds
 ##         PREP_DIR/deflator_monthly.rds
@@ -22,6 +28,8 @@ library(lubridate)
 library(scales)
 library(cowplot)
 
+ALPHAS_KEEP <- c(0.1, 0.25, 0.4, 0.5)
+
 # -----------------------------------------------------------------------
 # 1. Load data
 # -----------------------------------------------------------------------
@@ -33,7 +41,7 @@ deflator <- readRDS(file.path(PREP_DIR, "deflator_monthly.rds")) %>%
   select(ciudad, fecha, deflator)
 
 # -----------------------------------------------------------------------
-# 2. Real per capita cost
+# 2. Real per capita cost — all alphas, so the baseline stays available
 # -----------------------------------------------------------------------
 cost_pc <- ccona %>%
   group_by(alpha_val, ciudad, fecha) %>%
@@ -51,15 +59,16 @@ cona_base <- cost_pc %>%
   filter(alpha_val == 0) %>%
   select(ciudad, fecha, cost_base = cost_real)
 
+alpha_levels <- as.character(ALPHAS_KEEP)
+
 premium <- cost_pc %>%
-  filter(alpha_val > 0) %>%
+  filter(alpha_val %in% ALPHAS_KEEP) %>%
   left_join(cona_base, by = c("ciudad", "fecha")) %>%
   mutate(
     premium_pct = (cost_real / cost_base - 1) * 100,
     ciudad_lbl  = factor(CITY_LABS[ciudad],
                          levels = c("Bogotá", "Medellín", "Cali")),
-    alpha_chr   = factor(as.character(alpha_val),
-                         levels = c("0.25","0.5","0.75","1")))
+    alpha_chr   = factor(as.character(alpha_val), levels = alpha_levels))
 
 # Annual mean premium
 premium_annual <- premium %>%
@@ -68,25 +77,27 @@ premium_annual <- premium %>%
   dplyr::summarise(mean_prem = mean(premium_pct, na.rm = TRUE),
                    .groups   = "drop")
 
+message(sprintf("  alphas plotted: %s", paste(alpha_levels, collapse = ", ")))
 message(sprintf("  Premium range: %.2f%% – %.2f%%",
-                min(premium$premium_pct, na.rm=TRUE),
-                max(premium$premium_pct, na.rm=TRUE)))
+                min(premium$premium_pct, na.rm = TRUE),
+                max(premium$premium_pct, na.rm = TRUE)))
 
 # -----------------------------------------------------------------------
-# 4. Alpha colour scale (exclude alpha=0)
+# 4. Alpha colour scale
+#    ALPHA_COLS / ALPHA_LABS in 00_fig_config.R are keyed on the old grid
+#    (0.25, 0.5, 0.75, 1), so they are rebuilt here for the reported one.
 # -----------------------------------------------------------------------
+ALPHA_PALETTE <- c("0.1"  = "#A9DFBF",
+                   "0.25" = "#52BE80",
+                   "0.4"  = "#1E8449",
+                   "0.5"  = "#0B5A2A")
+
+ALPHA_LABELS <- setNames(sprintf("\u03b1 = %.2f", ALPHAS_KEEP), alpha_levels)
+
 alpha_scale <- scale_color_manual(
-  values = c(
-    "0.25" = unname(ALPHA_COLS["0.25"]),
-    "0.5"  = unname(ALPHA_COLS["0.5"]),
-    "0.75" = unname(ALPHA_COLS["0.75"]),
-    "1"    = unname(ALPHA_COLS["1"])),
-  labels = c(
-    "0.25" = unname(ALPHA_LABS["0.25"]),
-    "0.5"  = unname(ALPHA_LABS["0.5"]),
-    "0.75" = unname(ALPHA_LABS["0.75"]),
-    "1"    = unname(ALPHA_LABS["1"])),
-  name = NULL)
+  values = ALPHA_PALETTE[alpha_levels],
+  labels = ALPHA_LABELS,
+  name   = NULL)
 
 base_theme <- paper_theme() +
   theme(
@@ -140,8 +151,8 @@ p_bot <- ggplot(premium_annual,
   facet_wrap(~ year, nrow = 1) +
   city_scale +
   scale_x_continuous(
-    breaks = c(0.25, 0.5, 0.75, 1),
-    labels = c("0.25", "0.50", "0.75", "1.00")) +
+    breaks = ALPHAS_KEEP,
+    labels = sprintf("%.2f", ALPHAS_KEEP)) +
   scale_y_continuous(labels = function(x) sprintf("%+.1f%%", x)) +
   labs(x = expression(alpha),
        y = "Annual mean premium (%)") +

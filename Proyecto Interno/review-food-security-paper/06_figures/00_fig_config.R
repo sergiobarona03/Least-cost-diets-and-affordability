@@ -13,9 +13,12 @@ CITY_COLS <- c(
 )
 
 CITY_LABS <- c(
-  "BOGOTA"   = "Bogot<U+00E1>",
-  "MEDELLIN" = "Medell<U+00ED>n",
-  "CALI"     = "Cali"
+  "BOGOTA"      = "Bogot\u00e1",
+  "BOGOTÁ D.C." = "Bogot\u00e1",
+  "BOGOTA D.C." = "Bogot\u00e1",
+  "MEDELLIN"    = "Medell\u00edn",
+  "MEDELLÍN"    = "Medell\u00edn",
+  "CALI"        = "Cali"
 )
 
 # -----------------------------------------------------------------------

@@ -1,0 +1,7 @@
+model,ciudad,share_matched,share_unmatched,n_foods,n_unmatched,articulo,share
+CoCA,BOGOTÁ D.C.,1,0,3,0,NA,NA
+CoCA,CALI,0.9999999999999999,0,2,0,NA,NA
+CoCA,MEDELLÍN,1,0,3,0,NA,NA
+CoNA,BOGOTÁ D.C.,1,0,14,0,NA,NA
+CoNA,CALI,1,0,16,0,NA,NA
+CoNA,MEDELLÍN,1,0,14,0,NA,NA

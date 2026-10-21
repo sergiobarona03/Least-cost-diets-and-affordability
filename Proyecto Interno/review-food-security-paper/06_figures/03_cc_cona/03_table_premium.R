@@ -60,7 +60,7 @@ fmt_cost <- function(x) sprintf("%s (%s)",
 fmt_prem <- function(x) sprintf("%.2f (%.2f)",
                                 mean(x, na.rm=TRUE), sd(x, na.rm=TRUE))
 
-ALPHAS  <- c(0, 0.25, 0.5, 0.75, 1)
+ALPHAS  <- c(0, 0.05, 0.1, 0.15, 0.20, 0.25, 0.3,0.35,0.40,0.45,0.5)
 CITIES  <- c("Bogotá", "Medellín", "Cali")
 PERIODS <- c("2019\u20132024", as.character(2019:2024))
 

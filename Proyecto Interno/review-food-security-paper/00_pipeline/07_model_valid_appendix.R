@@ -1,0 +1,444 @@
+########################################################
+## SCRIPT 07 — Model validation: observed vs extrapolated prices
+##
+## The price validation (06) measures how far the extrapolated prices sit
+## from the observed ones. That is not what the paper reports. The models
+## select foods ON the extrapolated panel, so an item whose price is
+## under-predicted is more likely to be chosen: selection correlates with
+## the SIGN of the error, which an absolute-error measure cannot see.
+##
+## This script closes that gap. CoCA, CoNA and CoRD are each solved TWICE
+## over the validation window — once on observed DANE prices, once on
+## extrapolated ones — and the resulting metrics are compared. Each run
+## selects with its own panel, so the optimiser's selection is inside the
+## experiment rather than contaminating it.
+##
+## Two figures come out of it:
+##   MAD : mean absolute deviation of the metric  -> how much price error
+##         survives into the diet cost
+##   MD  : mean signed deviation                  -> the optimiser bias,
+##         negative = extrapolated panel understates the true cost
+##
+## All panels are restricted to the SAME food x city x month support, so
+## the comparison is not driven by one run having a larger basket.
+##
+## Reads:  FORECAST_DIR/prices_validation.csv
+##         PREP_DIR/tcac_master.rds
+##         PREP_DIR/household_eer.rds, household_eer_ll.rds, household_ul.rds
+##         PREP_DIR/gaba_exchanges_adj.rds
+##         IN_AUX_DIR/CoCA_paper.R, CoNA_paper.R, CoRD_Herforth.R
+##
+## Writes: VALID_DIR/model_validation_cost.csv    (every run, both panels)
+##         VALID_DIR/model_validation_summary.csv (MAD and MD by model/city)
+##         VALID_DIR/model_validation_horizon.csv (deviation by horizon)
+##         VALID_DIR/model_validation_comp.csv    (basket composition)
+##
+## NOTE: the model functions load Hmisc and other packages that mask
+## dplyr verbs, so the verbs used here are bound explicitly below. The
+## three functions also return Sex and Demo_Group with inconsistent
+## types (CoRD_Herforth returns Sex as character), so both are coerced
+## before any bind_rows.
+##
+## CHECK BEFORE RUNNING: the nutrient renaming and the EER_LL / UL
+## preparation reproduce what 02_cona.R does, and the group recoding and
+## serving construction reproduce what 03_cord.R does.
+########################################################
+
+source("00_config.R", encoding = "UTF-8")
+library(tidyverse)
+library(writexl)
+
+source(file.path(IN_AUX_DIR, "CoCA_paper.R"))
+source(file.path(IN_AUX_DIR, "CoNA_paper.R"))
+source(file.path(IN_AUX_DIR, "CoRD_Herforth.R"))
+
+# Bind dplyr verbs explicitly: the model functions pacman::p_load Hmisc
+# and others that mask summarise(), filter(), select(), rename() and n()
+summarise <- dplyr::summarise
+filter    <- dplyr::filter
+select    <- dplyr::select
+rename    <- dplyr::rename
+count     <- dplyr::count
+mutate    <- dplyr::mutate
+arrange   <- dplyr::arrange
+n         <- dplyr::n
+
+dir.create(VALID_DIR, recursive = TRUE, showWarnings = FALSE)
+
+# Same exclusion list as 01_data_preparation/02_food_table.R
+FOODS_EXCLUDE <- c(
+  "AREPAS RELLENAS CON ALGO", "BOCADILLOS",
+  "CEREAL ALIMENTO PARA BEBÉ", "CEREAL PARA DESAYUNO",
+  "CHOCOLATE INSTANTANEO", "CHORIZO",
+  "GALLETAS DE SAL", "GALLETAS DULCES", "GALLETAS INTEGRALES",
+  "GASEOSAS", "GELATINA O FLAN", "HARINA PARA TORTAS",
+  "HELADOS DE CREMA", "JAMÓN",
+  "JUGOS INSTANTANEOS O EN POLVO", "JUGOS PROCESADOS",
+  "MALTAS", "MAYONESA", "MERMELADA", "MORTADELA",
+  "PIZZA", "SALCHICHAS", "SALCHICHÓN", "SALSA DE TOMATE",
+  "SOPAS", "YOGOURT", "CREMA DE LECHE", "PAPAS FRITAS",
+  "CILANTRO", "COLOR", "COMINOS", "LAUREL", "MOSTAZA",
+  "PIMIENTA", "TOMILLO", "REVUELTO VERDE",
+  "ALMUERZO CORRIENTE O EJECUTIVO",
+  "ALMUERZO ESPECIAL O A LA CARTA",
+  "CHOCOLATE EN PASTA", "CAFÉ INSTANTANEO", "CAFÉ MOLIDO",
+  "COMBOS", "CREMAS", "TINTO",
+  "HAMBURGUESA", "KUMIS", "JUGOS NATURALES", "SUERO",
+  "ARROZ PARA SOPA")
+
+GRUPO_COCA <- "CEREALES, RAÍCES, TUBÉRCULOS Y PLÁTANOS"
+
+NUTRIENT_MAP <- c(
+  energia_kcal             = "Energy",
+  proteina_g               = "Protein",
+  lipidos_g                = "Lipids",
+  carbohidratos_totales_g  = "Carbohydrates",
+  vitamina_c_mg            = "VitaminC",
+  folatos_mcg              = "Folate",
+  vitamina_a_er            = "VitaminA",
+  tiamina_mg               = "Thiamine",
+  riboflavina_mg           = "Riboflavin",
+  niacina_mg               = "Niacin",
+  vitamina_b12_mcg         = "VitaminB12",
+  magnesio_mg              = "Magnesium",
+  fosforo_mg               = "Phosphorus",
+  sodio_mg                 = "Sodium",
+  calcio_mg                = "Calcium",
+  hierro_mg                = "Iron",
+  zinc_mg                  = "Zinc")
+
+# ---- CoRD vocabulary, as in 02_models/03_cord.R -----------------------
+GROUP_CANON <- c(
+  "Cereales, raíces, tubérculos y plátanos",
+  "Frutas",
+  "Verduras",
+  "Leche y productos lácteos",
+  "Carnes, huevos, leguminosas, frutos secos y semillas",
+  "Grasas",
+  "Azúcares")
+
+map_group_paper <- c(
+  "AZUCARES"                                                   = "Azúcares",
+  "CARNES, HUEVOS, LEGUMINOSAS SECAS, FRUTOS SECOS Y SEMILLAS" = "Carnes, huevos, leguminosas, frutos secos y semillas",
+  "CEREALES, RAÍCES, TUBÉRCULOS Y PLÁTANOS"                    = "Cereales, raíces, tubérculos y plátanos",
+  "FRUTAS"                                                     = "Frutas",
+  "GRASAS"                                                     = "Grasas",
+  "LECHE Y PRODUCTOS LACTEOS"                                  = "Leche y productos lácteos",
+  "VERDURAS"                                                   = "Verduras")
+
+map_group_serv <- c(
+  "AZÚCARES"                                             = "Azúcares",
+  "CARNES, HUEVOS, LEGUMINOSAS, FRUTOS SECOS Y SEMILLAS" = "Carnes, huevos, leguminosas, frutos secos y semillas",
+  "CEREALES, RAÍCES, TUBÉRCULOS Y PLÁTANOS"              = "Cereales, raíces, tubérculos y plátanos",
+  "FRUTAS"                                               = "Frutas",
+  "GRASAS"                                               = "Grasas",
+  "LECHE Y PRODUCTOS LÁCTEOS"                            = "Leche y productos lácteos",
+  "VERDURAS"                                             = "Verduras")
+
+div_cord <- tribble(
+  ~Group,                                                  ~Number,
+  "Cereales, raíces, tubérculos y plátanos",                3,
+  "Frutas",                                                 2,
+  "Verduras",                                               2,
+  "Leche y productos lácteos",                              1,
+  "Carnes, huevos, leguminosas, frutos secos y semillas",    2,
+  "Grasas",                                                 1,
+  "Azúcares",                                               1)
+
+# -----------------------------------------------------------------------
+# Inputs
+# -----------------------------------------------------------------------
+message("Loading inputs...")
+
+prices_val <- read_csv(file.path(FORECAST_DIR, "prices_validation.csv"),
+                       show_col_types = FALSE) %>%
+  mutate(fecha = as.Date(fecha))
+
+tcac_master      <- readRDS(file.path(PREP_DIR, "tcac_master.rds"))
+household_eer    <- readRDS(file.path(PREP_DIR, "household_eer.rds"))
+household_eer_ll <- readRDS(file.path(PREP_DIR, "household_eer_ll.rds"))
+household_ul     <- readRDS(file.path(PREP_DIR, "household_ul.rds"))
+gaba_adj         <- readRDS(file.path(PREP_DIR, "gaba_exchanges_adj.rds"))
+
+normalise_city <- function(x) {
+  x <- iconv(x, from = "", to = "ASCII//TRANSLIT")
+  x <- toupper(trimws(x))
+  case_when(x %in% c("BOGOTA D.C.", "BOGOTÁ D.C.") ~ "BOGOTA",
+            x %in% c("MEDELLIN", "MEDELLÍN")       ~ "MEDELLIN",
+            x == "CALI"                            ~ "CALI",
+            TRUE                                   ~ x)
+}
+
+# -----------------------------------------------------------------------
+# Build the two food panels, following 02_food_table.R exactly, plus the
+# CoRD fields built in 03_cord.R
+# -----------------------------------------------------------------------
+message("Building observed and extrapolated panels...")
+
+build_panel <- function(price_col) {
+  prices_val %>%
+    filter(!is.na(.data[[price_col]]), .data[[price_col]] > 0) %>%
+    transmute(ciudad = normalise_city(ciudad), articulo, fecha,
+              precio_500g = .data[[price_col]]) %>%
+    left_join(tcac_master %>% select(-codigo_articulo, -any_of("subclase_ipc")),
+              by = "articulo") %>%
+    mutate(
+      pc = case_when(
+        is.na(parte_comestible_percent) ~ NA_real_,
+        parte_comestible_percent > 1    ~ parte_comestible_percent / 100,
+        TRUE                            ~ parte_comestible_percent),
+      precio_100g = (precio_500g / 5) / pc,
+      gramos_g_1_intercambio_1_intercambio =
+        suppressWarnings(as.numeric(gramos_g_1_intercambio_1_intercambio))) %>%
+    filter(!articulo %in% FOODS_EXCLUDE,
+           !is.na(precio_100g), precio_100g > 0,
+           !is.na(energia_kcal)) %>%
+    # CoRD fields, as in 03_cord.R
+    mutate(
+      Group = if_else(subgrupos_gabas == "FRUTAS",   "FRUTAS",   grupos_gabas),
+      Group = if_else(subgrupos_gabas == "VERDURAS", "VERDURAS", Group),
+      Group = recode(Group, !!!map_group_paper),
+      Serving_g     = gramos_g_1_intercambio_1_intercambio,
+      Price_serving = precio_100g * Serving_g / 100)
+}
+
+panel_obs <- build_panel("price_obs")
+panel_ext <- build_panel("price_S5")
+
+# Common support: only food x city x month present in BOTH panels, so the
+# runs optimise over identical baskets
+support <- panel_obs %>% distinct(ciudad, articulo, fecha) %>%
+  inner_join(panel_ext %>% distinct(ciudad, articulo, fecha),
+             by = c("ciudad", "articulo", "fecha"))
+
+panel_obs <- panel_obs %>% semi_join(support, by = c("ciudad", "articulo", "fecha"))
+panel_ext <- panel_ext %>% semi_join(support, by = c("ciudad", "articulo", "fecha"))
+
+message(sprintf("  common support: %d rows | %d foods | %d months | %d cities",
+                nrow(support), n_distinct(support$articulo),
+                n_distinct(support$fecha), n_distinct(support$ciudad)))
+
+print(panel_obs %>% count(ciudad, fecha, name = "n_foods") %>%
+        summarise(min_foods = min(n_foods), median_foods = median(n_foods),
+                  max_foods = max(n_foods)))
+
+# How many CoRD groups are covered each month — CoRD_Herforth needs at
+# least five groups in common across data, servings and diversity table
+print(panel_obs %>% filter(Group %in% GROUP_CANON) %>%
+        distinct(ciudad, fecha, Group) %>%
+        count(ciudad, fecha, name = "n_groups") %>%
+        count(ciudad, n_groups))
+
+# -----------------------------------------------------------------------
+# Requirement objects, per city
+# -----------------------------------------------------------------------
+META_COLS <- c("ciudad", "cod_mun", "rango", "sex", "eer", "municipio",
+               "departamento", "poblacion")
+
+eer_for <- function(city) {
+  household_eer %>% filter(ciudad == city) %>%
+    select(-any_of(c("ciudad", "cod_mun"))) %>%
+    rename(Age = rango, Sex = sex, Energy = eer) %>%
+    mutate(Sex = if_else(Sex == "Masculino", 0L, 1L)) %>%
+    as.data.frame()
+}
+
+ll_for <- function(city) {
+  household_eer_ll %>% filter(ciudad == city) %>%
+    select(-any_of(META_COLS)) %>% as.data.frame()
+}
+
+ul_for <- function(city) {
+  household_ul %>% filter(ciudad == city) %>%
+    select(-any_of(META_COLS)) %>% as.data.frame()
+}
+
+# CoRD servings, as in 03_cord.R
+serv_adj <- gaba_adj %>%
+  filter(
+    (sex == "Masculino" & rango == "[31,51)") |
+      (sex == "Femenino"  & rango == "[31,51)") |
+      (sex == "Femenino"  & rango == "[10, 14)")) %>%
+  rename(Age = rango, Sex = sex, Group = grupo_principal,
+         Serving = n_exchanges_adj) %>%
+  mutate(Group = recode(Group, !!!map_group_serv),
+         Sex   = if_else(Sex == "Masculino", 0L, 1L)) %>%
+  filter(Group %in% GROUP_CANON)
+
+serv_for <- function(city) {
+  serv_adj %>% filter(ciudad == city) %>%
+    select(-any_of(c("ciudad", "cod_mun"))) %>% as.data.frame()
+}
+
+# -----------------------------------------------------------------------
+# Solve the three models on both panels
+# -----------------------------------------------------------------------
+message("Solving models...")
+
+ciudades <- sort(intersect(unique(panel_obs$ciudad), unique(household_eer$ciudad)))
+fechas   <- sort(unique(panel_obs$fecha))
+
+run_coca <- function(d, eer) {
+  dd <- d %>% filter(grupos_gabas == GRUPO_COCA) %>%
+    rename(Price_100g = precio_100g, Food = articulo, Energy = energia_kcal) %>%
+    as.data.frame()
+  if (nrow(dd) == 0) return(NULL)
+  tryCatch(CoCA_paper(data = dd, EER = eer), error = function(e) NULL)
+}
+
+run_cona <- function(d, ll, ul) {
+  dd <- d %>%
+    rename(Price_100g = precio_100g, Food = articulo) %>%
+    rename(any_of(setNames(names(NUTRIENT_MAP), unname(NUTRIENT_MAP)))) %>%
+    as.data.frame()
+  if (nrow(dd) == 0) return(NULL)
+  tryCatch(CoNA_paper(data = dd, EER_LL = ll, UL = ul), error = function(e) NULL)
+}
+
+run_cord <- function(d, serv) {
+  dd <- d %>%
+    filter(Group %in% GROUP_CANON,
+           !is.na(Serving_g), Serving_g > 0, !is.na(Price_serving)) %>%
+    rename(Food = articulo, Price_100g = precio_100g,
+           Energy = energia_kcal) %>%
+    as.data.frame()
+  if (nrow(dd) == 0) return(NULL)
+  tryCatch(CoRD_Herforth(data = dd, serv = serv, diverse = div_cord),
+           error = function(e) NULL)
+}
+
+# The three functions return Sex and Demo_Group with inconsistent types,
+# so both are coerced here before anything is combined
+harmonise <- function(x) {
+  x %>% mutate(Demo_Group = as.character(Demo_Group),
+               Sex        = suppressWarnings(as.numeric(Sex)))
+}
+
+keep_cost <- function(x, model_name, ci, ft, src) {
+  x %>%
+    select(any_of(c("Demo_Group", "Sex", "cost_day", "cona_cost",
+                    "Cost_1000kcal"))) %>%
+    { if ("cona_cost" %in% names(.)) rename(., cost_day = cona_cost) else . } %>%
+    harmonise() %>%
+    distinct(Demo_Group, Sex, .keep_all = TRUE) %>%
+    mutate(model = model_name, ciudad = ci,
+           fecha = as.Date(ft), source = src)
+}
+
+keep_comp <- function(x, model_name, ci, ft, src) {
+  x %>%
+    harmonise() %>%
+    mutate(model = model_name, ciudad = ci,
+           fecha = as.Date(ft), source = src)
+}
+
+cost_rows <- list(); comp_rows <- list()
+
+for (ci in ciudades) {
+  
+  eer  <- eer_for(ci); ll <- ll_for(ci); ul <- ul_for(ci)
+  serv <- serv_for(ci)
+  
+  for (ft in fechas) {
+    
+    d_obs <- panel_obs %>% filter(ciudad == ci, fecha == ft)
+    d_ext <- panel_ext %>% filter(ciudad == ci, fecha == ft)
+    if (nrow(d_obs) == 0 || nrow(d_ext) == 0) next
+    
+    for (src in c("observed", "extrapolated")) {
+      
+      d <- if (src == "observed") d_obs else d_ext
+      
+      r1 <- run_coca(d, eer)
+      if (!is.null(r1) && !is.null(r1$cost))
+        cost_rows[[length(cost_rows) + 1]] <-
+        keep_cost(r1$cost, "CoCA", ci, ft, src)
+      
+      r2 <- run_cona(d, ll, ul)
+      if (!is.null(r2) && !is.null(r2$cost)) {
+        cost_rows[[length(cost_rows) + 1]] <-
+          keep_cost(r2$cost, "CoNA", ci, ft, src)
+        comp_rows[[length(comp_rows) + 1]] <-
+          keep_comp(r2$comp, "CoNA", ci, ft, src)
+      }
+      
+      r3 <- run_cord(d, serv)
+      if (!is.null(r3) && !is.null(r3$cost)) {
+        cost_rows[[length(cost_rows) + 1]] <-
+          keep_cost(r3$cost, "CoRD", ci, ft, src)
+        comp_rows[[length(comp_rows) + 1]] <-
+          keep_comp(r3$comp, "CoRD", ci, ft, src)
+      }
+    }
+  }
+  message("  ", ci, " done.")
+}
+
+costs <- bind_rows(cost_rows)
+comps <- bind_rows(comp_rows)
+
+cat("\n  Solved cells by model and panel:\n\n")
+print(as.data.frame(
+  costs %>% distinct(model, source, ciudad, fecha) %>% count(model, source)))
+
+# -----------------------------------------------------------------------
+# Compare: per-capita household cost, the figure the paper reports
+# -----------------------------------------------------------------------
+per_capita <- costs %>%
+  filter(!is.na(cost_day)) %>%
+  group_by(model, ciudad, fecha, source) %>%
+  summarise(cost_pc = mean(cost_day), n_members = n(), .groups = "drop") %>%
+  filter(n_members == 3) %>%          # all three members solved
+  select(-n_members) %>%
+  pivot_wider(names_from = source, values_from = cost_pc) %>%
+  filter(!is.na(observed), !is.na(extrapolated)) %>%
+  mutate(dev_pct = 100 * (extrapolated - observed) / observed,
+         h_mes   = as.integer(round(as.numeric(fecha - T0) / 30.44)))
+
+summary_tbl <- per_capita %>%
+  group_by(model, ciudad) %>%
+  summarise(n_months = n(),
+            MAD_pct  = mean(abs(dev_pct)),
+            MD_pct   = mean(dev_pct),
+            p90      = quantile(abs(dev_pct), 0.9),
+            max_abs  = max(abs(dev_pct)),
+            .groups  = "drop") %>%
+  bind_rows(per_capita %>% group_by(model) %>%
+              summarise(ciudad = "ALL", n_months = n(),
+                        MAD_pct = mean(abs(dev_pct)), MD_pct = mean(dev_pct),
+                        p90 = quantile(abs(dev_pct), 0.9),
+                        max_abs = max(abs(dev_pct)), .groups = "drop"))
+
+horizon_tbl <- per_capita %>%
+  group_by(model, h_mes) %>%
+  summarise(MAD_pct = mean(abs(dev_pct)), MD_pct = mean(dev_pct),
+            .groups = "drop")
+
+# Does the extrapolated panel pick a different basket?
+comp_tbl <- comps %>%
+  distinct(model, ciudad, fecha, source, Food) %>%
+  count(model, ciudad, source, Food, name = "n_months") %>%
+  pivot_wider(names_from = source, values_from = n_months, values_fill = 0) %>%
+  mutate(only_in = case_when(observed > 0 & extrapolated == 0 ~ "observed only",
+                             observed == 0 & extrapolated > 0 ~ "extrapolated only",
+                             TRUE ~ "both")) %>%
+  arrange(model, ciudad, desc(abs(observed - extrapolated)))
+
+cat("\n", strrep("=", 68), "\n")
+cat("  MODEL VALIDATION — observed vs extrapolated prices\n")
+cat(sprintf("  window: %s .. %s\n", min(per_capita$fecha), max(per_capita$fecha)))
+cat("  MAD = how much price error survives into the metric\n")
+cat("  MD  = optimiser bias (negative: extrapolated understates true cost)\n")
+cat(strrep("=", 68), "\n\n")
+print(as.data.frame(summary_tbl), digits = 4)
+cat("\n  Deviation by horizon (months since the anchor):\n\n")
+print(as.data.frame(horizon_tbl), digits = 4)
+cat("\n  Foods selected under one panel only:\n\n")
+print(as.data.frame(comp_tbl %>% filter(only_in != "both")), digits = 4)
+
+write_csv(per_capita,  file.path(VALID_DIR, "model_validation_cost.csv"))
+write_csv(summary_tbl, file.path(VALID_DIR, "model_validation_summary.csv"))
+write_csv(horizon_tbl, file.path(VALID_DIR, "model_validation_horizon.csv"))
+write_csv(comp_tbl,    file.path(VALID_DIR, "model_validation_comp.csv"))
+
+message("Done. Outputs in: ", VALID_DIR)

@@ -2,9 +2,18 @@
 ## SCRIPT 02 — Sub-class assignment and OLS lambdas
 ## Output: FORECAST_DIR/lambda_raw.csv
 ##         FORECAST_DIR/anchor_prices.csv
+##         FORECAST_DIR/lambda_attrition.csv   (NEW)
 ##         CACHE_DIR/item_subclass_map.rds
 ##         CACHE_DIR/subclass_sizes.rds
 ##         CACHE_DIR/anchor_prices.rds
+##
+## FIX (2026-10-20): the local variable holding the item's sub-class was
+## named `subclase_ipc`, identical to the column of the same name in
+## `subclass_sizes`. Under dplyr data masking the column takes precedence,
+## so `filter(subclase_ipc == subclase_ipc)` evaluated as a tautology and
+## `k` was taken from the city's FIRST sub-class instead of the item's own.
+## The local variable is now `sub_ipc_i`. Nothing else in the estimation
+## changed: lambda, sigma2, r2 and n_obs were already correct.
 ########################################################
 
 source("00_config.R")
@@ -70,6 +79,8 @@ estimate_lambda_fd <- function(obs_slice, ipc_series,
 
 # -----------------------------------------------------------------------
 # Sub-class assignment
+# (assign_method is now kept: it reports how many items were matched
+#  through gasto_basico and how many through producto)
 # -----------------------------------------------------------------------
 message("Assigning sub-classes...")
 item_subclass_map <- dane %>%
@@ -79,10 +90,17 @@ item_subclass_map <- dane %>%
   group_by(nombre_ciudad, articulo) %>%
   group_modify(~ {
     sub_info <- assign_subclase(.x, corr_subclase, corr_producto)
-    tibble(subclase_ipc = sub_info$subclase)
+    tibble(subclase_ipc  = sub_info$subclase,
+           assign_method = sub_info$method)
   }) %>%
   ungroup() %>%
   filter(!is.na(subclase_ipc))
+
+message(sprintf("  assignment method: %s",
+                paste(sprintf("%s=%d",
+                              names(table(item_subclass_map$assign_method)),
+                              as.integer(table(item_subclass_map$assign_method))),
+                      collapse = " | ")))
 
 subclass_sizes <- item_subclass_map %>%
   group_by(nombre_ciudad, subclase_ipc) %>%
@@ -104,26 +122,33 @@ message(sprintf("  %d item × city series | k sizes: %s",
 # -----------------------------------------------------------------------
 message("Estimating OLS lambdas...")
 all_lambda <- list()
+attrition  <- list()   # NEW: records every item dropped inside the loop
+
+log_drop <- function(city_name, food_name, sub_ipc_i, reason) {
+  tibble(ciudad = city_name, articulo = food_name,
+         subclase_ipc = sub_ipc_i, drop_reason = reason)
+}
 
 for (i in seq_len(nrow(valid_items))) {
   
   city_name <- valid_items$ciudad[i]
   food_name <- valid_items$articulo[i]
   
-  sub_row      <- item_subclass_map %>%
+  sub_row   <- item_subclass_map %>%
     filter(nombre_ciudad == city_name, articulo == food_name)
-  subclase_ipc <- if (nrow(sub_row) > 0) sub_row$subclase_ipc[1] else NA
+  sub_ipc_i <- if (nrow(sub_row) > 0) sub_row$subclase_ipc[1] else NA_character_
   
+  # --- FIXED: filter on the item's own sub-class, not on itself -----------
   k_val <- subclass_sizes %>%
     filter(nombre_ciudad == city_name,
-           subclase_ipc  == subclase_ipc) %>%
+           subclase_ipc  == sub_ipc_i) %>%
     pull(k)
   k_val <- if (length(k_val) > 0) k_val[1] else 1L
   
   if (k_val == 1) {
     all_lambda[[length(all_lambda) + 1]] <- tibble(
       ciudad = city_name, articulo = food_name,
-      subclase_ipc = subclase_ipc, k = 1L,
+      subclase_ipc = sub_ipc_i, k = 1L,
       apply_D = FALSE, lambda = 1.0,
       sigma2 = NA_real_, r2 = NA_real_,
       n_obs = NA_integer_, est_ok = TRUE)
@@ -137,20 +162,30 @@ for (i in seq_len(nrow(valid_items))) {
            cod_subclase    = as.character(cod_subclase)) %>%
     arrange(fecha)
   
-  if (nrow(df_obs) == 0 || is.na(subclase_ipc)) next
+  if (nrow(df_obs) == 0 || is.na(sub_ipc_i)) {
+    attrition[[length(attrition) + 1]] <- log_drop(
+      city_name, food_name, sub_ipc_i,
+      if (is.na(sub_ipc_i)) "no_subclass_assigned" else "no_training_obs")
+    next
+  }
   
-  subclase_code <- substr(paste0(subclase_ipc, "00"), 1, 8)
+  subclase_code <- substr(paste0(sub_ipc_i, "00"), 1, 8)
   df_ipc <- ipc %>%
     filter(ciudad == city_name, cod_subclase == subclase_code,
            fecha <= TRAIN_END) %>%
     select(fecha, ipc) %>% arrange(fecha)
   
-  if (nrow(df_ipc) == 0) next
+  if (nrow(df_ipc) == 0) {
+    attrition[[length(attrition) + 1]] <- log_drop(
+      city_name, food_name, sub_ipc_i, "no_ipc_series")
+    next
+  }
+  
   est <- estimate_lambda_fd(df_obs, df_ipc)
   
   all_lambda[[length(all_lambda) + 1]] <- tibble(
     ciudad = city_name, articulo = food_name,
-    subclase_ipc = subclase_ipc, k = k_val,
+    subclase_ipc = sub_ipc_i, k = k_val,
     apply_D = TRUE,
     lambda  = if (!is.null(est)) est$lambda else NA_real_,
     sigma2  = if (!is.null(est)) est$sigma2 else NA_real_,
@@ -159,7 +194,8 @@ for (i in seq_len(nrow(valid_items))) {
     est_ok  = !is.null(est))
 }
 
-lambda_raw <- bind_rows(all_lambda)
+lambda_raw        <- bind_rows(all_lambda)
+lambda_attrition  <- bind_rows(attrition)
 
 message(sprintf(
   "  %d series | multi-item OK: %d | single-item: %d | failed: %d",
@@ -169,10 +205,48 @@ message(sprintf(
   sum(lambda_raw$apply_D & !lambda_raw$est_ok, na.rm=TRUE)))
 
 # -----------------------------------------------------------------------
+# Attrition report (NEW) — items with an anchor price that never reach
+# lambda_raw, and therefore disappear from the price panel in Script 05
+# -----------------------------------------------------------------------
+if (nrow(lambda_attrition) > 0) {
+  message("  dropped inside loop: ",
+          paste(sprintf("%s=%d",
+                        names(table(lambda_attrition$drop_reason)),
+                        as.integer(table(lambda_attrition$drop_reason))),
+                collapse = " | "))
+} else {
+  message("  dropped inside loop: none")
+}
+
+anchor_no_lambda <- anchor_prices %>%
+  anti_join(lambda_raw, by = c("ciudad", "articulo"))
+
+map_no_anchor <- item_subclass_map %>%
+  anti_join(anchor_prices,
+            by = c("nombre_ciudad" = "ciudad", "articulo"))
+
+message(sprintf(
+  "  items with anchor but no lambda: %d | assigned but no anchor at T0: %d",
+  nrow(anchor_no_lambda), nrow(map_no_anchor)))
+
+# -----------------------------------------------------------------------
+# k distribution check — guards against the masking bug returning
+# -----------------------------------------------------------------------
+k_check <- lambda_raw %>% count(ciudad, k) %>% arrange(ciudad, k)
+print(k_check)
+if (nrow(lambda_raw) > 0 &&
+    all(tapply(lambda_raw$k, lambda_raw$ciudad,
+               function(z) length(unique(z))) == 1)) {
+  warning("Every item within a city shares the same k. ",
+          "Check the subclass_sizes filter before continuing.")
+}
+
+# -----------------------------------------------------------------------
 # Save
 # -----------------------------------------------------------------------
-write_csv(lambda_raw,    file.path(FORECAST_DIR, "lambda_raw.csv"))
-write_csv(anchor_prices, file.path(FORECAST_DIR, "anchor_prices.csv"))
+write_csv(lambda_raw,       file.path(FORECAST_DIR, "lambda_raw.csv"))
+write_csv(anchor_prices,    file.path(FORECAST_DIR, "anchor_prices.csv"))
+write_csv(lambda_attrition, file.path(FORECAST_DIR, "lambda_attrition.csv"))
 saveRDS(item_subclass_map, file.path(CACHE_DIR, "item_subclass_map.rds"))
 saveRDS(subclass_sizes,    file.path(CACHE_DIR, "subclass_sizes.rds"))
 saveRDS(anchor_prices,     file.path(CACHE_DIR, "anchor_prices.rds"))

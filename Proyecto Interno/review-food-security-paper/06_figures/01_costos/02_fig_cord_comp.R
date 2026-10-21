@@ -121,7 +121,7 @@ cord_cost <- cord$comp %>%
       mutate(fecha = as.Date(fecha)) %>%
       select(ciudad, fecha, articulo, precio_100g,
              gramos_g_1_intercambio_1_intercambio) %>%
-      rename(Food = articulo, Serving_g = gramos_g_1_intercambio_1_intercambio),
+      dplyr::rename(Food = articulo, Serving_g = gramos_g_1_intercambio_1_intercambio),
     by = c("ciudad","fecha","Food")) %>%
   left_join(deflator, by = c("ciudad","fecha")) %>%
   mutate(
@@ -215,7 +215,7 @@ nutri_per_food <- data_paper %>%
     gramos_intercambio = mean(gramos_g_1_intercambio_1_intercambio,
                               na.rm = TRUE),
     .groups = "drop") %>%
-  rename(Food = articulo)
+  dplyr::rename(Food = articulo)
 
 # 4d. CoRD nutrient supply per member × city × month
 cord_nutri <- cord$comp %>%
@@ -232,7 +232,7 @@ cord_nutri <- cord$comp %>%
     across(starts_with("supply_"), ~ sum(.x, na.rm = TRUE)),
     .groups = "drop")
 
-# Rename supply columns to nutrient names
+# dplyr::rename supply columns to nutrient names
 # Step 1: strip supply_ prefix
 names(cord_nutri) <- gsub("^supply_", "", names(cord_nutri))
 # Step 2: map data_paper column names -> CoNA nutrient names

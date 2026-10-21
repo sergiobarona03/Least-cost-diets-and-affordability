@@ -6,6 +6,30 @@
 ##         FORECAST_DIR/params_optimal.csv
 ##         ROBUST_DIR/fig_threshold_heatmap.png
 ##         ROBUST_DIR/fig_threshold_improvement.png
+##
+## CHANGE 1 (2026-10-20): the shrinkage branch is selected with k_city
+## (items in the sub-class × city with a successful estimate) instead of
+## k (items assigned to the sub-class). The James-Stein factor already
+## used k_city, so condition and formula now count the same thing. The
+## dead `k == 1` branch was removed: apply_D == FALSE already captures
+## single-item sub-classes in the first condition.
+##
+## CHANGE 2 (2026-10-20): a series that is the ONLY successful estimate
+## in its sub-class and city (k_city == 1) now receives INDIVIDUAL
+## shrinkage instead of reverting to lambda = 1. The two-item formula,
+## delta = dev / (dev + sigma2), uses only the item's own deviation and
+## residual variance, so it needs no group; the earlier reversion was
+## over-conservative. Tested in 06d_reversion_rules.R: for the three
+## affected series the validation MAPE falls from 8.34% to 4.75% in the
+## evaluation window and from 2.54% to 1.59% in the selection window,
+## and two of the four series that determine CoCA are among them
+## (HARINA DE TRIGO in Cali, 10.97% -> 3.60%; HARINA PRECOCIDA in
+## Bogota, 11.59% -> 8.20%).
+##
+## The R2 reversion criterion was also tested in 06d and is KEPT: the
+## alternatives improve the evaluation window but worsen the selection
+## window, and they gain in low-lambda series while losing in mid-lambda
+## ones, so the evidence does not support changing it.
 ########################################################
 
 source("00_config.R")
@@ -49,9 +73,9 @@ grid <- expand.grid(
 message(sprintf("Grid: %d combinations", nrow(grid)))
 
 # -----------------------------------------------------------------------
-# Pre-compute JS shrinkage (threshold-independent)
+# Pre-compute shrinkage (threshold-independent)
 # -----------------------------------------------------------------------
-message("Pre-computing JS shrinkage...")
+message("Pre-computing shrinkage...")
 subclass_js <- lambda_raw %>%
   filter(apply_D, est_ok, !is.na(lambda)) %>%
   group_by(subclase_ipc, ciudad) %>%
@@ -66,9 +90,10 @@ lambda_shrunk_base <- lambda_raw %>%
   mutate(
     delta = case_when(
       !apply_D | !est_ok  ~ NA_real_,
-      k == 1              ~ 1.0,
-      k >= 3 ~ pmax(0, 1 - (k_city - 2) * sigma2_sc / Q_sc),
-      k == 2 ~ {
+      k_city >= 3 ~ pmax(0, 1 - (k_city - 2) * sigma2_sc / Q_sc),
+      # individual shrinkage: needs only the item's own dev and sigma2,
+      # so it also covers k_city == 1 (no group required)
+      k_city <= 2 ~ {
         dev <- (lambda - 1)^2
         if_else((dev + sigma2) > 0, dev / (dev + sigma2), 0)},
       TRUE ~ NA_real_),
@@ -79,7 +104,7 @@ lambda_shrunk_base <- lambda_raw %>%
     lambda_shrunk = if_else(
       !is.finite(lambda_shrunk), 1.0, lambda_shrunk)
   ) %>%
-  select(ciudad, articulo, subclase_ipc, k,
+  select(ciudad, articulo, subclase_ipc, k, k_city,
          apply_D, est_ok, lambda, r2, lambda_shrunk)
 
 # Pre-build price base (anchor × IPC ratio — threshold-independent)
@@ -90,7 +115,7 @@ price_base_df <- lambda_shrunk_base %>%
   inner_join(ipc_t0_lookup, by = c("ciudad", "cod_subclase")) %>%
   inner_join(ipc_val,       by = c("ciudad", "cod_subclase")) %>%
   mutate(ipc_ratio = ipc / ipc_t0) %>%
-  select(ciudad, articulo, fecha, subclase_ipc, k,
+  select(ciudad, articulo, fecha, subclase_ipc, k, k_city,
          apply_D, est_ok, lambda, r2, lambda_shrunk,
          precio_anchor, ipc_ratio)
 
