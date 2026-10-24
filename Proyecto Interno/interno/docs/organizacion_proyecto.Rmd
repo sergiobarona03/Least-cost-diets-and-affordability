@@ -1,6 +1,6 @@
 ---
 title: "Organización de carpetas del proyecto"
-date: "8 de octubre de 2026"
+date: "10 de octubre de 2026"
 lang: es
 geometry: margin=2.5cm
 output:
@@ -37,7 +37,7 @@ tabla <- function(df, anchos) {
 
 El proyecto tiene tres zonas dentro de `interno/`:
 
-- Producción: las carpetas numeradas (`01_webscrap_prep`, `02_dataprep`, `03_models`, `04_income`, `05_figures`, `06_sensibilidad_umbral`), `output/` y `shiny_boxplots/`, todas en la raíz de `interno/`, y el working paper (`workingpaper_041026.Rmd` y su PDF), que también vive en la raíz. Es la versión que corre hoy, con el método del umbral (v2) para elegir el sku representativo de cada alimento.
+- Producción: las carpetas numeradas (`01_webscrap_prep`, `02_dataprep`, `03_models`, `04_income`, `05_figures`, `06_sensibilidad_umbral`), `output/` y `shiny_boxplots/`, todas en la raíz de `interno/`, y el working paper (`workingpaper_101026.Rmd` y su PDF), que también vive en la raíz. Es la versión que corre hoy, con el método del umbral (v2) para elegir el sku representativo de cada alimento.
 - `v1/`: una copia completa y aparte del pipeline, congelada en el método anterior (el sku más parecido a 500 g o 1.000 ml). Tiene su propia versión de cada carpeta numerada, su propio `output/` y su propio `shiny_boxplots/`.
 - `docs/`: los documentos de apoyo: este, `sensibilidad_azucar`, `sensibilidad_umbral_tamano`, `prueba_aceites` y la revisión de literatura sobre azúcares que se usó como insumo (`revision-sobre-azucares.pdf`).
 
@@ -88,6 +88,7 @@ tabla(tribble(
   "02_eer_4members.R", "Requerimientos del hogar de cuatro personas: hombre adulto, mujer gestante 31-50, adolescente mujer 14-18 y niña 9-13. Con `VARIANTE_HOGAR=t3` usa el incremento de energía del tercer trimestre, y con `VARIANTE_HOGAR=esc` escala los límites de macronutrientes a la energía de cada miembro.",
   "02_eer_5members.R", "Requerimientos del hogar de cinco personas: hombre adulto, mujer adulta, adolescente mujer 14-18, niña 9-13 y mujer mayor 51-70.",
   "eer/06-auditoria-eer.R", "Auditoría de los requerimientos de energía de los seis tipos de miembro: antropometría, actividad, EER, recálculo con las ecuaciones y comparación con la energía de referencia de FoodpriceR y de la guía. Guarda `eer/output/081026_auditoria_eer.xlsx` y `.rds`, que lee el working paper.",
+  "eer/07-comparacion-hierro-zinc.R", "Compara los mínimos de hierro y zinc de FoodpriceR con el EAR y el RDA del IOM (2001) para los grupos de 31 a 50 años. Guarda `eer/output/101026_comparacion_hierro_zinc.xlsx` y `.rds`.",
   "03_gaba_ajustado.R", "Ajusta los intercambios de la guía alimentaria a la energía de cada ciudad, para el hogar que indique la variable `N_MIEMBROS`.",
   "04_auditoria_productos.R", "Rehace el precio de cada producto elegido desde los datos originales y marca los casos que hay que revisar a mano.",
   "05_mapeo_ipc.R", "Asigna cada alimento a una subclase del IPC y calcula las participaciones que usa el CC-CoNA (resultado en `output/ipc/`)."
@@ -95,6 +96,8 @@ tabla(tribble(
 ```
 
 Los tres scripts `02_eer_*members.R` leen la tabla de EER por ciudad (`eer/output/230726_agg_eer.xlsx`) y las tablas de mínimos y máximos de nutrientes del paquete FoodpriceR, y guardan en `household eer/` tres archivos por hogar: `household_eer`, `household_eer_ll` (EER con mínimos de nutrientes) y `household_ul` (máximos). Los del hogar de tres personas no llevan sufijo; los de cuatro y cinco terminan en `_4m` y `_5m`. `aux-functions/eer_hogar.R` tiene la lista de miembros posibles y arma los insumos de los hogares de cuatro y cinco; para cambiar la composición de uno de ellos basta cambiar la lista de miembros que está al principio de su script.
+
+Los Excel de requerimientos de energía están en tres lugares. Las ecuaciones de NASEM (2023) transcritas a mano están en `EER act/ECUACIONES ENERGIA ACTUALIZACIÓN.xlsx`, una carpeta que queda al lado de `interno/`. El EER por ciudad y miembro que leen los modelos es `interno/02_dataprep/eer/output/230726_agg_eer.xlsx` (con `230726_adult_eer.xlsx` para los mayores de 14 años y `230726_child_eer.xlsx` para los niños). Las auditorías y la gestante están en la misma carpeta `eer/output/`: `081026_auditoria_eer.xlsx`, `041026_gestantes_mayores.xlsx` y `101026_comparacion_hierro_zinc.xlsx`.
 
 Los miembros que no están en el hogar de tres salen así. La mujer gestante tiene el EER de la mujer de 31 a 50 años de su ciudad más el incremento de la gestación (311 kcal), que calcula `eer/05-EER-gestantes-mayores.R` con el trimestre de embarazo de la ENSIN, y los mínimos y máximos de nutrientes de "gestantes de 31 a 50 años". La adolescente y la mujer mayor toman el EER de la tabla de adultos y adolescentes (`eer/02-EER-adultos.R`, ecuaciones NASEM 2023 con la antropometría y la actividad física de ENSIN y SABE) para los grupos de 14 a 18 y de 51 a 70 años. Las ecuaciones viven en `aux-functions/eer_iom.R`, como un objeto con los coeficientes (`EER_IOM_COEF`) que el working paper imprime en el apéndice. `02-EER-adultos.R` descarta los pesos y tallas fuera de rango (la SABE codifica con 777 los datos no medidos). La tabla de niñas y niños (`eer/01-EER-ninos.R`) viene de la resolución de recomendaciones de energía y se promedia con la población del Censo; de ahí sale la niña de 9 a 13 años. `eer/03-EER-agregados.R` junta las dos tablas, y `ipc/` guarda las ponderaciones del IPC del DANE. v1 reutiliza el mismo cálculo de requerimiento que producción.
 
@@ -247,7 +250,7 @@ tabla(tribble(
   "3c. Asequibilidad", "04_income: 00_pobreza_csv_a_rds, 01_geih_deciles, 02_asequibilidad (después de 05_models_hcost)",
   "4. Figuras", "05_figures: 02, 03, 04, 05, 06, 07, 10, 11, 12 y 13 (08 y 09 después de 04_income)",
   "5. Sensibilidad", "06_sensibilidad_umbral: 01_cobertura_alimentos, 02_correr_regla (una vez por regla), 04_sin_umbral_tamano, 05_efecto_densidad, 06_aceites_sin_umbral y 03_tablas_sensibilidad",
-  "6. Documentos", "workingpaper_041026.Rmd, y en docs/: sensibilidad_azucar.Rmd, sensibilidad_umbral_tamano.Rmd, prueba_aceites.Rmd y este",
+  "6. Documentos", "workingpaper_101026.Rmd, y en docs/: sensibilidad_azucar.Rmd, sensibilidad_umbral_tamano.Rmd, prueba_aceites.Rmd y este",
   "7. App", "shiny_boxplots/data_prep.R, y publicar si se quiere refrescar la app"
 ), c("4cm", "10.5cm"))
 ```

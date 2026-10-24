@@ -4,7 +4,7 @@
 ## Loop sobre alpha x ciudades x fechas del panel de 13 ciudades.
 ##   alpha = 0    : CoNA sin restriccion de composicion
 ##   alpha = 1    : la dieta reproduce las participaciones del IPC (sin
-##                  solucion en este panel; ver docs/workingpaper_041026)
+##                  solucion en este panel; ver docs/workingpaper_101026)
 ##
 ## Hogar de 3 miembros por defecto; con N_MIEMBROS = 4 o 5 usa el hogar de
 ## 02_eer_4members.R o 02_eer_5members.R y los archivos llevan el sufijo _4m o _5m.

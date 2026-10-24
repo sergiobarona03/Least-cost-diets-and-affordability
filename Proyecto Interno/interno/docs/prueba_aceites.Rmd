@@ -1,7 +1,7 @@
 ---
 title: "Prueba del precio de los aceites"
 subtitle: "¿Se infla el precio de los líquidos en el panel?"
-date: "8 de octubre de 2026"
+date: "10 de octubre de 2026"
 lang: es
 geometry: margin=2.5cm
 output:

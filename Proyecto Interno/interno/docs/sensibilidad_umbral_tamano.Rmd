@@ -1,6 +1,6 @@
 ---
 title: "Análisis de sensibilidad: dietas de costo mínimo con umbral de tamaño del producto y sin él"
-date: "8 de octubre de 2026"
+date: "10 de octubre de 2026"
 lang: es
 geometry: margin=2cm
 output:

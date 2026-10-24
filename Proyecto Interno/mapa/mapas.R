@@ -369,6 +369,20 @@ plot_city <- function(city_name) {
 # =========================================================
 # 16. HORIZONTAL LEGEND PANEL
 # =========================================================
+legend_df <- data.frame(
+  supply_level = factor(
+    c("Low supply", "Medium supply", "High supply"),
+    levels = c("Low supply", "Medium supply", "High supply")
+  ),
+  x = c(1, 2, 3),
+  y = 1,
+  label = c(
+    paste0("Low: under ", scales::comma(low_max), " tonnes"),
+    paste0("Medium: ", scales::comma(low_max), "–", scales::comma(med_max), " tonnes"),
+    paste0("High: over ", scales::comma(med_max), " tonnes")
+  )
+)
+
 legend_panel <- ggplot() +
   geom_point(
     data = legend_df,
