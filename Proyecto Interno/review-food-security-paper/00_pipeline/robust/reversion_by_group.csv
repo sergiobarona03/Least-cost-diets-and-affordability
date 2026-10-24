@@ -1,0 +1,61 @@
+group,rule,window,n_items,MAPE,MPE
+"low r2, lambda near one",current,evaluation,8,21.825386085638698,7.493347408776787
+"low r2, lambda near one",k1_indiv,evaluation,8,21.825386085638698,7.493347408776787
+"low r2, lambda near one",near_one,evaluation,8,21.825386085638698,7.493347408776787
+"low r2, lambda near one",combo,evaluation,8,21.921002504913375,7.439649236230656
+"low r2, lambda near one",floor,evaluation,8,21.921002504913375,7.439649236230656
+"low r2, lambda near one",no_r2,evaluation,8,21.921002504913375,7.439649236230656
+"low r2, lambda near one",current,selection,8,24.347163979657658,4.649744568363642
+"low r2, lambda near one",k1_indiv,selection,8,24.347163979657658,4.649744568363642
+"low r2, lambda near one",near_one,selection,8,24.347163979657658,4.649744568363642
+"low r2, lambda near one",combo,selection,8,24.412550131108997,4.649522596853862
+"low r2, lambda near one",floor,selection,8,24.412550131108997,4.649522596853862
+"low r2, lambda near one",no_r2,selection,8,24.412550131108997,4.649522596853862
+"low r2, low lambda",combo,evaluation,24,19.878370887101916,10.698925461192049
+"low r2, low lambda",near_one,evaluation,24,19.878370887101916,10.698925461192049
+"low r2, low lambda",no_r2,evaluation,24,19.878370887101916,10.698925461192049
+"low r2, low lambda",floor,evaluation,24,20.18187869439486,10.934406505024894
+"low r2, low lambda",current,evaluation,24,21.456513135553692,11.810009512004934
+"low r2, low lambda",k1_indiv,evaluation,24,21.456513135553692,11.810009512004934
+"low r2, low lambda",current,selection,24,17.071024630490257,7.616866913057397
+"low r2, low lambda",k1_indiv,selection,24,17.071024630490257,7.616866913057397
+"low r2, low lambda",floor,selection,24,17.487123115098836,7.01209996732672
+"low r2, low lambda",combo,selection,24,18.047124546397765,6.793973289695558
+"low r2, low lambda",near_one,selection,24,18.047124546397765,6.793973289695558
+"low r2, low lambda",no_r2,selection,24,18.047124546397765,6.793973289695558
+"low r2, mid lambda",current,evaluation,19,14.026469550411395,9.286987072501741
+"low r2, mid lambda",k1_indiv,evaluation,19,14.026469550411395,9.286987072501741
+"low r2, mid lambda",combo,evaluation,19,14.805422759495228,7.066788076925747
+"low r2, mid lambda",near_one,evaluation,19,14.805422759495228,7.066788076925747
+"low r2, mid lambda",no_r2,evaluation,19,14.805422759495228,7.066788076925747
+"low r2, mid lambda",floor,evaluation,19,14.826622950160889,7.780198891038466
+"low r2, mid lambda",current,selection,19,8.546055846737488,4.588908006328467
+"low r2, mid lambda",k1_indiv,selection,19,8.546055846737488,4.588908006328467
+"low r2, mid lambda",floor,selection,19,10.079512318601719,4.041738316204809
+"low r2, mid lambda",combo,selection,19,10.36846681352614,3.735424274462709
+"low r2, mid lambda",near_one,selection,19,10.36846681352614,3.735424274462709
+"low r2, mid lambda",no_r2,selection,19,10.36846681352614,3.735424274462709
+no group (k_city = 1),combo,evaluation,3,4.751589023386839,-3.086411605700032
+no group (k_city = 1),k1_indiv,evaluation,3,4.751589023386839,-3.086411605700032
+no group (k_city = 1),current,evaluation,3,8.336269712506164,-6.697764162174839
+no group (k_city = 1),floor,evaluation,3,8.336269712506164,-6.697764162174839
+no group (k_city = 1),near_one,evaluation,3,8.336269712506164,-6.697764162174839
+no group (k_city = 1),no_r2,evaluation,3,8.336269712506164,-6.697764162174839
+no group (k_city = 1),combo,selection,3,1.5850777462122299,-0.12657661175985527
+no group (k_city = 1),k1_indiv,selection,3,1.5850777462122299,-0.12657661175985527
+no group (k_city = 1),current,selection,3,2.544047014888149,1.086902890159098
+no group (k_city = 1),floor,selection,3,2.544047014888149,1.086902890159098
+no group (k_city = 1),near_one,selection,3,2.544047014888149,1.086902890159098
+no group (k_city = 1),no_r2,selection,3,2.544047014888149,1.086902890159098
+r2 above threshold,combo,evaluation,103,6.823551110197649,2.0334344544505907
+r2 above threshold,current,evaluation,103,6.823551110197649,2.0334344544505907
+r2 above threshold,k1_indiv,evaluation,103,6.823551110197649,2.0334344544505907
+r2 above threshold,near_one,evaluation,103,6.823551110197649,2.0334344544505907
+r2 above threshold,no_r2,evaluation,103,6.823551110197649,2.0334344544505907
+r2 above threshold,floor,evaluation,103,6.835923871637074,2.0564449417909554
+r2 above threshold,combo,selection,103,5.768724813947559,1.2198481474350047
+r2 above threshold,current,selection,103,5.768724813947559,1.2198481474350047
+r2 above threshold,k1_indiv,selection,103,5.768724813947559,1.2198481474350047
+r2 above threshold,near_one,selection,103,5.768724813947559,1.2198481474350047
+r2 above threshold,no_r2,selection,103,5.768724813947559,1.2198481474350047
+r2 above threshold,floor,selection,103,5.785932369362792,1.2188602484843223

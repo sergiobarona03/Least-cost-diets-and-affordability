@@ -205,7 +205,7 @@ prices_all_monthly <- data_paper %>%
   group_by(ciudad, articulo, fecha) %>%
   dplyr::summarise(mean_precio_real = mean(precio_real, na.rm=TRUE),
                    .groups = "drop") %>%
-  rename(Food = articulo)
+  dplyr::rename(Food = articulo)
 
 # -----------------------------------------------------------------------
 # 4c. Cost contribution per capita

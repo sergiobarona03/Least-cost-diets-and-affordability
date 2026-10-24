@@ -123,32 +123,6 @@ message(sprintf(
 saveRDS(panel, file.path(PREP_DIR, "panel_food_paper.rds"))
 write_csv(panel, file.path(PREP_DIR, "panel_food_paper.csv"))
 
-message(sprintf("  Saved to: %s", PREP_DIR))
-
-# -----------------------------------------------------------------------
-# Appendix table: food items with nutritional composition
-# -----------------------------------------------------------------------
-message("Building appendix food table...")
-
-appendix_table <- panel %>%
-  group_by(articulo) %>%
-  slice(1) %>%
-  ungroup() %>%
-  select(
-    articulo, subclase_ipc,
-    grupos_gabas, subgrupos_gabas,
-    parte_comestible_percent,
-    energia_kcal, proteina_g, lipidos_g,
-    carbohidratos_totales_g,
-    calcio_mg, hierro_mg, zinc_mg,
-    magnesio_mg, fosforo_mg,
-    vitamina_c_mg, tiamina_mg, riboflavina_mg,
-    niacina_mg, folatos_mcg,
-    vitamina_b12_mcg, vitamina_a_er, sodio_mg
-  ) %>%
-  arrange(grupos_gabas, subgrupos_gabas, articulo)
-
-writexl::write_xlsx(appendix_table,
-                    file.path(PREP_DIR, "appendix_food_items.xlsx"))
+message(sprintf("  Saved to: %s", PREP_DIR)
 
 message("Done. Run 03_gaba_base.R next.")
