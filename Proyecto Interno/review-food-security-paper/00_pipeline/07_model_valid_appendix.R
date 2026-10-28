@@ -1,26 +1,23 @@
 ########################################################
-## SCRIPT 07 — Model validation: observed vs extrapolated prices
+## SCRIPT 08 — Model validation figure (Appendix A)
 ##
-## The price validation (06) measures how far the extrapolated prices sit
-## from the observed ones. That is not what the paper reports. The models
-## select foods ON the extrapolated panel, so an item whose price is
-## under-predicted is more likely to be chosen: selection correlates with
-## the SIGN of the error, which an absolute-error measure cannot see.
+## Script 07 solves CoCA, CoNA and CoRD twice over the validation window,
+## once on observed DANE prices and once on extrapolated ones, and reports
+## the deviation between the two. This script redraws that comparison as a
+## scatter of observed against extrapolated cost, with the 45-degree line,
+## to replace the table currently in Appendix A.
 ##
-## This script closes that gap. CoCA, CoNA and CoRD are each solved TWICE
-## over the validation window — once on observed DANE prices, once on
-## extrapolated ones — and the resulting metrics are compared. Each run
-## selects with its own panel, so the optimiser's selection is inside the
-## experiment rather than contaminating it.
+## Both runs are restricted to the same food x city x month support, so the
+## deviation comes only from price error and not from one panel having a
+## larger basket. The uncontrolled version, in which each run optimises
+## over its own panel, was examined and gave practically the same answer,
+## so only the controlled specification is reported.
 ##
-## Two figures come out of it:
-##   MAD : mean absolute deviation of the metric  -> how much price error
-##         survives into the diet cost
-##   MD  : mean signed deviation                  -> the optimiser bias,
-##         negative = extrapolated panel understates the true cost
-##
-## All panels are restricted to the SAME food x city x month support, so
-## the comparison is not driven by one run having a larger basket.
+## Beyond the figure, the script prints the figures needed to write the
+## interpretation in the appendix: MAD and MD by model and city, the
+## deviation by horizon, the share of months in which the extrapolated
+## panel understates the cost, and which foods are selected under one
+## panel but not the other.
 ##
 ## Reads:  FORECAST_DIR/prices_validation.csv
 ##         PREP_DIR/tcac_master.rds
@@ -28,32 +25,27 @@
 ##         PREP_DIR/gaba_exchanges_adj.rds
 ##         IN_AUX_DIR/CoCA_paper.R, CoNA_paper.R, CoRD_Herforth.R
 ##
-## Writes: VALID_DIR/model_validation_cost.csv    (every run, both panels)
-##         VALID_DIR/model_validation_summary.csv (MAD and MD by model/city)
-##         VALID_DIR/model_validation_horizon.csv (deviation by horizon)
-##         VALID_DIR/model_validation_comp.csv    (basket composition)
+## Writes: VALID_DIR/model_validation_cost.csv
+##         VALID_DIR/model_validation_summary.csv
+##         VALID_DIR/model_validation_horizon.csv
+##         FIG_DIR/final/validation/figA_validation_scatter.png / .pdf
 ##
-## NOTE: the model functions load Hmisc and other packages that mask
-## dplyr verbs, so the verbs used here are bound explicitly below. The
-## three functions also return Sex and Demo_Group with inconsistent
-## types (CoRD_Herforth returns Sex as character), so both are coerced
-## before any bind_rows.
-##
-## CHECK BEFORE RUNNING: the nutrient renaming and the EER_LL / UL
-## preparation reproduce what 02_cona.R does, and the group recoding and
-## serving construction reproduce what 03_cord.R does.
+## CHECK BEFORE USING: the panel construction, nutrient renaming and CoRD
+## serving setup are copied from script 07, which in turn reproduces
+## 02_food_table.R, 02_cona.R and 03_cord.R. If any of those changed, this
+## script drifts with them.
 ########################################################
 
 source("00_config.R", encoding = "UTF-8")
+source(file.path(REVIEW_DIR, "06_figures", "00_fig_config.R"))
 library(tidyverse)
-library(writexl)
+library(scales)
 
 source(file.path(IN_AUX_DIR, "CoCA_paper.R"))
 source(file.path(IN_AUX_DIR, "CoNA_paper.R"))
 source(file.path(IN_AUX_DIR, "CoRD_Herforth.R"))
 
-# Bind dplyr verbs explicitly: the model functions pacman::p_load Hmisc
-# and others that mask summarise(), filter(), select(), rename() and n()
+# The model functions pacman::p_load Hmisc and others that mask dplyr
 summarise <- dplyr::summarise
 filter    <- dplyr::filter
 select    <- dplyr::select
@@ -63,9 +55,13 @@ mutate    <- dplyr::mutate
 arrange   <- dplyr::arrange
 n         <- dplyr::n
 
+VALID_FIG_DIR <- file.path(FIG_DIR, "final", "validation")
+dir.create(VALID_FIG_DIR, recursive = TRUE, showWarnings = FALSE)
 dir.create(VALID_DIR, recursive = TRUE, showWarnings = FALSE)
 
-# Same exclusion list as 01_data_preparation/02_food_table.R
+# -----------------------------------------------------------------------
+# 1. Vocabulary, copied from script 07
+# -----------------------------------------------------------------------
 FOODS_EXCLUDE <- c(
   "AREPAS RELLENAS CON ALGO", "BOCADILLOS",
   "CEREAL ALIMENTO PARA BEBÉ", "CEREAL PARA DESAYUNO",
@@ -107,7 +103,6 @@ NUTRIENT_MAP <- c(
   hierro_mg                = "Iron",
   zinc_mg                  = "Zinc")
 
-# ---- CoRD vocabulary, as in 02_models/03_cord.R -----------------------
 GROUP_CANON <- c(
   "Cereales, raíces, tubérculos y plátanos",
   "Frutas",
@@ -146,7 +141,7 @@ div_cord <- tribble(
   "Azúcares",                                               1)
 
 # -----------------------------------------------------------------------
-# Inputs
+# 2. Inputs and panels
 # -----------------------------------------------------------------------
 message("Loading inputs...")
 
@@ -169,12 +164,6 @@ normalise_city <- function(x) {
             TRUE                                   ~ x)
 }
 
-# -----------------------------------------------------------------------
-# Build the two food panels, following 02_food_table.R exactly, plus the
-# CoRD fields built in 03_cord.R
-# -----------------------------------------------------------------------
-message("Building observed and extrapolated panels...")
-
 build_panel <- function(price_col) {
   prices_val %>%
     filter(!is.na(.data[[price_col]]), .data[[price_col]] > 0) %>%
@@ -193,7 +182,6 @@ build_panel <- function(price_col) {
     filter(!articulo %in% FOODS_EXCLUDE,
            !is.na(precio_100g), precio_100g > 0,
            !is.na(energia_kcal)) %>%
-    # CoRD fields, as in 03_cord.R
     mutate(
       Group = if_else(subgrupos_gabas == "FRUTAS",   "FRUTAS",   grupos_gabas),
       Group = if_else(subgrupos_gabas == "VERDURAS", "VERDURAS", Group),
@@ -205,8 +193,7 @@ build_panel <- function(price_col) {
 panel_obs <- build_panel("price_obs")
 panel_ext <- build_panel("price_S5")
 
-# Common support: only food x city x month present in BOTH panels, so the
-# runs optimise over identical baskets
+# Common support: only food x city x month present in BOTH panels
 support <- panel_obs %>% distinct(ciudad, articulo, fecha) %>%
   inner_join(panel_ext %>% distinct(ciudad, articulo, fecha),
              by = c("ciudad", "articulo", "fecha"))
@@ -218,19 +205,8 @@ message(sprintf("  common support: %d rows | %d foods | %d months | %d cities",
                 nrow(support), n_distinct(support$articulo),
                 n_distinct(support$fecha), n_distinct(support$ciudad)))
 
-print(panel_obs %>% count(ciudad, fecha, name = "n_foods") %>%
-        summarise(min_foods = min(n_foods), median_foods = median(n_foods),
-                  max_foods = max(n_foods)))
-
-# How many CoRD groups are covered each month — CoRD_Herforth needs at
-# least five groups in common across data, servings and diversity table
-print(panel_obs %>% filter(Group %in% GROUP_CANON) %>%
-        distinct(ciudad, fecha, Group) %>%
-        count(ciudad, fecha, name = "n_groups") %>%
-        count(ciudad, n_groups))
-
 # -----------------------------------------------------------------------
-# Requirement objects, per city
+# 3. Requirement objects
 # -----------------------------------------------------------------------
 META_COLS <- c("ciudad", "cod_mun", "rango", "sex", "eer", "municipio",
                "departamento", "poblacion")
@@ -242,23 +218,19 @@ eer_for <- function(city) {
     mutate(Sex = if_else(Sex == "Masculino", 0L, 1L)) %>%
     as.data.frame()
 }
-
 ll_for <- function(city) {
   household_eer_ll %>% filter(ciudad == city) %>%
     select(-any_of(META_COLS)) %>% as.data.frame()
 }
-
 ul_for <- function(city) {
   household_ul %>% filter(ciudad == city) %>%
     select(-any_of(META_COLS)) %>% as.data.frame()
 }
 
-# CoRD servings, as in 03_cord.R
 serv_adj <- gaba_adj %>%
-  filter(
-    (sex == "Masculino" & rango == "[31,51)") |
-      (sex == "Femenino"  & rango == "[31,51)") |
-      (sex == "Femenino"  & rango == "[10, 14)")) %>%
+  filter((sex == "Masculino" & rango == "[31,51)") |
+           (sex == "Femenino" & rango == "[31,51)") |
+           (sex == "Femenino" & rango == "[10, 14)")) %>%
   rename(Age = rango, Sex = sex, Group = grupo_principal,
          Serving = n_exchanges_adj) %>%
   mutate(Group = recode(Group, !!!map_group_serv),
@@ -271,13 +243,8 @@ serv_for <- function(city) {
 }
 
 # -----------------------------------------------------------------------
-# Solve the three models on both panels
+# 4. Solvers
 # -----------------------------------------------------------------------
-message("Solving models...")
-
-ciudades <- sort(intersect(unique(panel_obs$ciudad), unique(household_eer$ciudad)))
-fechas   <- sort(unique(panel_obs$fecha))
-
 run_coca <- function(d, eer) {
   dd <- d %>% filter(grupos_gabas == GRUPO_COCA) %>%
     rename(Price_100g = precio_100g, Food = articulo, Energy = energia_kcal) %>%
@@ -299,16 +266,13 @@ run_cord <- function(d, serv) {
   dd <- d %>%
     filter(Group %in% GROUP_CANON,
            !is.na(Serving_g), Serving_g > 0, !is.na(Price_serving)) %>%
-    rename(Food = articulo, Price_100g = precio_100g,
-           Energy = energia_kcal) %>%
+    rename(Food = articulo, Price_100g = precio_100g, Energy = energia_kcal) %>%
     as.data.frame()
   if (nrow(dd) == 0) return(NULL)
   tryCatch(CoRD_Herforth(data = dd, serv = serv, diverse = div_cord),
            error = function(e) NULL)
 }
 
-# The three functions return Sex and Demo_Group with inconsistent types,
-# so both are coerced here before anything is combined
 harmonise <- function(x) {
   x %>% mutate(Demo_Group = as.character(Demo_Group),
                Sex        = suppressWarnings(as.numeric(Sex)))
@@ -321,53 +285,50 @@ keep_cost <- function(x, model_name, ci, ft, src) {
     { if ("cona_cost" %in% names(.)) rename(., cost_day = cona_cost) else . } %>%
     harmonise() %>%
     distinct(Demo_Group, Sex, .keep_all = TRUE) %>%
-    mutate(model = model_name, ciudad = ci,
-           fecha = as.Date(ft), source = src)
+    mutate(model = model_name, ciudad = ci, fecha = as.Date(ft), source = src)
 }
 
 keep_comp <- function(x, model_name, ci, ft, src) {
-  x %>%
-    harmonise() %>%
-    mutate(model = model_name, ciudad = ci,
-           fecha = as.Date(ft), source = src)
+  x %>% harmonise() %>%
+    mutate(model = model_name, ciudad = ci, fecha = as.Date(ft), source = src)
 }
+
+# -----------------------------------------------------------------------
+# 5. Solve
+# -----------------------------------------------------------------------
+message("Solving models...")
+
+ciudades <- sort(intersect(unique(panel_obs$ciudad), unique(household_eer$ciudad)))
+fechas   <- sort(unique(panel_obs$fecha))
 
 cost_rows <- list(); comp_rows <- list()
 
 for (ci in ciudades) {
-  
   eer  <- eer_for(ci); ll <- ll_for(ci); ul <- ul_for(ci)
   serv <- serv_for(ci)
   
   for (ft in fechas) {
-    
     d_obs <- panel_obs %>% filter(ciudad == ci, fecha == ft)
     d_ext <- panel_ext %>% filter(ciudad == ci, fecha == ft)
     if (nrow(d_obs) == 0 || nrow(d_ext) == 0) next
     
     for (src in c("observed", "extrapolated")) {
-      
       d <- if (src == "observed") d_obs else d_ext
       
       r1 <- run_coca(d, eer)
       if (!is.null(r1) && !is.null(r1$cost))
-        cost_rows[[length(cost_rows) + 1]] <-
-        keep_cost(r1$cost, "CoCA", ci, ft, src)
+        cost_rows[[length(cost_rows) + 1]] <- keep_cost(r1$cost, "CoCA", ci, ft, src)
       
       r2 <- run_cona(d, ll, ul)
       if (!is.null(r2) && !is.null(r2$cost)) {
-        cost_rows[[length(cost_rows) + 1]] <-
-          keep_cost(r2$cost, "CoNA", ci, ft, src)
-        comp_rows[[length(comp_rows) + 1]] <-
-          keep_comp(r2$comp, "CoNA", ci, ft, src)
+        cost_rows[[length(cost_rows) + 1]] <- keep_cost(r2$cost, "CoNA", ci, ft, src)
+        comp_rows[[length(comp_rows) + 1]] <- keep_comp(r2$comp, "CoNA", ci, ft, src)
       }
       
       r3 <- run_cord(d, serv)
       if (!is.null(r3) && !is.null(r3$cost)) {
-        cost_rows[[length(cost_rows) + 1]] <-
-          keep_cost(r3$cost, "CoRD", ci, ft, src)
-        comp_rows[[length(comp_rows) + 1]] <-
-          keep_comp(r3$comp, "CoRD", ci, ft, src)
+        cost_rows[[length(cost_rows) + 1]] <- keep_cost(r3$cost, "CoRD", ci, ft, src)
+        comp_rows[[length(comp_rows) + 1]] <- keep_comp(r3$comp, "CoRD", ci, ft, src)
       }
     }
   }
@@ -377,68 +338,135 @@ for (ci in ciudades) {
 costs <- bind_rows(cost_rows)
 comps <- bind_rows(comp_rows)
 
-cat("\n  Solved cells by model and panel:\n\n")
-print(as.data.frame(
-  costs %>% distinct(model, source, ciudad, fecha) %>% count(model, source)))
+if (nrow(costs) == 0) stop("No model solved. Check the panels and requirements.")
 
 # -----------------------------------------------------------------------
-# Compare: per-capita household cost, the figure the paper reports
+# 6. Per capita deviation
 # -----------------------------------------------------------------------
 per_capita <- costs %>%
   filter(!is.na(cost_day)) %>%
   group_by(model, ciudad, fecha, source) %>%
   summarise(cost_pc = mean(cost_day), n_members = n(), .groups = "drop") %>%
-  filter(n_members == 3) %>%          # all three members solved
+  filter(n_members == 3) %>%
   select(-n_members) %>%
   pivot_wider(names_from = source, values_from = cost_pc) %>%
   filter(!is.na(observed), !is.na(extrapolated)) %>%
   mutate(dev_pct = 100 * (extrapolated - observed) / observed,
-         h_mes   = as.integer(round(as.numeric(fecha - T0) / 30.44)))
+         h_mes   = as.integer(round(as.numeric(fecha - T0) / 30.44)),
+         model   = factor(model, levels = c("CoCA", "CoNA", "CoRD")),
+         ciudad_lbl = factor(CITY_LABS[ciudad],
+                             levels = c("Bogotá", "Medellín", "Cali")))
+
+# -----------------------------------------------------------------------
+# 7. Everything needed to write the appendix interpretation
+# -----------------------------------------------------------------------
+rule <- function(txt) {
+  cat("\n", strrep("=", 70), "\n  ", txt, "\n", strrep("=", 70), "\n\n", sep = "")
+}
+
+rule("MAD and MD by model and city")
 
 summary_tbl <- per_capita %>%
-  group_by(model, ciudad) %>%
+  group_by(model, ciudad_lbl) %>%
   summarise(n_months = n(),
             MAD_pct  = mean(abs(dev_pct)),
             MD_pct   = mean(dev_pct),
-            p90      = quantile(abs(dev_pct), 0.9),
+            p90_abs  = quantile(abs(dev_pct), 0.9),
             max_abs  = max(abs(dev_pct)),
             .groups  = "drop") %>%
-  bind_rows(per_capita %>% group_by(model) %>%
-              summarise(ciudad = "ALL", n_months = n(),
-                        MAD_pct = mean(abs(dev_pct)), MD_pct = mean(dev_pct),
-                        p90 = quantile(abs(dev_pct), 0.9),
-                        max_abs = max(abs(dev_pct)), .groups = "drop"))
+  bind_rows(
+    per_capita %>% group_by(model) %>%
+      summarise(ciudad_lbl = "All", n_months = n(),
+                MAD_pct = mean(abs(dev_pct)), MD_pct = mean(dev_pct),
+                p90_abs = quantile(abs(dev_pct), 0.9),
+                max_abs = max(abs(dev_pct)), .groups = "drop")) %>%
+  arrange(model, ciudad_lbl)
+
+print(as.data.frame(summary_tbl), digits = 4)
+
+rule("Share of months in which the extrapolated panel understates the cost")
+
+cat("  (the optimiser-selection bias: if well above 50%, selection is\n")
+cat("   correlated with the sign of the price error)\n\n")
+print(as.data.frame(
+  per_capita %>% group_by(model) %>%
+    summarise(pct_understated = 100 * mean(dev_pct < 0),
+              n_months = n(), .groups = "drop")), digits = 4)
+
+rule("Deviation by horizon — where the bias turns and how it grows")
 
 horizon_tbl <- per_capita %>%
   group_by(model, h_mes) %>%
   summarise(MAD_pct = mean(abs(dev_pct)), MD_pct = mean(dev_pct),
             .groups = "drop")
+print(as.data.frame(horizon_tbl), digits = 4)
 
-# Does the extrapolated panel pick a different basket?
+cat("\n  First horizon at which each model's MD turns negative:\n\n")
+print(as.data.frame(
+  horizon_tbl %>% filter(MD_pct < 0) %>%
+    group_by(model) %>% slice_min(h_mes, n = 1)), digits = 4)
+
+rule("R-squared and slope of extrapolated on observed, by model")
+
+cat("  (a slope below one means the panel compresses the range of costs)\n\n")
+print(as.data.frame(
+  per_capita %>% group_by(model) %>%
+    summarise(r2    = summary(lm(extrapolated ~ observed))$r.squared,
+              slope = coef(lm(extrapolated ~ observed))[2],
+              .groups = "drop")), digits = 4)
+
+rule("Foods selected under one panel only")
+
 comp_tbl <- comps %>%
   distinct(model, ciudad, fecha, source, Food) %>%
   count(model, ciudad, source, Food, name = "n_months") %>%
   pivot_wider(names_from = source, values_from = n_months, values_fill = 0) %>%
   mutate(only_in = case_when(observed > 0 & extrapolated == 0 ~ "observed only",
                              observed == 0 & extrapolated > 0 ~ "extrapolated only",
-                             TRUE ~ "both")) %>%
-  arrange(model, ciudad, desc(abs(observed - extrapolated)))
+                             TRUE ~ "both"))
 
-cat("\n", strrep("=", 68), "\n")
-cat("  MODEL VALIDATION — observed vs extrapolated prices\n")
-cat(sprintf("  window: %s .. %s\n", min(per_capita$fecha), max(per_capita$fecha)))
-cat("  MAD = how much price error survives into the metric\n")
-cat("  MD  = optimiser bias (negative: extrapolated understates true cost)\n")
-cat(strrep("=", 68), "\n\n")
-print(as.data.frame(summary_tbl), digits = 4)
-cat("\n  Deviation by horizon (months since the anchor):\n\n")
-print(as.data.frame(horizon_tbl), digits = 4)
-cat("\n  Foods selected under one panel only:\n\n")
 print(as.data.frame(comp_tbl %>% filter(only_in != "both")), digits = 4)
+
+cat("\n  Foods whose selection frequency differs most between panels:\n\n")
+print(as.data.frame(
+  comp_tbl %>% mutate(diff = extrapolated - observed) %>%
+    filter(abs(diff) > 0) %>%
+    arrange(desc(abs(diff))) %>% head(15)), digits = 4)
 
 write_csv(per_capita,  file.path(VALID_DIR, "model_validation_cost.csv"))
 write_csv(summary_tbl, file.path(VALID_DIR, "model_validation_summary.csv"))
 write_csv(horizon_tbl, file.path(VALID_DIR, "model_validation_horizon.csv"))
-write_csv(comp_tbl,    file.path(VALID_DIR, "model_validation_comp.csv"))
 
-message("Done. Outputs in: ", VALID_DIR)
+# -----------------------------------------------------------------------
+# 8. Figure — observed vs extrapolated, with the 45-degree line
+# -----------------------------------------------------------------------
+figA <- ggplot(per_capita,
+               aes(x = observed, y = extrapolated, colour = model)) +
+  geom_abline(slope = 1, intercept = 0, colour = "grey50",
+              linetype = "dashed", linewidth = 0.4) +
+  geom_point(size = 1.1, alpha = 0.75) +
+  facet_wrap(~ ciudad_lbl, nrow = 1) +
+  scale_colour_manual(
+    values = c("CoCA" = "#1F4E79", "CoNA" = "#C07A17", "CoRD" = "#7B2D8E"),
+    name = NULL) +
+  scale_x_continuous(labels = comma_format(big.mark = ",")) +
+  scale_y_continuous(labels = comma_format(big.mark = ",")) +
+  labs(x = "Cost on observed prices (COP/day)",
+       y = "Cost on extrapolated prices (COP/day)") +
+  paper_theme() +
+  theme(axis.text = element_text(size = 7),
+        axis.title = element_text(size = 9),
+        strip.text = element_text(face = "bold", size = 9),
+        legend.position = "top", legend.direction = "horizontal",
+        legend.text = element_text(family = "serif", size = 9),
+        legend.key.size = unit(0.35, "cm"),
+        legend.background = element_rect(colour = "black", fill = "white",
+                                         linewidth = 0.4),
+        panel.spacing = unit(0.45, "cm"))
+
+ggsave(file.path(VALID_FIG_DIR, "figA_validation_scatter.png"),
+       figA, width = 17.4, height = 8, units = "cm", dpi = 400, bg = "white")
+ggsave(file.path(VALID_FIG_DIR, "figA_validation_scatter.pdf"),
+       figA, width = 17.4, height = 8, units = "cm", bg = "white")
+
+message("\nFigure saved to: ", VALID_FIG_DIR)

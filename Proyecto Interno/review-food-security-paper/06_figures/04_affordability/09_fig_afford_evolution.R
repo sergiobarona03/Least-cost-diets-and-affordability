@@ -78,11 +78,7 @@ fig9 <- ggplot(afford_monthly,
                       "by income decile and city, 2019\u20132024"),
     subtitle = paste0("Monthly share of households unable to afford each diet. ",
                       "Darker fill indicates higher unaffordability."),
-    caption  = paste0(
-      "Note: Monthly unaffordability rate (FGT0) = share of households ",
-      "whose annual food expenditure per capita is below the annual diet cost.\n",
-      "CoCA = Cost of Caloric Adequacy; CoNA = Cost of Nutritional Adequacy; ",
-      "CoRD = Cost of Recommended Diet."),
+    caption  = " ",
     x = NULL,
     y = NULL) +
   paper_theme() +

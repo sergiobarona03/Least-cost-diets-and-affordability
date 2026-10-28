@@ -87,11 +87,7 @@ fig8 <- ggplot(afford_monthly,
   labs(
     title    = " ",
     subtitle = " ",
-    caption  = paste0(
-      "Note: Unaffordability rate = share of households in each decile ",
-      "whose monthly food expenditure per capita is below the monthly diet cost (FGT0).\n",
-      "CoCA = Cost of Caloric Adequacy; CoNA = Cost of Nutritional Adequacy; ",
-      "CoRD = Cost of Recommended Diet. Dashed vertical lines mark year boundaries."),
+    caption  = " ",
     x = NULL,
     y = "Income decile") +
   paper_theme() +

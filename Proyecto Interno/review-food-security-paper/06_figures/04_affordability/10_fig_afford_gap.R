@@ -77,12 +77,7 @@ fig10 <- ggplot(afford_agg,
   labs(
     title   = paste0("Figure 10. Aggregate monthly unaffordability rate ",
                      "by city and diet model, 2019\u20132024"),
-    caption = paste0(
-      "Note: Unaffordability rate (FGT0) = share of households whose annual ",
-      "food expenditure per capita is below the annual diet cost, ",
-      "averaged across all income deciles (unweighted mean).\n",
-      "CoCA = Cost of Caloric Adequacy; CoNA = Cost of Nutritional Adequacy; ",
-      "CoRD = Cost of Recommended Diet."),
+    caption = " ",
     x = NULL,
     y = "Unaffordability rate (%)") +
   base_theme +
@@ -120,12 +115,7 @@ fig10b <- ggplot(afford_gap_agg,
   labs(
     title   = paste0("Figure 10B. Aggregate monthly affordability gap (FGT1) ",
                      "by city and diet model, 2019–2024"),
-    caption = paste0(
-      "Note: Affordability gap (FGT1) = mean proportional deficit of food budget ",
-      "relative to diet cost, averaged across all income deciles.\n",
-      "Scale: 0 = no gap; values closer to 1 indicate deeper unaffordability. ",
-      "CoCA = Cost of Caloric Adequacy; CoNA = Cost of Nutritional Adequacy; ",
-      "CoRD = Cost of Recommended Diet."),
+    caption = " ",
     x = NULL,
     y = "Affordability gap (FGT1, 0–1)") +
   base_theme +

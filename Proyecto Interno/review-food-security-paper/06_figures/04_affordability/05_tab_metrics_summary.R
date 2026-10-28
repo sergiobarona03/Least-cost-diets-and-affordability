@@ -72,12 +72,7 @@ fig9 <- ggplot(gap_annual,
   labs(
     title    = " ",
     subtitle = " ",
-    caption  = paste0(
-      "Note: The affordability gap measures the mean proportional shortfall ",
-      "between food expenditure and diet cost, averaged across all households ",
-      "in the decile (0 = no gap; 1 = food budget covers 0% of diet cost).\n",
-      "CoCA = Cost of Caloric Adequacy; CoNA = Cost of Nutritional Adequacy; ",
-      "CoRD = Cost of Recommended Diet."),
+    caption  = " ",
     x = NULL,
     y = "Income decile") +
   paper_theme() +

@@ -110,14 +110,7 @@ fig3 <- ggplot(binding_annual,
   labs(
     title    = " ",
     subtitle = " ",
-    caption  = paste0(
-      "Note: A constraint is binding when the cost-minimising diet exactly meets ",
-      "the nutritional lower bound. Cell values report the share of months in ",
-      "each year that the constraint was binding. Nutrients with 0% binding ",
-      "frequency in every period and city are omitted.\n",
-      "CoNA = Cost of Nutritional Adequacy. ",
-      "Household members: adult male [31\u201351), ",
-      "adult female [31\u201351), female child [10\u201314)."),
+    caption  = " ",
     x = NULL,
     y = NULL) +
   paper_theme() +
