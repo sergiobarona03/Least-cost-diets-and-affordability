@@ -1,0 +1,193 @@
+articulo,subclase_codigo,subclase_nombre,patron
+Aceite girasol,01150100,Aceites comestibles,^aceite
+Aceite soya,01150100,Aceites comestibles,^aceite
+Aceite vegetal mezcla,01150100,Aceites comestibles,^aceite
+Acelga,01171600,Hortalizas y legumbres frescas,^(acelga|ahuyama|aji|apio|arveja verde|berenjena|brocoli|calabacin|cidra|coles|coliflor|espinaca|frijol verde|habichuela|lechuga|pepino|perejil|pimenton|remolacha|repollo|rabano)
+Aguacate Hass,01160900,Frutas frescas,^(aguacate|coco|borojo|ciruela|curuba|durazno|fresa|guanabana|guayaba|gulupa|higo|kiwi|limon|lulo|mandarina|mango|manzana|maracuya|melon|papaya|patilla|pera|pitahaya|tangelo|uchuva|uva)
+Aguacate común,01160900,Frutas frescas,^(aguacate|coco|borojo|ciruela|curuba|durazno|fresa|guanabana|guayaba|gulupa|higo|kiwi|limon|lulo|mandarina|mango|manzana|maracuya|melon|papaya|patilla|pera|pitahaya|tangelo|uchuva|uva)
+Aguacate papelillo,01160900,Frutas frescas,^(aguacate|coco|borojo|ciruela|curuba|durazno|fresa|guanabana|guayaba|gulupa|higo|kiwi|limon|lulo|mandarina|mango|manzana|maracuya|melon|papaya|patilla|pera|pitahaya|tangelo|uchuva|uva)
+Ahuyama,01171600,Hortalizas y legumbres frescas,^(acelga|ahuyama|aji|apio|arveja verde|berenjena|brocoli|calabacin|cidra|coles|coliflor|espinaca|frijol verde|habichuela|lechuga|pepino|perejil|pimenton|remolacha|repollo|rabano)
+Ajo,01190800,Condimentos y hierbas culinarias,^(ajo|cilantro)
+Ajo importado,01190800,Condimentos y hierbas culinarias,^(ajo|cilantro)
+Ají topito dulce,01171600,Hortalizas y legumbres frescas,^(acelga|ahuyama|aji|apio|arveja verde|berenjena|brocoli|calabacin|cidra|coles|coliflor|espinaca|frijol verde|habichuela|lechuga|pepino|perejil|pimenton|remolacha|repollo|rabano)
+Almejas con concha,01130300,Productos de rio y mar (incluye pescados y camarones frescos o congelados y pescado enlatado como sardinas y atún),^(almejas|bagre|basa|bocachico|cachama|calamar|corvina|lomitos de atun|palmitos de mar|pargo|pescado|robalo|salmon|sierra|tilapia|trucha|camaron|langostino|cazuela de mariscos|sardinas)
+Apio,01171600,Hortalizas y legumbres frescas,^(acelga|ahuyama|aji|apio|arveja verde|berenjena|brocoli|calabacin|cidra|coles|coliflor|espinaca|frijol verde|habichuela|lechuga|pepino|perejil|pimenton|remolacha|repollo|rabano)
+Arracacha blanca,01171200,"Arracacha, ñame y otros tubérculos",^(arracacha|ulluco)
+Arroz de primera,01110100,Arroz,^arroz
+Arroz de segunda,01110100,Arroz,^arroz
+Arroz excelso,01110100,Arroz,^arroz
+Arveja amarilla seca importada,01170200,Legumbres secas,^(frijol (bolon|cabeza|calima|cargamanto)|garbanzo|arveja amarilla)
+Arveja enlatada,01170300,Legumbres y hortalizas en conserva y deshidratadas,^(frijol enlatado|arveja enlatada)
+Arveja verde en vaina,01171600,Hortalizas y legumbres frescas,^(acelga|ahuyama|aji|apio|arveja verde|berenjena|brocoli|calabacin|cidra|coles|coliflor|espinaca|frijol verde|habichuela|lechuga|pepino|perejil|pimenton|remolacha|repollo|rabano)
+Avena en hojuelas,01110300,Avena y sus derivados,^avena
+Avena molida,01110300,Avena y sus derivados,^avena
+Azúcar morena,01180100,Azúcar y otros endulzantes,^azucar
+Azúcar refinada,01180100,Azúcar y otros endulzantes,^azucar
+Azúcar sulfitada,01180100,Azúcar y otros endulzantes,^azucar
+Bagre rayado en postas congelado,01130300,Productos de rio y mar (incluye pescados y camarones frescos o congelados y pescado enlatado como sardinas y atún),^(almejas|bagre|basa|bocachico|cachama|calamar|corvina|lomitos de atun|palmitos de mar|pargo|pescado|robalo|salmon|sierra|tilapia|trucha|camaron|langostino|cazuela de mariscos|sardinas)
+Bagre rayado entero congelado,01130300,Productos de rio y mar (incluye pescados y camarones frescos o congelados y pescado enlatado como sardinas y atún),^(almejas|bagre|basa|bocachico|cachama|calamar|corvina|lomitos de atun|palmitos de mar|pargo|pescado|robalo|salmon|sierra|tilapia|trucha|camaron|langostino|cazuela de mariscos|sardinas)
+Bagre rayado entero fresco,01130300,Productos de rio y mar (incluye pescados y camarones frescos o congelados y pescado enlatado como sardinas y atún),^(almejas|bagre|basa|bocachico|cachama|calamar|corvina|lomitos de atun|palmitos de mar|pargo|pescado|robalo|salmon|sierra|tilapia|trucha|camaron|langostino|cazuela de mariscos|sardinas)
+Banano bocadillo,01160600,Bananos,^banano
+"Basa, filete congelado importado",01130300,Productos de rio y mar (incluye pescados y camarones frescos o congelados y pescado enlatado como sardinas y atún),^(almejas|bagre|basa|bocachico|cachama|calamar|corvina|lomitos de atun|palmitos de mar|pargo|pescado|robalo|salmon|sierra|tilapia|trucha|camaron|langostino|cazuela de mariscos|sardinas)
+Berenjena,01171600,Hortalizas y legumbres frescas,^(acelga|ahuyama|aji|apio|arveja verde|berenjena|brocoli|calabacin|cidra|coles|coliflor|espinaca|frijol verde|habichuela|lechuga|pepino|perejil|pimenton|remolacha|repollo|rabano)
+Blanquillo entero fresco,01140500,Huevos,^(huevo|blanquillo)
+Bocachico criollo fresco,01130300,Productos de rio y mar (incluye pescados y camarones frescos o congelados y pescado enlatado como sardinas y atún),^(almejas|bagre|basa|bocachico|cachama|calamar|corvina|lomitos de atun|palmitos de mar|pargo|pescado|robalo|salmon|sierra|tilapia|trucha|camaron|langostino|cazuela de mariscos|sardinas)
+Borojó,01160900,Frutas frescas,^(aguacate|coco|borojo|ciruela|curuba|durazno|fresa|guanabana|guayaba|gulupa|higo|kiwi|limon|lulo|mandarina|mango|manzana|maracuya|melon|papaya|patilla|pera|pitahaya|tangelo|uchuva|uva)
+Brócoli,01171600,Hortalizas y legumbres frescas,^(acelga|ahuyama|aji|apio|arveja verde|berenjena|brocoli|calabacin|cidra|coles|coliflor|espinaca|frijol verde|habichuela|lechuga|pepino|perejil|pimenton|remolacha|repollo|rabano)
+Cachama de cultivo fresca,01130300,Productos de rio y mar (incluye pescados y camarones frescos o congelados y pescado enlatado como sardinas y atún),^(almejas|bagre|basa|bocachico|cachama|calamar|corvina|lomitos de atun|palmitos de mar|pargo|pescado|robalo|salmon|sierra|tilapia|trucha|camaron|langostino|cazuela de mariscos|sardinas)
+Café instantáneo,01210100,Café y productos a base de café,^cafe
+Café molido,01210100,Café y productos a base de café,^cafe
+Calabacín,01171600,Hortalizas y legumbres frescas,^(acelga|ahuyama|aji|apio|arveja verde|berenjena|brocoli|calabacin|cidra|coles|coliflor|espinaca|frijol verde|habichuela|lechuga|pepino|perejil|pimenton|remolacha|repollo|rabano)
+Calamar anillos,01130300,Productos de rio y mar (incluye pescados y camarones frescos o congelados y pescado enlatado como sardinas y atún),^(almejas|bagre|basa|bocachico|cachama|calamar|corvina|lomitos de atun|palmitos de mar|pargo|pescado|robalo|salmon|sierra|tilapia|trucha|camaron|langostino|cazuela de mariscos|sardinas)
+Camarón tigre precocido seco,01130300,Productos de rio y mar (incluye pescados y camarones frescos o congelados y pescado enlatado como sardinas y atún),^(almejas|bagre|basa|bocachico|cachama|calamar|corvina|lomitos de atun|palmitos de mar|pargo|pescado|robalo|salmon|sierra|tilapia|trucha|camaron|langostino|cazuela de mariscos|sardinas)
+Camarón tití precocido seco,01130300,Productos de rio y mar (incluye pescados y camarones frescos o congelados y pescado enlatado como sardinas y atún),^(almejas|bagre|basa|bocachico|cachama|calamar|corvina|lomitos de atun|palmitos de mar|pargo|pescado|robalo|salmon|sierra|tilapia|trucha|camaron|langostino|cazuela de mariscos|sardinas)
+"Carne de cerdo, costilla",01120200,Carne de cerdo y derivados,^carne de cerdo
+"Carne de cerdo, espinazo",01120200,Carne de cerdo y derivados,^carne de cerdo
+"Carne de cerdo, lomo sin hueso",01120200,Carne de cerdo y derivados,^carne de cerdo
+"Carne de cerdo, pernil sin hueso",01120200,Carne de cerdo y derivados,^carne de cerdo
+"Carne de cerdo, tocineta plancha",01120500,"Carnes preparadas, charcutería y otros productos conteniendo carne","^carne de cerdo, tocineta"
+"Carne de cerdo, tocino barriga",01120200,Carne de cerdo y derivados,^carne de cerdo
+"Carne de cerdo, tocino papada",01120200,Carne de cerdo y derivados,^carne de cerdo
+"Carne de res molida, murillo",01120100,Carne de res y derivados,^carne de res
+"Carne de res, bola de pierna",01120100,Carne de res y derivados,^carne de res
+"Carne de res, bota",01120100,Carne de res y derivados,^carne de res
+"Carne de res, cadera",01120100,Carne de res y derivados,^carne de res
+"Carne de res, centro de pierna",01120100,Carne de res y derivados,^carne de res
+"Carne de res, chatas",01120100,Carne de res y derivados,^carne de res
+"Carne de res, cogote",01120100,Carne de res y derivados,^carne de res
+"Carne de res, costilla",01120100,Carne de res y derivados,^carne de res
+"Carne de res, lomo fino",01120100,Carne de res y derivados,^carne de res
+"Carne de res, morrillo",01120100,Carne de res y derivados,^carne de res
+"Carne de res, muchacho",01120100,Carne de res y derivados,^carne de res
+"Carne de res, murillo",01120100,Carne de res y derivados,^carne de res
+"Carne de res, pecho",01120100,Carne de res y derivados,^carne de res
+"Carne de res, punta de anca",01120100,Carne de res y derivados,^carne de res
+"Carne de res, sobrebarriga",01120100,Carne de res y derivados,^carne de res
+Cazuela de mariscos (paquete),01130300,Productos de rio y mar (incluye pescados y camarones frescos o congelados y pescado enlatado como sardinas y atún),^(almejas|bagre|basa|bocachico|cachama|calamar|corvina|lomitos de atun|palmitos de mar|pargo|pescado|robalo|salmon|sierra|tilapia|trucha|camaron|langostino|cazuela de mariscos|sardinas)
+Cebolla cabezona blanca,01171400,Cebolla,^(cebolla|cebollin)
+Cebolla cabezona roja,01171400,Cebolla,^(cebolla|cebollin)
+Cebolla junca,01171400,Cebolla,^(cebolla|cebollin)
+Cebolla puerro,01171400,Cebolla,^(cebolla|cebollin)
+Cebollín chino,01171400,Cebolla,^(cebolla|cebollin)
+Chócolo mazorca,01110600,Maíz y sus derivados,^(harina precocida|cuchuco|maiz (amarillo|blanco|pira)|chocolo)
+Cidra,01171600,Hortalizas y legumbres frescas,^(acelga|ahuyama|aji|apio|arveja verde|berenjena|brocoli|calabacin|cidra|coles|coliflor|espinaca|frijol verde|habichuela|lechuga|pepino|perejil|pimenton|remolacha|repollo|rabano)
+Cilantro,01190800,Condimentos y hierbas culinarias,^(ajo|cilantro)
+Ciruela roja,01160900,Frutas frescas,^(aguacate|coco|borojo|ciruela|curuba|durazno|fresa|guanabana|guayaba|gulupa|higo|kiwi|limon|lulo|mandarina|mango|manzana|maracuya|melon|papaya|patilla|pera|pitahaya|tangelo|uchuva|uva)
+Coco,01160900,Frutas frescas,^(aguacate|coco|borojo|ciruela|curuba|durazno|fresa|guanabana|guayaba|gulupa|higo|kiwi|limon|lulo|mandarina|mango|manzana|maracuya|melon|papaya|patilla|pera|pitahaya|tangelo|uchuva|uva)
+Coles,01171600,Hortalizas y legumbres frescas,^(acelga|ahuyama|aji|apio|arveja verde|berenjena|brocoli|calabacin|cidra|coles|coliflor|espinaca|frijol verde|habichuela|lechuga|pepino|perejil|pimenton|remolacha|repollo|rabano)
+Coliflor,01171600,Hortalizas y legumbres frescas,^(acelga|ahuyama|aji|apio|arveja verde|berenjena|brocoli|calabacin|cidra|coles|coliflor|espinaca|frijol verde|habichuela|lechuga|pepino|perejil|pimenton|remolacha|repollo|rabano)
+"Corvina, filete congelado nacional",01130300,Productos de rio y mar (incluye pescados y camarones frescos o congelados y pescado enlatado como sardinas y atún),^(almejas|bagre|basa|bocachico|cachama|calamar|corvina|lomitos de atun|palmitos de mar|pargo|pescado|robalo|salmon|sierra|tilapia|trucha|camaron|langostino|cazuela de mariscos|sardinas)
+Cuchuco de maíz,01110600,Maíz y sus derivados,^(harina precocida|cuchuco|maiz (amarillo|blanco|pira)|chocolo)
+Curuba,01160900,Frutas frescas,^(aguacate|coco|borojo|ciruela|curuba|durazno|fresa|guanabana|guayaba|gulupa|higo|kiwi|limon|lulo|mandarina|mango|manzana|maracuya|melon|papaya|patilla|pera|pitahaya|tangelo|uchuva|uva)
+Durazno importado,01160900,Frutas frescas,^(aguacate|coco|borojo|ciruela|curuba|durazno|fresa|guanabana|guayaba|gulupa|higo|kiwi|limon|lulo|mandarina|mango|manzana|maracuya|melon|papaya|patilla|pera|pitahaya|tangelo|uchuva|uva)
+Durazno nacional,01160900,Frutas frescas,^(aguacate|coco|borojo|ciruela|curuba|durazno|fresa|guanabana|guayaba|gulupa|higo|kiwi|limon|lulo|mandarina|mango|manzana|maracuya|melon|papaya|patilla|pera|pitahaya|tangelo|uchuva|uva)
+Espinaca,01171600,Hortalizas y legumbres frescas,^(acelga|ahuyama|aji|apio|arveja verde|berenjena|brocoli|calabacin|cidra|coles|coliflor|espinaca|frijol verde|habichuela|lechuga|pepino|perejil|pimenton|remolacha|repollo|rabano)
+Fresa,01160900,Frutas frescas,^(aguacate|coco|borojo|ciruela|curuba|durazno|fresa|guanabana|guayaba|gulupa|higo|kiwi|limon|lulo|mandarina|mango|manzana|maracuya|melon|papaya|patilla|pera|pitahaya|tangelo|uchuva|uva)
+Fríjol bolón,01170200,Legumbres secas,^(frijol (bolon|cabeza|calima|cargamanto)|garbanzo|arveja amarilla)
+Fríjol cabeza negra nacional,01170200,Legumbres secas,^(frijol (bolon|cabeza|calima|cargamanto)|garbanzo|arveja amarilla)
+Fríjol calima,01170200,Legumbres secas,^(frijol (bolon|cabeza|calima|cargamanto)|garbanzo|arveja amarilla)
+Fríjol cargamanto blanco,01170200,Legumbres secas,^(frijol (bolon|cabeza|calima|cargamanto)|garbanzo|arveja amarilla)
+Fríjol cargamanto rojo,01170200,Legumbres secas,^(frijol (bolon|cabeza|calima|cargamanto)|garbanzo|arveja amarilla)
+Fríjol enlatado,01170300,Legumbres y hortalizas en conserva y deshidratadas,^(frijol enlatado|arveja enlatada)
+Fríjol verde en vaina,01171600,Hortalizas y legumbres frescas,^(acelga|ahuyama|aji|apio|arveja verde|berenjena|brocoli|calabacin|cidra|coles|coliflor|espinaca|frijol verde|habichuela|lechuga|pepino|perejil|pimenton|remolacha|repollo|rabano)
+Fécula de maíz,01119800,"Otras harinas, cereales y almidones",^fecula
+Garbanzo importado,01170200,Legumbres secas,^(frijol (bolon|cabeza|calima|cargamanto)|garbanzo|arveja amarilla)
+Guanábana,01160900,Frutas frescas,^(aguacate|coco|borojo|ciruela|curuba|durazno|fresa|guanabana|guayaba|gulupa|higo|kiwi|limon|lulo|mandarina|mango|manzana|maracuya|melon|papaya|patilla|pera|pitahaya|tangelo|uchuva|uva)
+Guayaba manzana,01160900,Frutas frescas,^(aguacate|coco|borojo|ciruela|curuba|durazno|fresa|guanabana|guayaba|gulupa|higo|kiwi|limon|lulo|mandarina|mango|manzana|maracuya|melon|papaya|patilla|pera|pitahaya|tangelo|uchuva|uva)
+Guayaba pera,01160900,Frutas frescas,^(aguacate|coco|borojo|ciruela|curuba|durazno|fresa|guanabana|guayaba|gulupa|higo|kiwi|limon|lulo|mandarina|mango|manzana|maracuya|melon|papaya|patilla|pera|pitahaya|tangelo|uchuva|uva)
+Gulupa,01160900,Frutas frescas,^(aguacate|coco|borojo|ciruela|curuba|durazno|fresa|guanabana|guayaba|gulupa|higo|kiwi|limon|lulo|mandarina|mango|manzana|maracuya|melon|papaya|patilla|pera|pitahaya|tangelo|uchuva|uva)
+Habichuela,01171600,Hortalizas y legumbres frescas,^(acelga|ahuyama|aji|apio|arveja verde|berenjena|brocoli|calabacin|cidra|coles|coliflor|espinaca|frijol verde|habichuela|lechuga|pepino|perejil|pimenton|remolacha|repollo|rabano)
+Harina de trigo,01110500,Trigo y sus derivados,^harina de trigo
+Harina precocida de maíz,01110600,Maíz y sus derivados,^(harina precocida|cuchuco|maiz (amarillo|blanco|pira)|chocolo)
+Higo,01160900,Frutas frescas,^(aguacate|coco|borojo|ciruela|curuba|durazno|fresa|guanabana|guayaba|gulupa|higo|kiwi|limon|lulo|mandarina|mango|manzana|maracuya|melon|papaya|patilla|pera|pitahaya|tangelo|uchuva|uva)
+Huevo blanco AA,01140500,Huevos,^(huevo|blanquillo)
+Huevo blanco extra,01140500,Huevos,^(huevo|blanquillo)
+Huevo rojo A,01140500,Huevos,^(huevo|blanquillo)
+Huevo rojo AA,01140500,Huevos,^(huevo|blanquillo)
+Huevo rojo extra,01140500,Huevos,^(huevo|blanquillo)
+Kiwi,01160900,Frutas frescas,^(aguacate|coco|borojo|ciruela|curuba|durazno|fresa|guanabana|guayaba|gulupa|higo|kiwi|limon|lulo|mandarina|mango|manzana|maracuya|melon|papaya|patilla|pera|pitahaya|tangelo|uchuva|uva)
+Langostino 16-20,01130300,Productos de rio y mar (incluye pescados y camarones frescos o congelados y pescado enlatado como sardinas y atún),^(almejas|bagre|basa|bocachico|cachama|calamar|corvina|lomitos de atun|palmitos de mar|pargo|pescado|robalo|salmon|sierra|tilapia|trucha|camaron|langostino|cazuela de mariscos|sardinas)
+Leche en polvo,01140100,Leche,^leche en polvo
+Lechuga Batavia,01171600,Hortalizas y legumbres frescas,^(acelga|ahuyama|aji|apio|arveja verde|berenjena|brocoli|calabacin|cidra|coles|coliflor|espinaca|frijol verde|habichuela|lechuga|pepino|perejil|pimenton|remolacha|repollo|rabano)
+Lechuga crespa verde,01171600,Hortalizas y legumbres frescas,^(acelga|ahuyama|aji|apio|arveja verde|berenjena|brocoli|calabacin|cidra|coles|coliflor|espinaca|frijol verde|habichuela|lechuga|pepino|perejil|pimenton|remolacha|repollo|rabano)
+Limón Tahití,01160900,Frutas frescas,^(aguacate|coco|borojo|ciruela|curuba|durazno|fresa|guanabana|guayaba|gulupa|higo|kiwi|limon|lulo|mandarina|mango|manzana|maracuya|melon|papaya|patilla|pera|pitahaya|tangelo|uchuva|uva)
+Limón común,01160900,Frutas frescas,^(aguacate|coco|borojo|ciruela|curuba|durazno|fresa|guanabana|guayaba|gulupa|higo|kiwi|limon|lulo|mandarina|mango|manzana|maracuya|melon|papaya|patilla|pera|pitahaya|tangelo|uchuva|uva)
+Lomitos de atún en lata,01130300,Productos de rio y mar (incluye pescados y camarones frescos o congelados y pescado enlatado como sardinas y atún),^(almejas|bagre|basa|bocachico|cachama|calamar|corvina|lomitos de atun|palmitos de mar|pargo|pescado|robalo|salmon|sierra|tilapia|trucha|camaron|langostino|cazuela de mariscos|sardinas)
+Lulo,01160900,Frutas frescas,^(aguacate|coco|borojo|ciruela|curuba|durazno|fresa|guanabana|guayaba|gulupa|higo|kiwi|limon|lulo|mandarina|mango|manzana|maracuya|melon|papaya|patilla|pera|pitahaya|tangelo|uchuva|uva)
+Mandarina Oneco,01160900,Frutas frescas,^(aguacate|coco|borojo|ciruela|curuba|durazno|fresa|guanabana|guayaba|gulupa|higo|kiwi|limon|lulo|mandarina|mango|manzana|maracuya|melon|papaya|patilla|pera|pitahaya|tangelo|uchuva|uva)
+Mandarina común,01160900,Frutas frescas,^(aguacate|coco|borojo|ciruela|curuba|durazno|fresa|guanabana|guayaba|gulupa|higo|kiwi|limon|lulo|mandarina|mango|manzana|maracuya|melon|papaya|patilla|pera|pitahaya|tangelo|uchuva|uva)
+Mango Tommy,01160900,Frutas frescas,^(aguacate|coco|borojo|ciruela|curuba|durazno|fresa|guanabana|guayaba|gulupa|higo|kiwi|limon|lulo|mandarina|mango|manzana|maracuya|melon|papaya|patilla|pera|pitahaya|tangelo|uchuva|uva)
+Mango común,01160900,Frutas frescas,^(aguacate|coco|borojo|ciruela|curuba|durazno|fresa|guanabana|guayaba|gulupa|higo|kiwi|limon|lulo|mandarina|mango|manzana|maracuya|melon|papaya|patilla|pera|pitahaya|tangelo|uchuva|uva)
+Manzana nacional,01160900,Frutas frescas,^(aguacate|coco|borojo|ciruela|curuba|durazno|fresa|guanabana|guayaba|gulupa|higo|kiwi|limon|lulo|mandarina|mango|manzana|maracuya|melon|papaya|patilla|pera|pitahaya|tangelo|uchuva|uva)
+Manzana roja importada,01160900,Frutas frescas,^(aguacate|coco|borojo|ciruela|curuba|durazno|fresa|guanabana|guayaba|gulupa|higo|kiwi|limon|lulo|mandarina|mango|manzana|maracuya|melon|papaya|patilla|pera|pitahaya|tangelo|uchuva|uva)
+Manzana royal gala importada,01160900,Frutas frescas,^(aguacate|coco|borojo|ciruela|curuba|durazno|fresa|guanabana|guayaba|gulupa|higo|kiwi|limon|lulo|mandarina|mango|manzana|maracuya|melon|papaya|patilla|pera|pitahaya|tangelo|uchuva|uva)
+Manzana verde importada,01160900,Frutas frescas,^(aguacate|coco|borojo|ciruela|curuba|durazno|fresa|guanabana|guayaba|gulupa|higo|kiwi|limon|lulo|mandarina|mango|manzana|maracuya|melon|papaya|patilla|pera|pitahaya|tangelo|uchuva|uva)
+Maracuyá,01160900,Frutas frescas,^(aguacate|coco|borojo|ciruela|curuba|durazno|fresa|guanabana|guayaba|gulupa|higo|kiwi|limon|lulo|mandarina|mango|manzana|maracuya|melon|papaya|patilla|pera|pitahaya|tangelo|uchuva|uva)
+Maíz amarillo cáscara,01110600,Maíz y sus derivados,^(harina precocida|cuchuco|maiz (amarillo|blanco|pira)|chocolo)
+Maíz amarillo trillado,01110600,Maíz y sus derivados,^(harina precocida|cuchuco|maiz (amarillo|blanco|pira)|chocolo)
+Maíz blanco cáscara,01110600,Maíz y sus derivados,^(harina precocida|cuchuco|maiz (amarillo|blanco|pira)|chocolo)
+Maíz blanco trillado,01110600,Maíz y sus derivados,^(harina precocida|cuchuco|maiz (amarillo|blanco|pira)|chocolo)
+Maíz enlatado,01170300,Legumbres y hortalizas en conserva y deshidratadas,^maiz enlatado
+Maíz pira,01110600,Maíz y sus derivados,^(harina precocida|cuchuco|maiz (amarillo|blanco|pira)|chocolo)
+Melón Cantalup,01160900,Frutas frescas,^(aguacate|coco|borojo|ciruela|curuba|durazno|fresa|guanabana|guayaba|gulupa|higo|kiwi|limon|lulo|mandarina|mango|manzana|maracuya|melon|papaya|patilla|pera|pitahaya|tangelo|uchuva|uva)
+Menudencias de pollo,01120300,Carne de aves,pollo|rabadilla|menudencias|^pierna pernil|^piernas
+Mora de Castilla,01160800,Moras,^mora
+Muslos de pollo sin rabadilla,01120300,Carne de aves,pollo|rabadilla|menudencias|^pierna pernil|^piernas
+Naranja común,01160500,Naranjas,^naranja
+Palmitos de mar,01130300,Productos de rio y mar (incluye pescados y camarones frescos o congelados y pescado enlatado como sardinas y atún),^(almejas|bagre|basa|bocachico|cachama|calamar|corvina|lomitos de atun|palmitos de mar|pargo|pescado|robalo|salmon|sierra|tilapia|trucha|camaron|langostino|cazuela de mariscos|sardinas)
+Panela cuadrada morena,01180200,Panela cruda para consumo en el hogar,^panela
+Panela redonda morena,01180200,Panela cruda para consumo en el hogar,^panela
+Papa capira,01170500,Papas,^papa
+Papa criolla limpia,01170500,Papas,^papa
+Papa parda pastusa,01170500,Papas,^papa
+Papa sabanera,01170500,Papas,^papa
+Papaya Paulina,01160900,Frutas frescas,^(aguacate|coco|borojo|ciruela|curuba|durazno|fresa|guanabana|guayaba|gulupa|higo|kiwi|limon|lulo|mandarina|mango|manzana|maracuya|melon|papaya|patilla|pera|pitahaya|tangelo|uchuva|uva)
+Pargo rojo entero congelado,01130300,Productos de rio y mar (incluye pescados y camarones frescos o congelados y pescado enlatado como sardinas y atún),^(almejas|bagre|basa|bocachico|cachama|calamar|corvina|lomitos de atun|palmitos de mar|pargo|pescado|robalo|salmon|sierra|tilapia|trucha|camaron|langostino|cazuela de mariscos|sardinas)
+Pastas alimenticias,01110200,Pastas alimenticias,^pastas
+Patilla,01160900,Frutas frescas,^(aguacate|coco|borojo|ciruela|curuba|durazno|fresa|guanabana|guayaba|gulupa|higo|kiwi|limon|lulo|mandarina|mango|manzana|maracuya|melon|papaya|patilla|pera|pitahaya|tangelo|uchuva|uva)
+Patilla baby,01160900,Frutas frescas,^(aguacate|coco|borojo|ciruela|curuba|durazno|fresa|guanabana|guayaba|gulupa|higo|kiwi|limon|lulo|mandarina|mango|manzana|maracuya|melon|papaya|patilla|pera|pitahaya|tangelo|uchuva|uva)
+Pechuga de pollo,01120300,Carne de aves,pollo|rabadilla|menudencias|^pierna pernil|^piernas
+Pepino cohombro,01171600,Hortalizas y legumbres frescas,^(acelga|ahuyama|aji|apio|arveja verde|berenjena|brocoli|calabacin|cidra|coles|coliflor|espinaca|frijol verde|habichuela|lechuga|pepino|perejil|pimenton|remolacha|repollo|rabano)
+Pepino de rellenar,01171600,Hortalizas y legumbres frescas,^(acelga|ahuyama|aji|apio|arveja verde|berenjena|brocoli|calabacin|cidra|coles|coliflor|espinaca|frijol verde|habichuela|lechuga|pepino|perejil|pimenton|remolacha|repollo|rabano)
+Pera importada,01160900,Frutas frescas,^(aguacate|coco|borojo|ciruela|curuba|durazno|fresa|guanabana|guayaba|gulupa|higo|kiwi|limon|lulo|mandarina|mango|manzana|maracuya|melon|papaya|patilla|pera|pitahaya|tangelo|uchuva|uva)
+Pera nacional,01160900,Frutas frescas,^(aguacate|coco|borojo|ciruela|curuba|durazno|fresa|guanabana|guayaba|gulupa|higo|kiwi|limon|lulo|mandarina|mango|manzana|maracuya|melon|papaya|patilla|pera|pitahaya|tangelo|uchuva|uva)
+Perejil,01171600,Hortalizas y legumbres frescas,^(acelga|ahuyama|aji|apio|arveja verde|berenjena|brocoli|calabacin|cidra|coles|coliflor|espinaca|frijol verde|habichuela|lechuga|pepino|perejil|pimenton|remolacha|repollo|rabano)
+Pescado cabezas,01130300,Productos de rio y mar (incluye pescados y camarones frescos o congelados y pescado enlatado como sardinas y atún),^(almejas|bagre|basa|bocachico|cachama|calamar|corvina|lomitos de atun|palmitos de mar|pargo|pescado|robalo|salmon|sierra|tilapia|trucha|camaron|langostino|cazuela de mariscos|sardinas)
+Pierna pernil con rabadilla,01120300,Carne de aves,pollo|rabadilla|menudencias|^pierna pernil|^piernas
+Pierna pernil sin rabadilla,01120300,Carne de aves,pollo|rabadilla|menudencias|^pierna pernil|^piernas
+Piernas de pollo,01120300,Carne de aves,pollo|rabadilla|menudencias|^pierna pernil|^piernas
+Pimentón,01171600,Hortalizas y legumbres frescas,^(acelga|ahuyama|aji|apio|arveja verde|berenjena|brocoli|calabacin|cidra|coles|coliflor|espinaca|frijol verde|habichuela|lechuga|pepino|perejil|pimenton|remolacha|repollo|rabano)
+Pimentón verde,01171600,Hortalizas y legumbres frescas,^(acelga|ahuyama|aji|apio|arveja verde|berenjena|brocoli|calabacin|cidra|coles|coliflor|espinaca|frijol verde|habichuela|lechuga|pepino|perejil|pimenton|remolacha|repollo|rabano)
+Pitahaya,01160900,Frutas frescas,^(aguacate|coco|borojo|ciruela|curuba|durazno|fresa|guanabana|guayaba|gulupa|higo|kiwi|limon|lulo|mandarina|mango|manzana|maracuya|melon|papaya|patilla|pera|pitahaya|tangelo|uchuva|uva)
+Plátano hartón maduro,01170400,Plátanos,^platano
+Plátano hartón verde,01170400,Plátanos,^platano
+Pollo entero congelado sin vísceras,01120300,Carne de aves,pollo|rabadilla|menudencias|^pierna pernil|^piernas
+Queso campesino,01140200,Quesos y productos afines,^queso
+Queso costeño,01140200,Quesos y productos afines,^queso
+Queso cuajada,01140200,Quesos y productos afines,^queso
+Queso doble crema,01140200,Quesos y productos afines,^queso
+Rabadillas de pollo,01120300,Carne de aves,pollo|rabadilla|menudencias|^pierna pernil|^piernas
+Remolacha,01171600,Hortalizas y legumbres frescas,^(acelga|ahuyama|aji|apio|arveja verde|berenjena|brocoli|calabacin|cidra|coles|coliflor|espinaca|frijol verde|habichuela|lechuga|pepino|perejil|pimenton|remolacha|repollo|rabano)
+Repollo blanco,01120300,Carne de aves,pollo|rabadilla|menudencias|^pierna pernil|^piernas
+Repollo morado,01120300,Carne de aves,pollo|rabadilla|menudencias|^pierna pernil|^piernas
+Rábano rojo,01171600,Hortalizas y legumbres frescas,^(acelga|ahuyama|aji|apio|arveja verde|berenjena|brocoli|calabacin|cidra|coles|coliflor|espinaca|frijol verde|habichuela|lechuga|pepino|perejil|pimenton|remolacha|repollo|rabano)
+"Róbalo, filete congelado",01130300,Productos de rio y mar (incluye pescados y camarones frescos o congelados y pescado enlatado como sardinas y atún),^(almejas|bagre|basa|bocachico|cachama|calamar|corvina|lomitos de atun|palmitos de mar|pargo|pescado|robalo|salmon|sierra|tilapia|trucha|camaron|langostino|cazuela de mariscos|sardinas)
+Sal yodada,01190200,Sal,^sal 
+"Salmón, filete congelado",01130300,Productos de rio y mar (incluye pescados y camarones frescos o congelados y pescado enlatado como sardinas y atún),^(almejas|bagre|basa|bocachico|cachama|calamar|corvina|lomitos de atun|palmitos de mar|pargo|pescado|robalo|salmon|sierra|tilapia|trucha|camaron|langostino|cazuela de mariscos|sardinas)
+Sardinas en lata,01130300,Productos de rio y mar (incluye pescados y camarones frescos o congelados y pescado enlatado como sardinas y atún),^(almejas|bagre|basa|bocachico|cachama|calamar|corvina|lomitos de atun|palmitos de mar|pargo|pescado|robalo|salmon|sierra|tilapia|trucha|camaron|langostino|cazuela de mariscos|sardinas)
+Sierra entera congelada,01130300,Productos de rio y mar (incluye pescados y camarones frescos o congelados y pescado enlatado como sardinas y atún),^(almejas|bagre|basa|bocachico|cachama|calamar|corvina|lomitos de atun|palmitos de mar|pargo|pescado|robalo|salmon|sierra|tilapia|trucha|camaron|langostino|cazuela de mariscos|sardinas)
+Tangelo,01160900,Frutas frescas,^(aguacate|coco|borojo|ciruela|curuba|durazno|fresa|guanabana|guayaba|gulupa|higo|kiwi|limon|lulo|mandarina|mango|manzana|maracuya|melon|papaya|patilla|pera|pitahaya|tangelo|uchuva|uva)
+Tilapia roja entera fresca,01130300,Productos de rio y mar (incluye pescados y camarones frescos o congelados y pescado enlatado como sardinas y atún),^(almejas|bagre|basa|bocachico|cachama|calamar|corvina|lomitos de atun|palmitos de mar|pargo|pescado|robalo|salmon|sierra|tilapia|trucha|camaron|langostino|cazuela de mariscos|sardinas)
+"Tilapia, filete congelado",01130300,Productos de rio y mar (incluye pescados y camarones frescos o congelados y pescado enlatado como sardinas y atún),^(almejas|bagre|basa|bocachico|cachama|calamar|corvina|lomitos de atun|palmitos de mar|pargo|pescado|robalo|salmon|sierra|tilapia|trucha|camaron|langostino|cazuela de mariscos|sardinas)
+Tomate chonto,01171300,Tomate,^tomate (chonto|larga)
+Tomate de árbol,01160700,Tomate de árbol,^tomate de arbol
+Tomate larga vida,01171300,Tomate,^tomate (chonto|larga)
+Trucha en corte mariposa,01130300,Productos de rio y mar (incluye pescados y camarones frescos o congelados y pescado enlatado como sardinas y atún),^(almejas|bagre|basa|bocachico|cachama|calamar|corvina|lomitos de atun|palmitos de mar|pargo|pescado|robalo|salmon|sierra|tilapia|trucha|camaron|langostino|cazuela de mariscos|sardinas)
+Trucha entera fresca,01130300,Productos de rio y mar (incluye pescados y camarones frescos o congelados y pescado enlatado como sardinas y atún),^(almejas|bagre|basa|bocachico|cachama|calamar|corvina|lomitos de atun|palmitos de mar|pargo|pescado|robalo|salmon|sierra|tilapia|trucha|camaron|langostino|cazuela de mariscos|sardinas)
+Uchuva con cáscara,01160900,Frutas frescas,^(aguacate|coco|borojo|ciruela|curuba|durazno|fresa|guanabana|guayaba|gulupa|higo|kiwi|limon|lulo|mandarina|mango|manzana|maracuya|melon|papaya|patilla|pera|pitahaya|tangelo|uchuva|uva)
+Ulluco,01171200,"Arracacha, ñame y otros tubérculos",^(arracacha|ulluco)
+Uva Isabela,01160900,Frutas frescas,^(aguacate|coco|borojo|ciruela|curuba|durazno|fresa|guanabana|guayaba|gulupa|higo|kiwi|limon|lulo|mandarina|mango|manzana|maracuya|melon|papaya|patilla|pera|pitahaya|tangelo|uchuva|uva)
+Uva red globe nacional,01160900,Frutas frescas,^(aguacate|coco|borojo|ciruela|curuba|durazno|fresa|guanabana|guayaba|gulupa|higo|kiwi|limon|lulo|mandarina|mango|manzana|maracuya|melon|papaya|patilla|pera|pitahaya|tangelo|uchuva|uva)
+Uva roja,01160900,Frutas frescas,^(aguacate|coco|borojo|ciruela|curuba|durazno|fresa|guanabana|guayaba|gulupa|higo|kiwi|limon|lulo|mandarina|mango|manzana|maracuya|melon|papaya|patilla|pera|pitahaya|tangelo|uchuva|uva)
+Yuca ICA,01170600,Yuca para consumo en el hogar,^yuca
+Zanahoria,01171500,Zanahoria,^zanahoria
